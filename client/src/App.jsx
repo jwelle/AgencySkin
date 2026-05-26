@@ -3,85 +3,195 @@ import { createRoot } from "react-dom/client";
 import "./styles.css";
 
 const menuLabels = {
+  launchpad: "Launchpad",
   dashboard: "Dashboard",
   conversations: "Conversations",
   calendars: "Calendars",
   contacts: "Contacts",
   opportunities: "Opportunities",
   payments: "Payments",
+  ask_ai: "Ask AI",
+  ai_studio: "AI Studio",
+  ai_agents: "AI Agents",
   marketing: "Marketing",
   automation: "Automation",
   sites: "Sites",
-  reporting: "Reporting",
-  settings: "Settings",
   memberships: "Memberships",
+  media: "Media Storage",
   reputation: "Reputation",
+  reporting: "Reporting",
   app_marketplace: "App Marketplace",
-  media: "Media"
+  mobile_app: "Mobile App",
+  settings: "Settings"
+};
+
+const menuPresetDefinitions = {
+  admin: {
+    label: "Admin View",
+    visibleMenus: Object.keys(menuLabels)
+  },
+  show_all: {
+    label: "Show All",
+    visibleMenus: Object.keys(menuLabels)
+  },
+  simple_client: {
+    label: "Simple Client View",
+    visibleMenus: ["dashboard", "conversations", "calendars", "contacts"]
+  },
+  sales_team: {
+    label: "Sales Team View",
+    visibleMenus: ["dashboard", "conversations", "calendars", "contacts", "opportunities"]
+  },
+  marketing: {
+    label: "Marketing View",
+    visibleMenus: ["dashboard", "marketing", "automation", "sites", "media"]
+  },
+  minimal: {
+    label: "Minimal View",
+    visibleMenus: ["dashboard"]
+  }
+};
+
+const sidebarThemePresetDefinitions = {
+  clean_dark: {
+    label: "Clean Dark",
+    theme: {
+      sidebarBackground: "#111827",
+      sidebarText: "#ffffff",
+      sidebarHover: "#1f2937",
+      sidebarHoverText: "#ffffff",
+      sidebarActive: "#3368db",
+      sidebarActiveText: "#ffffff"
+    }
+  },
+  light_blue: {
+    label: "Light Blue",
+    theme: {
+      sidebarBackground: "#f8fafc",
+      sidebarText: "#0f172a",
+      sidebarHover: "#e0f2fe",
+      sidebarHoverText: "#0f172a",
+      sidebarActive: "#2563eb",
+      sidebarActiveText: "#ffffff"
+    }
+  },
+  slate_pro: {
+    label: "Slate Pro",
+    theme: {
+      sidebarBackground: "#0f172a",
+      sidebarText: "#cbd5e1",
+      sidebarHover: "#1e293b",
+      sidebarHoverText: "#ffffff",
+      sidebarActive: "#475569",
+      sidebarActiveText: "#ffffff"
+    }
+  },
+  emerald: {
+    label: "Emerald",
+    theme: {
+      sidebarBackground: "#052e2b",
+      sidebarText: "#d1fae5",
+      sidebarHover: "#064e3b",
+      sidebarHoverText: "#ffffff",
+      sidebarActive: "#10b981",
+      sidebarActiveText: "#052e2b"
+    }
+  },
+  neutral_minimal: {
+    label: "Neutral Minimal",
+    theme: {
+      sidebarBackground: "#ffffff",
+      sidebarText: "#374151",
+      sidebarHover: "#f3f4f6",
+      sidebarHoverText: "#111827",
+      sidebarActive: "#111827",
+      sidebarActiveText: "#ffffff"
+    }
+  }
 };
 
 const menuSelectorRegistry = {
-  // CSV selectors are preferred. Existing guessed selectors are retained as fallbacks because
+  // Live DOM audit selectors are preferred. Stable attribute/href selectors are retained as fallbacks because
   // GoHighLevel DOM selectors can change and this registry should be versioned over time.
+  launchpad: {
+    primarySelectors: ["#sb_launchpad"],
+    fallbackSelectors: ['[meta="launchpad"]']
+  },
   dashboard: {
     primarySelectors: ["#sb_dashboard"],
-    fallbackSelectors: ['[data-testid="sidebar-dashboard"]', 'a[href*="/dashboard"]']
+    fallbackSelectors: ['[meta="dashboard"]', 'a[href*="/dashboard"]']
   },
   conversations: {
     primarySelectors: ["#sb_conversations"],
-    fallbackSelectors: ['[data-testid="sidebar-conversations"]', 'a[href*="/conversations"]']
+    fallbackSelectors: ['[meta="conversations"]', 'a[href*="/conversations"]']
   },
   calendars: {
     primarySelectors: ["#sb_calendars"],
-    fallbackSelectors: ['[data-testid="sidebar-calendars"]', 'a[href*="/calendars"]']
+    fallbackSelectors: ['[meta="calendars"]', 'a[href*="/calendars"]']
   },
   contacts: {
     primarySelectors: ["#sb_contacts"],
-    fallbackSelectors: ['[data-testid="sidebar-contacts"]', 'a[href*="/contacts"]']
+    fallbackSelectors: ['[meta="contacts"]', 'a[href*="/contacts"]']
   },
   opportunities: {
     primarySelectors: ["#sb_opportunities"],
-    fallbackSelectors: ['[data-testid="sidebar-opportunities"]', 'a[href*="/opportunities"]']
+    fallbackSelectors: ['[meta="opportunities"]', 'a[href*="/opportunities"]']
   },
   payments: {
     primarySelectors: ["#sb_payments"],
-    fallbackSelectors: ['[data-testid="sidebar-payments"]', 'a[href*="/payments"]']
+    fallbackSelectors: ['[meta="payments"]', 'a[href*="/payments"]']
+  },
+  ask_ai: {
+    primarySelectors: ["#sb_ask-ai"],
+    fallbackSelectors: ['[meta="ask-ai"]', 'a[href*="/ask-ai"]']
+  },
+  ai_studio: {
+    primarySelectors: ["#sb_vibe"],
+    fallbackSelectors: ['[meta="vibe"]', 'a[href*="/vibe"]']
+  },
+  ai_agents: {
+    primarySelectors: ['[meta="AI Agents"]'],
+    fallbackSelectors: ["#sb_AI\\ Agents", 'a[href*="/ai-agents"]']
   },
   marketing: {
     primarySelectors: ["#sb_email-marketing"],
-    fallbackSelectors: ['[data-testid="sidebar-marketing"]', 'a[href*="/marketing"]']
+    fallbackSelectors: ['[meta="email-marketing"]', 'a[href*="/marketing"]']
   },
   automation: {
-    primarySelectors: [],
-    fallbackSelectors: ['[data-testid="sidebar-automation"]', 'a[href*="/automation"]']
+    primarySelectors: ["#sb_automation"],
+    fallbackSelectors: ['[meta="automation"]', 'a[href*="/automation"]']
   },
   sites: {
     primarySelectors: ["#sb_sites"],
-    fallbackSelectors: ['[data-testid="sidebar-sites"]', 'a[href*="/sites"]']
-  },
-  reporting: {
-    primarySelectors: ["#sb_reporting"],
-    fallbackSelectors: ['[data-testid="sidebar-reporting"]', 'a[href*="/reporting"]']
-  },
-  settings: {
-    primarySelectors: ["#sb_settings"],
-    fallbackSelectors: ['[data-testid="sidebar-settings"]', 'a[href*="/settings"]']
+    fallbackSelectors: ['[meta="sites"]', 'a[href*="/sites"]']
   },
   memberships: {
     primarySelectors: ["#sb_memberships"],
-    fallbackSelectors: ['a[meta="memberships"]', 'a[href*="/memberships"]']
-  },
-  reputation: {
-    primarySelectors: ["#sb_reputation"],
-    fallbackSelectors: ['a[href*="/reputation"]']
-  },
-  app_marketplace: {
-    primarySelectors: ["#sb_app-marketplace"],
-    fallbackSelectors: ['a[href*="/marketplace"]']
+    fallbackSelectors: ['[meta="memberships"]', 'a[href*="/memberships"]']
   },
   media: {
     primarySelectors: ["#sb_app-media"],
-    fallbackSelectors: ['a[href*="/media"]']
+    fallbackSelectors: ['[meta="app-media"]', 'a[href*="/media-storage"]']
+  },
+  reputation: {
+    primarySelectors: ["#sb_reputation"],
+    fallbackSelectors: ['[meta="reputation"]', 'a[href*="/reputation"]']
+  },
+  reporting: {
+    primarySelectors: ["#sb_reporting"],
+    fallbackSelectors: ['[meta="reporting"]', 'a[href*="/reporting"]']
+  },
+  app_marketplace: {
+    primarySelectors: ["#sb_app-marketplace"],
+    fallbackSelectors: ['[meta="app-marketplace"]', 'a[href*="/integration"]']
+  },
+  mobile_app: {
+    primarySelectors: ["#sb_location-mobile-app"],
+    fallbackSelectors: ['[meta="location-mobile-app"]', 'a[href*="/mobile_app"]']
+  },
+  settings: {
+    primarySelectors: ["#sb_settings"],
+    fallbackSelectors: ['[meta="settings"]', 'a[href*="/settings"]']
   }
 };
 
@@ -92,6 +202,13 @@ const emptySettings = {
     primaryColor: "#2563eb",
     accentColor: "#14b8a6",
     backgroundColor: "#ffffff",
+    includeSidebarTheme: true,
+    sidebarBackground: "",
+    sidebarText: "#ffffff",
+    sidebarHover: "",
+    sidebarHoverText: "#ffffff",
+    sidebarActive: "",
+    sidebarActiveText: "#ffffff",
     logoUrl: ""
   },
   menus: Object.fromEntries(Object.keys(menuLabels).map((key) => [key, true]))
@@ -117,11 +234,23 @@ function getMenuSelectors(key) {
   return entry ? [...entry.primarySelectors, ...entry.fallbackSelectors] : [];
 }
 
+function resolveTheme(settingsTheme) {
+  const theme = { ...emptySettings.theme, ...(settingsTheme || {}) };
+  return {
+    ...theme,
+    sidebarBackground: theme.sidebarBackground || theme.backgroundColor,
+    sidebarText: theme.sidebarText || "#ffffff",
+    sidebarHover: theme.sidebarHover || theme.accentColor,
+    sidebarHoverText: theme.sidebarHoverText || "#ffffff",
+    sidebarActive: theme.sidebarActive || theme.primaryColor,
+    sidebarActiveText: theme.sidebarActiveText || "#ffffff"
+  };
+}
+
 function generateInstallCode(locationId, settings) {
-  const theme = { ...emptySettings.theme, ...(settings.theme || {}) };
+  const theme = resolveTheme(settings.theme);
   const menus = { ...emptySettings.menus, ...(settings.menus || {}) };
   const hiddenMenuEntries = Object.entries(menus).filter(([, isVisible]) => isVisible === false);
-  const menuSelectorList = Object.values(menuSelectors).join(",\n");
   const safeLogoUrlComment = String(theme.logoUrl || "")
     .replace(/\*\//g, "* /")
     .replace(/[\r\n]/g, " ");
@@ -129,27 +258,72 @@ function generateInstallCode(locationId, settings) {
   const cssLines = [
     "/* AgencySkin Generated CSS */",
     "/* Paste this into GoHighLevel Custom CSS */",
+    "/* Best used with your GoHighLevel white-label domain. */",
     "",
     ":root {",
     `  --agencyskin-primary: ${theme.primaryColor};`,
     `  --agencyskin-accent: ${theme.accentColor};`,
     `  --agencyskin-background: ${theme.backgroundColor};`,
-    "}",
-    "",
-    "/* Example shell styling */",
-    "body {",
-    "  --agencyskin-active-primary: var(--agencyskin-primary);",
-    "  background: var(--agencyskin-background) !important;",
-    "}",
-    "",
-    "/* Example registered menu styling */",
-    `${menuSelectorList} {`,
-    "  color: var(--agencyskin-primary) !important;",
+    `  --agencyskin-sidebar-background: ${theme.sidebarBackground};`,
+    `  --agencyskin-sidebar-text: ${theme.sidebarText};`,
+    `  --agencyskin-sidebar-hover: ${theme.sidebarHover};`,
+    `  --agencyskin-sidebar-hover-text: ${theme.sidebarHoverText};`,
+    `  --agencyskin-sidebar-active: ${theme.sidebarActive};`,
+    `  --agencyskin-sidebar-active-text: ${theme.sidebarActiveText};`,
     "}"
   ];
 
+  if (menus.settings === false) {
+    warnings.push("You are hiding Settings. Make sure you can still access GHL settings another way before using this CSS.");
+  }
+
   if (safeLogoUrlComment) {
     cssLines.push("", `/* Logo URL saved in AgencySkin: ${safeLogoUrlComment} */`);
+  }
+
+  if (theme.includeSidebarTheme !== false) {
+    cssLines.push(
+      "",
+      "/* AgencySkin Sidebar Theme */",
+      "",
+      "/* Sidebar container */",
+      "#sidebar-v2 {",
+      "  background: var(--agencyskin-sidebar-background) !important;",
+      "}",
+      "",
+      "/* Sidebar links */",
+      '#sidebar-v2 a[id^="sb_"] {',
+      "  color: var(--agencyskin-sidebar-text) !important;",
+      "}",
+      "",
+      "/* Sidebar icons and text */",
+      '#sidebar-v2 a[id^="sb_"] svg,',
+      '#sidebar-v2 a[id^="sb_"] span {',
+      "  color: var(--agencyskin-sidebar-text) !important;",
+      "}",
+      "",
+      "/* Sidebar hover */",
+      '#sidebar-v2 a[id^="sb_"]:hover {',
+      "  background: var(--agencyskin-sidebar-hover) !important;",
+      "  color: var(--agencyskin-sidebar-hover-text) !important;",
+      "}",
+      "",
+      '#sidebar-v2 a[id^="sb_"]:hover svg,',
+      '#sidebar-v2 a[id^="sb_"]:hover span {',
+      "  color: var(--agencyskin-sidebar-hover-text) !important;",
+      "}",
+      "",
+      "/* Active sidebar item */",
+      '#sidebar-v2 a[id^="sb_"].active {',
+      "  background: var(--agencyskin-sidebar-active) !important;",
+      "  color: var(--agencyskin-sidebar-active-text) !important;",
+      "}",
+      "",
+      '#sidebar-v2 a[id^="sb_"].active svg,',
+      '#sidebar-v2 a[id^="sb_"].active span {',
+      "  color: var(--agencyskin-sidebar-active-text) !important;",
+      "}"
+    );
   }
 
   cssLines.push("", "/* Hide selected GoHighLevel menu items */");
@@ -173,7 +347,7 @@ function generateInstallCode(locationId, settings) {
 
   return {
     css: cssLines.join("\n"),
-    loaderScript: `<script src="http://localhost:5174/loader.js" data-location-id="${locationId}" data-config-url="http://localhost:5174/api/locations/{locationId}/settings"></script>`,
+    loaderScript: "",
     warnings
   };
 }
@@ -246,6 +420,41 @@ function App() {
     }));
   }
 
+  function applyMenuPreset(presetKey) {
+    const preset = menuPresetDefinitions[presetKey];
+
+    if (!preset) {
+      return;
+    }
+
+    const visibleMenuSet = new Set(preset.visibleMenus);
+
+    setSettings((current) => ({
+      ...current,
+      menus: Object.fromEntries(Object.keys(menuLabels).map((key) => [key, visibleMenuSet.has(key)]))
+    }));
+    setStatus(`${preset.label} applied.`);
+    setCopyStatus("");
+  }
+
+  function applyThemePreset(presetKey) {
+    const preset = sidebarThemePresetDefinitions[presetKey];
+
+    if (!preset) {
+      return;
+    }
+
+    setSettings((current) => ({
+      ...current,
+      theme: {
+        ...current.theme,
+        ...preset.theme
+      }
+    }));
+    setStatus(`${preset.label} theme applied.`);
+    setCopyStatus("");
+  }
+
   async function persistSettings(action, path, payload = settings) {
     if (!selectedLocationId) {
       return;
@@ -276,10 +485,26 @@ function App() {
       return;
     }
 
-    const generated = generateInstallCode(selectedLocationId, settings);
-    setInstallCode(generated);
-    setCopyStatus("");
-    setStatus("Install code generated.");
+    const menus = { ...emptySettings.menus, ...(settings.menus || {}) };
+    const hasVisibleMenu = Object.keys(menuLabels).some((key) => menus[key] !== false);
+
+    if (!hasVisibleMenu) {
+      setCopyStatus("");
+      setStatus("At least one menu item must remain visible. Unhide at least one item before generating CSS.");
+      return;
+    }
+
+    try {
+      const generated = generateInstallCode(selectedLocationId, settings);
+      setInstallCode(generated);
+      setCopyStatus("");
+      setStatus("CSS generated.");
+    } catch (error) {
+      console.error("[AgencySkin] Unable to generate CSS.", error);
+      setInstallCode({ css: "", loaderScript: "", warnings: [] });
+      setCopyStatus("");
+      setStatus("Unable to generate CSS. Check the selector registry.");
+    }
   }
 
   async function copyToClipboard(value, target) {
@@ -344,6 +569,28 @@ function App() {
               <span>{settings.published ? "Published" : "Draft"}</span>
             </div>
 
+            <div className="preset-controls">
+              <p className="preset-helper">
+                Sidebar theme profiles update only the GoHighLevel sidebar colors.
+              </p>
+              <div className="preset-list" aria-label="Sidebar theme presets">
+                {Object.entries(sidebarThemePresetDefinitions).map(([key, preset]) => (
+                  <button key={key} type="button" onClick={() => applyThemePreset(key)}>
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="checkbox-row">
+              <span>Include sidebar theme styling</span>
+              <input
+                type="checkbox"
+                checked={settings.theme.includeSidebarTheme !== false}
+                onChange={(event) => updateTheme("includeSidebarTheme", event.target.checked)}
+              />
+            </label>
+
             <div className="field-row">
               <label htmlFor="primaryColor">Primary</label>
               <input
@@ -374,6 +621,66 @@ function App() {
               />
             </div>
 
+            <div className="field-row">
+              <label htmlFor="sidebarBackground">Sidebar background</label>
+              <input
+                id="sidebarBackground"
+                type="color"
+                value={resolveTheme(settings.theme).sidebarBackground}
+                onChange={(event) => updateTheme("sidebarBackground", event.target.value)}
+              />
+            </div>
+
+            <div className="field-row">
+              <label htmlFor="sidebarText">Sidebar text</label>
+              <input
+                id="sidebarText"
+                type="color"
+                value={resolveTheme(settings.theme).sidebarText}
+                onChange={(event) => updateTheme("sidebarText", event.target.value)}
+              />
+            </div>
+
+            <div className="field-row">
+              <label htmlFor="sidebarHover">Sidebar hover background</label>
+              <input
+                id="sidebarHover"
+                type="color"
+                value={resolveTheme(settings.theme).sidebarHover}
+                onChange={(event) => updateTheme("sidebarHover", event.target.value)}
+              />
+            </div>
+
+            <div className="field-row">
+              <label htmlFor="sidebarHoverText">Sidebar hover text</label>
+              <input
+                id="sidebarHoverText"
+                type="color"
+                value={resolveTheme(settings.theme).sidebarHoverText}
+                onChange={(event) => updateTheme("sidebarHoverText", event.target.value)}
+              />
+            </div>
+
+            <div className="field-row">
+              <label htmlFor="sidebarActive">Active item background</label>
+              <input
+                id="sidebarActive"
+                type="color"
+                value={resolveTheme(settings.theme).sidebarActive}
+                onChange={(event) => updateTheme("sidebarActive", event.target.value)}
+              />
+            </div>
+
+            <div className="field-row">
+              <label htmlFor="sidebarActiveText">Active item text</label>
+              <input
+                id="sidebarActiveText"
+                type="color"
+                value={resolveTheme(settings.theme).sidebarActiveText}
+                onChange={(event) => updateTheme("sidebarActiveText", event.target.value)}
+              />
+            </div>
+
             <label className="stacked-field" htmlFor="logoUrl">
               Logo URL
               <input
@@ -390,6 +697,25 @@ function App() {
             <div className="panel-header">
               <h2>Menu Manager</h2>
               <span>{Object.values(settings.menus).filter(Boolean).length} visible</span>
+            </div>
+
+            <div className="preset-controls">
+              <p className="preset-helper">
+                Presets quickly choose which GHL menu items are visible. You can adjust individual
+                toggles after selecting a preset.
+              </p>
+              <div className="preset-list" aria-label="Menu visibility presets">
+                {Object.entries(menuPresetDefinitions).map(([key, preset]) => (
+                  <button
+                    className={key === "show_all" ? "preset-button-secondary" : undefined}
+                    key={key}
+                    type="button"
+                    onClick={() => applyMenuPreset(key)}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="menu-list">
@@ -421,6 +747,10 @@ function App() {
         <button disabled={isSaving} onClick={() => persistSettings("reset", "/reset")}>
           Reset to Default
         </button>
+        <p className="action-helper">
+          Save Settings stores your choices in this app. Generate CSS creates copy/paste CSS from the
+          current screen. Publish is reserved for a future hosted-loader workflow.
+        </p>
         {status ? <span className="save-status">{status}</span> : null}
       </footer>
 
@@ -428,12 +758,21 @@ function App() {
         <div className="panel-header">
           <div>
             <h2>Install Code</h2>
-            <p>Copy this CSS into GoHighLevel Custom CSS to apply the current AgencySkin settings.</p>
+            <p>
+              Copy this CSS into GoHighLevel Custom CSS. This MVP uses copy/paste CSS. Save Settings
+              stores your choices in this app, but the generated CSS is what changes GoHighLevel.
+            </p>
           </div>
           <button type="button" onClick={handleGenerateInstallCode}>
-            Generate Install Code
+            Generate CSS
           </button>
         </div>
+
+        <p className="domain-warning">
+          Dashboard/sidebar CSS customizations are intended for your GoHighLevel white-label domain.
+          If users log in through app.gohighlevel.com instead of your branded domain, some changes may
+          not appear.
+        </p>
 
         <label className="code-field" htmlFor="generatedCss">
           Generated CSS
@@ -445,19 +784,11 @@ function App() {
 
         <div className="loader-snippet">
           <div>
-            <h3>Optional Hosted Loader Script</h3>
+            <h3>Experimental Future Loader</h3>
             <p>
-              Use the CSS snippet for the current MVP. The loader script is reserved for a future
-              hosted configuration workflow.
+              Not part of the current CSS-first MVP. Use the generated CSS above for GoHighLevel.
             </p>
           </div>
-          <label className="code-field" htmlFor="loaderScript">
-            Loader snippet
-            <textarea id="loaderScript" readOnly value={installCode.loaderScript} />
-          </label>
-          <button type="button" onClick={() => copyToClipboard(installCode.loaderScript, "Loader script")}>
-            Copy Loader Script
-          </button>
         </div>
 
         {installCode.warnings.length > 0 ? (
@@ -469,7 +800,7 @@ function App() {
         ) : null}
 
         <p className="install-warning">
-          The current MVP uses copy/paste CSS. The hosted loader script is experimental and intended
+          The current MVP uses copy/paste CSS. The hosted loader script is experimental and reserved
           for a future version.
         </p>
         {copyStatus ? <span className="save-status">{copyStatus}</span> : null}

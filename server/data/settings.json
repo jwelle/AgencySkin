@@ -2,7 +2,7 @@
   "loc_001": {
     "locationId": "loc_001",
     "enabled": true,
-    "published": true,
+    "published": false,
     "theme": {
       "primaryColor": "#2563eb",
       "accentColor": "#14b8a6",
@@ -10,53 +10,62 @@
       "logoUrl": ""
     },
     "menus": {
-      "dashboard": true,
-      "conversations": true,
-      "calendars": true,
-      "contacts": true,
-      "opportunities": true,
-      "payments": false,
-      "marketing": true,
-      "automation": true,
-      "sites": true,
-      "reporting": true,
-      "settings": true,
-      "memberships": true,
-      "reputation": true,
-      "app_marketplace": true,
-      "media": true
-    },
-    "updatedAt": "2026-05-26T18:57:09.542Z",
-    "publishedAt": "2026-05-26T18:57:07.044Z"
-  },
-  "loc_002": {
-    "locationId": "loc_002",
-    "enabled": false,
-    "published": true,
-    "theme": {
-      "primaryColor": "#2750aa",
-      "accentColor": "#14b8a6",
-      "backgroundColor": "#c12525",
-      "logoUrl": ""
-    },
-    "menus": {
+      "launchpad": true,
       "dashboard": true,
       "conversations": true,
       "calendars": true,
       "contacts": true,
       "opportunities": true,
       "payments": true,
+      "ask_ai": true,
+      "ai_studio": true,
+      "ai_agents": true,
       "marketing": true,
       "automation": true,
       "sites": true,
-      "reporting": true,
-      "settings": true,
       "memberships": true,
+      "media": true,
       "reputation": true,
+      "reporting": true,
       "app_marketplace": true,
-      "media": true
+      "mobile_app": true,
+      "settings": true
     },
-    "updatedAt": "2026-05-26T19:00:12.108Z",
-    "publishedAt": "2026-05-26T19:00:11.630Z"
+    "updatedAt": "2026-05-26T20:48:30.300Z"
+  },
+  "loc_002": {
+    "locationId": "loc_002",
+    "enabled": false,
+    "published": true,
+    "theme": {
+      "primaryColor": "#3368db",
+      "accentColor": "#5fd3c6",
+      "backgroundColor": "#470b0b",
+      "logoUrl": ""
+    },
+    "menus": {
+      "launchpad": false,
+      "dashboard": false,
+      "conversations": false,
+      "calendars": false,
+      "contacts": false,
+      "opportunities": false,
+      "payments": false,
+      "ask_ai": false,
+      "ai_studio": false,
+      "ai_agents": false,
+      "marketing": false,
+      "automation": false,
+      "sites": false,
+      "memberships": false,
+      "media": false,
+      "reputation": false,
+      "reporting": false,
+      "app_marketplace": false,
+      "mobile_app": false,
+      "settings": false
+    },
+    "updatedAt": "2026-05-26T19:54:49.614Z",
+    "publishedAt": "2026-05-26T19:54:49.613Z"
   }
 }

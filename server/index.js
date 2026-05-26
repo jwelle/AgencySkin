@@ -40,21 +40,26 @@ function defaultSettings(locationId) {
       logoUrl: ""
     },
     menus: {
+      launchpad: true,
       dashboard: true,
       conversations: true,
       calendars: true,
       contacts: true,
       opportunities: true,
       payments: true,
+      ask_ai: true,
+      ai_studio: true,
+      ai_agents: true,
       marketing: true,
       automation: true,
       sites: true,
-      reporting: true,
-      settings: true,
       memberships: true,
+      media: true,
       reputation: true,
+      reporting: true,
       app_marketplace: true,
-      media: true
+      mobile_app: true,
+      settings: true
     },
     updatedAt: new Date().toISOString()
   };

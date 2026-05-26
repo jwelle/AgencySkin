@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AgencySkin CleanView</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header>
+        <p class="eyebrow">AgencySkin</p>
+        <h1>CleanView</h1>
+      </header>
+
+      <label class="field" for="presetSelect">
+        Preset
+        <select id="presetSelect"></select>
+      </label>
+
+      <div class="button-row">
+        <button id="applyPresetButton" type="button">Apply Preset</button>
+        <button id="showAllButton" class="secondary" type="button">Show All</button>
+      </div>
+
+      <p id="statusMessage" class="status" role="status"></p>
+      <p class="note">Changes apply only in this browser.</p>
+    </main>
+
+    <script src="presets.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

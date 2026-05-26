@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "AgencySkin CleanView",
+  "version": "0.1.0",
+  "description": "Simplify the GoHighLevel sidebar with local browser presets.",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://app.gohighlevel.com/*",
+    "https://*.leadconnectorhq.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "AgencySkin CleanView"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://app.gohighlevel.com/*",
+        "https://*.leadconnectorhq.com/*"
+      ],
+      "js": ["selectorRegistry.js", "presets.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
