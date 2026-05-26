@@ -1,0 +1,23 @@
+[
+  {
+    "id": "loc_001",
+    "name": "Northstar Dental",
+    "agency": "BrightPath Agency",
+    "city": "Austin",
+    "state": "TX"
+  },
+  {
+    "id": "loc_002",
+    "name": "Summit Fitness",
+    "agency": "BrightPath Agency",
+    "city": "Denver",
+    "state": "CO"
+  },
+  {
+    "id": "loc_003",
+    "name": "Harbor Med Spa",
+    "agency": "BrightPath Agency",
+    "city": "Tampa",
+    "state": "FL"
+  }
+]

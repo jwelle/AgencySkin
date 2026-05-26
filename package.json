@@ -1,0 +1,14 @@
+{
+  "name": "agencyskin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GoHighLevel white-label customization MVP for agency sub-location menus and themes.",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "install": "npm install --prefix server && npm install --prefix client",
+    "start": "npm run start --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
