@@ -1,64 +1,104 @@
-# AgencySkin CleanView Extension
+# AgencySkin Chrome Extension
 
-AgencySkin CleanView is a Chrome extension MVP for simplifying the GoHighLevel sidebar with local browser presets.
+AgencySkin includes CleanView, a personal-browser tool for simplifying the GoHighLevel sidebar.
 
-It is independent from the AgencySkin web app. It does not use a backend, authentication, billing, the GoHighLevel API, or a hosted loader.
+CleanView runs locally in Chrome. It does not use a backend, authentication, billing, the GoHighLevel API, or hosted configuration.
 
-## What It Does
+## What CleanView Does
 
-- Runs on `https://app.gohighlevel.com/*` and `https://*.leadconnectorhq.com/*`.
-- Applies sidebar visibility presets using validated GoHighLevel sidebar selectors.
-- Hides registered menu items with inline `display: none !important`.
-- Restores registered menu items without removing DOM elements.
-- Reapplies the selected preset when GoHighLevel rerenders the sidebar.
-
-Custom white-label domains can be added later by extending the `matches` and `host_permissions` entries in `manifest.json`.
+- Switch between built-in sidebar views instantly.
+- Create personal CleanView Views.
+- Duplicate built-in views into editable personal views.
+- Hide registered GoHighLevel sidebar menu items.
+- Rename registered GoHighLevel sidebar labels for your browser.
+- Add CleanView Quick Links as personal shortcuts in the sidebar.
+- Assign a view to the current GoHighLevel location with CleanView Location Rules.
+- Apply optional per-view sidebar styling.
+- Reset the current page back to the original GoHighLevel sidebar.
+- Enable or disable CleanView without deleting saved views.
 
 ## Load Unpacked in Chrome
 
 1. Open `chrome://extensions`.
 2. Enable Developer Mode.
 3. Click `Load unpacked`.
-4. Select the repo's `extension/` folder.
-5. Pin or open the `AgencySkin CleanView` extension.
+4. Select this repo's `extension/` folder.
+5. Pin or open the `AgencySkin` extension.
 
 ## Test on GoHighLevel
 
 1. Open `https://app.gohighlevel.com/`.
-2. Open the extension popup.
-3. Choose `Simple Client View`.
-4. Click `Apply Preset`.
-5. Confirm only Dashboard, Conversations, Calendars, and Contacts remain visible among registered menu items.
-6. Choose `Sales Team View`.
-7. Click `Apply Preset`.
-8. Confirm Opportunities is visible too.
-9. Click `Show All` to restore all registered menu items.
-10. Navigate inside GoHighLevel and confirm the selected preset reapplies after sidebar rerenders.
+2. Open the AgencySkin extension popup.
+3. Confirm the popup shows `CleanView`.
+4. Choose `Simple View` or another Current View.
+5. Confirm the selected view applies immediately.
+6. Click `Edit views`.
+7. Duplicate a built-in view or create a new custom view.
+8. Use the Menu Items, Rename Labels, Quick Links, Sidebar Style, and Location Rules tabs.
+9. Save the view, then use `Save and Apply` to apply it to the active GHL tab.
+10. Add a Quick Link with `LOCATION_ID` in the URL if needed.
+11. Enable a Sidebar Style preset and confirm the GHL sidebar updates.
+12. Click `Use this view for this location` to assign the selected view to the current GHL location.
+13. Navigate inside GoHighLevel and confirm the sidebar state reapplies after rerenders.
+14. Click `Restore current page` to restore the original sidebar for the current page.
+15. Toggle CleanView off and confirm the original sidebar remains visible.
 
-## Presets
+## Built-In Views
 
-- Admin View: shows every registered menu item.
-- Simple Client View: shows Dashboard, Conversations, Calendars, and Contacts.
-- Sales Team View: shows Dashboard, Conversations, Calendars, Contacts, and Opportunities.
-- Marketing View: shows Dashboard, Marketing, Automation, Sites, and Media Storage.
-- Minimal View: shows Dashboard only.
+- Simple View
+- Sales View
+- Marketing View
+- Admin View
+- Loan Officer View
+- Blank Custom View
+
+## CleanView Views
+
+Built-in views are read-only. Duplicate a built-in view or create a personal view to edit:
+
+- Visible sidebar items
+- Personal menu label overrides
+- CleanView Quick Links
+- Sidebar Style
+
+Personal views are stored in `chrome.storage.local` on this browser.
+
+## CleanView Quick Links
+
+CleanView Quick Links are personal links injected into the GoHighLevel sidebar.
+
+Use `LOCATION_ID` in a link URL when you want CleanView to substitute the current GoHighLevel location id.
+
+## CleanView Location Rules
+
+CleanView Location Rules map a GoHighLevel location id to a view. When a location rule exists, it takes priority over the global current view.
 
 ## Restore All Items
 
-Click `Show All` in the popup. This restores all registered sidebar menu items and stores the Admin View preset.
+Use `Restore current page` to restore the current page to the original GoHighLevel sidebar. This does not delete saved views or location rules.
+
+Turn off `Enable CleanView` to stop automatic reapplication.
+
+## Supported Sites
+
+- `https://app.gohighlevel.com/*`
+- `https://*.leadconnectorhq.com/*`
+
+Custom white-label domains can be added later by extending `matches` and `host_permissions` in `manifest.json`.
 
 ## Known Limitations
 
-- Settings apply globally across supported GoHighLevel domains in this browser.
-- Per-location profiles are not implemented yet.
-- Custom white-label domains are not included by default.
-- The extension only manages registered sidebar menu selectors.
-- It does not provide theme controls, raw CSS, raw JavaScript, or selector editing.
+- Storage is local to the current Chrome browser.
+- No cloud sync or AgencySkin web app sync yet.
+- No GoHighLevel API access.
+- Sidebar Style is scoped to the detected GHL sidebar/menu area.
+- No raw CSS, raw JavaScript, or selector editor.
+- CleanView only manages registered selectors and its own injected quick links.
 
 ## Future Ideas
 
 - Quick Hide Mode
-- Per-location profiles
+- Per-location profile improvements
 - Export CSS
 - Sync with AgencySkin web app
 - Theme controls

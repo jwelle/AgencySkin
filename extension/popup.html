@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AgencySkin CleanView</title>
+    <title>AgencySkin</title>
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
@@ -13,21 +13,39 @@
         <h1>CleanView</h1>
       </header>
 
+      <label class="toggle-row">
+        <span>CleanView</span>
+        <input id="enabledToggle" type="checkbox">
+      </label>
+
+      <p id="locationLabel" class="meta">Current location: detecting...</p>
+
       <label class="field" for="presetSelect">
-        Preset
+        Current View
         <select id="presetSelect"></select>
       </label>
 
-      <div class="button-row">
-        <button id="applyPresetButton" type="button">Apply Preset</button>
-        <button id="showAllButton" class="secondary" type="button">Show All</button>
-      </div>
+      <section class="popup-section" aria-label="Location">
+        <p class="section-label">Location</p>
+        <button id="assignLocationButton" class="secondary full-width" type="button">Use this view for this location</button>
+      </section>
+
+      <section class="popup-section" aria-label="Manage">
+        <p class="section-label">Manage</p>
+        <div class="button-row">
+          <button id="editorButton" type="button">Edit views</button>
+          <button id="resetPageButton" class="secondary" type="button" title="Temporarily removes CleanView changes from this page.">Restore current page</button>
+        </div>
+      </section>
 
       <p id="statusMessage" class="status" role="status"></p>
       <p class="note">Changes apply only in this browser.</p>
     </main>
 
+    <script src="namespace.js"></script>
+    <script src="selectorRegistry.js"></script>
     <script src="presets.js"></script>
+    <script src="storage.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

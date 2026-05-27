@@ -1,5 +1,7 @@
 (function registerAgencySkinSelectors() {
-  window.AgencySkinSelectorRegistry = {
+  var namespace = window.agencySkinCleanView || {};
+
+  namespace.selectorRegistry = {
     launchpad: {
       label: "Launchpad",
       selectors: ["#sb_launchpad", "[meta='launchpad']"]
@@ -56,6 +58,10 @@
       label: "Memberships",
       selectors: ["#sb_memberships", "[meta='memberships']"]
     },
+    communities: {
+      label: "Communities",
+      selectors: ["#sb_communities", "[meta='communities']"]
+    },
     media: {
       label: "Media Storage",
       selectors: ["#sb_app-media", "[meta='app-media']"]
@@ -81,4 +87,7 @@
       selectors: ["#sb_settings", "[meta='settings']"]
     }
   };
+
+  namespace.allMenuKeys = Object.keys(namespace.selectorRegistry);
+  window.agencySkinCleanView = namespace;
 })();

@@ -1,145 +1,146 @@
-(function agencySkinPopup() {
-  var presets = window.AgencySkinPresets || {};
-  var allMenuKeys = window.AgencySkinAllMenuKeys || [];
+(function agencySkinCleanViewPopup() {
+  var namespace = window.agencySkinCleanView;
+  var storage = namespace.storage;
   var presetSelect = document.getElementById("presetSelect");
-  var applyPresetButton = document.getElementById("applyPresetButton");
-  var showAllButton = document.getElementById("showAllButton");
+  var enabledToggle = document.getElementById("enabledToggle");
+  var locationLabel = document.getElementById("locationLabel");
+  var assignLocationButton = document.getElementById("assignLocationButton");
+  var resetPageButton = document.getElementById("resetPageButton");
+  var editorButton = document.getElementById("editorButton");
   var statusMessage = document.getElementById("statusMessage");
+  var activeLocationId = null;
+  var currentState = null;
 
   function setStatus(message, isError) {
     statusMessage.textContent = message;
     statusMessage.className = isError ? "status error" : "status";
   }
 
-  function populatePresets() {
-    Object.keys(presets).forEach(function addPresetOption(key) {
-      var option = document.createElement("option");
-      option.value = key;
-      option.textContent = presets[key].label;
-      presetSelect.appendChild(option);
-    });
-  }
-
   function getActiveTab(callback) {
     chrome.tabs.query({ active: true, currentWindow: true }, function handleTabs(tabs) {
-      if (chrome.runtime.lastError || !tabs || !tabs[0] || !tabs[0].id) {
-        callback(null);
-        return;
-      }
-
-      callback(tabs[0]);
+      callback(chrome.runtime.lastError || !tabs || !tabs[0] ? null : tabs[0]);
     });
   }
 
   function sendToContentScript(message, callback) {
     getActiveTab(function handleActiveTab(tab) {
-      if (!tab) {
+      if (!tab || !tab.id) {
         callback({ ok: false, error: "No active tab found." });
         return;
       }
 
-      chrome.tabs.sendMessage(tab.id, message, function handleResponse(response) {
+      chrome.tabs.sendMessage(tab.id, Object.assign({ source: namespace.messageSource }, message), function handleResponse(response) {
         if (chrome.runtime.lastError) {
           callback({ ok: false, error: "Open a supported GoHighLevel page, then try again." });
           return;
         }
-
         callback(response || { ok: false, error: "No response from page." });
       });
     });
   }
 
-  function saveSettings(selectedPreset, visibleItems, callback) {
-    chrome.storage.local.set(
-      {
-        selectedPreset: selectedPreset,
-        visibleItems: visibleItems,
-        updatedAt: new Date().toISOString()
-      },
-      function handleSaved() {
-        if (chrome.runtime.lastError) {
-          callback({ ok: false, error: "Unable to save preset." });
+  function optionLabel(preset) {
+    return preset.source === "builtin" ? preset.name + " (Built-in)" : preset.name;
+  }
+
+  function populatePresets(state) {
+    var allPresets = storage.getAllPresets(state);
+    presetSelect.innerHTML = "";
+
+    Object.keys(allPresets).forEach(function addOption(presetId) {
+      var option = document.createElement("option");
+      option.value = presetId;
+      option.textContent = optionLabel(allPresets[presetId]);
+      presetSelect.appendChild(option);
+    });
+
+    presetSelect.value = state.activePresetId || "builtin:simple";
+  }
+
+  function refreshState() {
+    storage.getState(function handleState(state, error) {
+      if (error) {
+        setStatus("Unable to load CleanView settings.", true);
+        return;
+      }
+
+      currentState = state;
+      enabledToggle.checked = state.enabled !== false;
+      populatePresets(state);
+
+      sendToContentScript({ type: "getPageContext" }, function handleContext(result) {
+        if (!result.ok) {
+          locationLabel.textContent = "Current location: open GoHighLevel";
           return;
         }
 
-        callback({ ok: true });
-      }
-    );
+        activeLocationId = result.locationId || null;
+        locationLabel.textContent = activeLocationId ? "Current location: " + activeLocationId : "Current location: not detected";
+
+        if (activeLocationId && state.locationRules[activeLocationId]) {
+          presetSelect.value = state.locationRules[activeLocationId].presetId;
+        }
+      });
+    });
   }
 
   function applyPreset() {
-    var presetKey = presetSelect.value;
-    var preset = presets[presetKey];
+    sendToContentScript({ type: "applyPreset", presetId: presetSelect.value }, function handleApplied(result) {
+      if (!result.ok) {
+        setStatus(result.error || "Unable to apply view.", true);
+        return;
+      }
+      if (result.skipped) {
+        setStatus("Current view saved. Turn CleanView on to apply.");
+        refreshState();
+        return;
+      }
+      setStatus((result.presetName || "View") + " applied.");
+      refreshState();
+    });
+  }
 
-    if (!preset) {
-      setStatus("Choose a preset first.", true);
+  function assignToLocation() {
+    if (!activeLocationId) {
+      setStatus("No GHL location detected on this page.", true);
       return;
     }
 
-    saveSettings(presetKey, preset.visibleItems, function handleSaved(saveResult) {
-      if (!saveResult.ok) {
-        setStatus(saveResult.error, true);
+    sendToContentScript({ type: "applyPresetForLocation", presetId: presetSelect.value }, function handleAssigned(result) {
+      if (!result.ok) {
+        setStatus(result.error || "Unable to assign location rule.", true);
         return;
       }
-
-      sendToContentScript(
-        {
-          source: "agencyskin-cleanview",
-          type: "applyPreset",
-          presetKey: presetKey
-        },
-        function handleApplied(result) {
-          if (!result.ok) {
-            setStatus(result.error || "Unable to apply preset.", true);
-            return;
-          }
-
-          setStatus(preset.label + " applied.");
-        }
-      );
+      setStatus("This view will be used automatically for this GHL location.");
+      refreshState();
     });
   }
 
-  function showAll() {
-    saveSettings("admin", allMenuKeys, function handleSaved(saveResult) {
-      if (!saveResult.ok) {
-        setStatus(saveResult.error, true);
+  function setEnabled() {
+    sendToContentScript({ type: "setEnabled", enabled: enabledToggle.checked }, function handleEnabled(result) {
+      if (!result.ok) {
+        setStatus(result.error || "Unable to update CleanView.", true);
         return;
       }
-
-      presetSelect.value = "admin";
-      sendToContentScript(
-        {
-          source: "agencyskin-cleanview",
-          type: "showAll"
-        },
-        function handleShown(result) {
-          if (!result.ok) {
-            setStatus(result.error || "Unable to show all items.", true);
-            return;
-          }
-
-          setStatus("All registered items restored.");
-        }
-      );
+      setStatus(enabledToggle.checked ? "CleanView enabled." : "CleanView disabled.");
+      refreshState();
     });
   }
 
-  function restoreSelectedPreset() {
-    chrome.storage.local.get(["selectedPreset"], function handleStore(store) {
-      if (chrome.runtime.lastError) {
-        setStatus("Unable to load saved preset.", true);
-        return;
-      }
-
-      if (store.selectedPreset && presets[store.selectedPreset]) {
-        presetSelect.value = store.selectedPreset;
-      }
+  function resetPage() {
+    sendToContentScript({ type: "resetPage" }, function handleReset(result) {
+      setStatus(result.ok ? "CleanView changes removed from this page." : result.error || "Unable to restore page.", !result.ok);
     });
   }
 
-  populatePresets();
-  restoreSelectedPreset();
-  applyPresetButton.addEventListener("click", applyPreset);
-  showAllButton.addEventListener("click", showAll);
+  function openEditor() {
+    chrome.runtime.openOptionsPage();
+  }
+
+  presetSelect.addEventListener("change", applyPreset);
+  assignLocationButton.addEventListener("click", assignToLocation);
+  enabledToggle.addEventListener("change", setEnabled);
+  resetPageButton.addEventListener("click", resetPage);
+  editorButton.addEventListener("click", openEditor);
+  refreshState();
 })();

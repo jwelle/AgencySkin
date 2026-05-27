@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AgencySkin - CleanView View Builder</title>
+    <link rel="stylesheet" href="editor.css">
+  </head>
+  <body>
+    <main class="editor-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">AgencySkin</p>
+          <h1>CleanView View Builder</h1>
+        </div>
+        <p id="statusMessage" class="status" role="status"></p>
+      </header>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Views</h2>
+          <div class="button-row compact">
+            <button id="duplicatePresetButton" class="secondary" type="button">Duplicate View</button>
+            <button id="createPresetButton" type="button">New Custom View</button>
+            <button id="deletePresetButton" class="danger" type="button">Delete View</button>
+          </div>
+        </div>
+
+        <label class="field" for="presetSelect">
+          Current View
+          <select id="presetSelect"></select>
+        </label>
+
+        <div class="form-grid two-columns">
+          <label class="field" for="presetName">
+            View Name
+            <input id="presetName" type="text">
+          </label>
+
+          <label class="field" for="presetDescription">
+            Description
+            <input id="presetDescription" type="text">
+          </label>
+        </div>
+
+        <p id="builtInNotice" class="help-text"></p>
+      </section>
+
+      <section class="panel builder-panel">
+        <nav class="tabs" aria-label="View Builder sections">
+          <button class="tab-button active" type="button" data-tab-button="menu">Menu Items</button>
+          <button class="tab-button" type="button" data-tab-button="rename">Rename Labels</button>
+          <button class="tab-button" type="button" data-tab-button="links">Quick Links</button>
+          <button class="tab-button" type="button" data-tab-button="style">Sidebar Style</button>
+          <button class="tab-button" type="button" data-tab-button="locations">Location Rules</button>
+        </nav>
+
+        <section class="tab-panel active" data-tab-panel="menu">
+          <div class="panel-header">
+            <h2>Menu Items</h2>
+            <p>Choose which GHL menu items should remain visible in this view.</p>
+          </div>
+          <div class="button-row menu-actions" aria-label="GHL menu item selection shortcuts">
+            <button id="selectAllMenusButton" class="secondary" type="button">Select All</button>
+            <button id="deselectAllMenusButton" class="secondary" type="button">Deselect All</button>
+            <button id="resetMenuDefaultsButton" class="secondary" type="button">Reset to Default</button>
+          </div>
+          <div id="menuEditor" class="menu-editor"></div>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="rename">
+          <div class="panel-header">
+            <h2>Rename Labels</h2>
+            <p>Use this to make GHL match your workflow. Example: Opportunities to Pipeline.</p>
+          </div>
+          <div id="renameEditor" class="rename-editor"></div>
+          <button id="addRenameButton" type="button">Add Rename Rule</button>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="links">
+          <div class="panel-header">
+            <h2>Quick Links</h2>
+            <p>Add personal shortcuts to resources you use often. Quick links appear only in your browser.</p>
+          </div>
+          <div id="linkEditor" class="link-editor"></div>
+          <button id="addLinkButton" type="button">Add Quick Link</button>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="style">
+          <div class="panel-header">
+            <h2>Sidebar Style</h2>
+            <p>Control how the GHL sidebar looks when this view is active.</p>
+          </div>
+          <label class="toggle-row">
+            <span>Apply sidebar styling for this view</span>
+            <input id="sidebarStyleEnabled" type="checkbox">
+          </label>
+          <label class="field" for="sidebarStylePreset">
+            Style Preset
+            <select id="sidebarStylePreset"></select>
+          </label>
+          <div id="sidebarStyleEditor" class="form-grid two-columns"></div>
+          <button id="resetStyleButton" class="secondary" type="button">Reset Style</button>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="locations">
+          <div class="panel-header">
+            <h2>Location Rules</h2>
+            <p>Choose which view should be used automatically for specific GHL locations.</p>
+          </div>
+          <label class="field" for="defaultPresetSelect">
+            Default View
+            <select id="defaultPresetSelect"></select>
+          </label>
+          <p id="currentLocationLabel" class="help-text">Current GHL Location: detecting...</p>
+          <button id="assignCurrentLocationButton" class="secondary" type="button">Use current view for this location</button>
+          <div id="locationRules" class="location-rules"></div>
+        </section>
+
+        <div class="sticky-actions">
+          <button id="savePresetButton" type="button">Save View</button>
+          <button id="saveApplyPresetButton" type="button">Save and Apply</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="namespace.js"></script>
+    <script src="selectorRegistry.js"></script>
+    <script src="presets.js"></script>
+    <script src="storage.js"></script>
+    <script src="editor.js"></script>
+  </body>
+</html>
