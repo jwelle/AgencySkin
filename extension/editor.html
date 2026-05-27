@@ -99,8 +99,32 @@
             Style Preset
             <select id="sidebarStylePreset"></select>
           </label>
+          <label class="field" for="sidebarBackgroundType">
+            Sidebar Background Type
+            <select id="sidebarBackgroundType"></select>
+          </label>
           <div id="sidebarStyleEditor" class="form-grid two-columns"></div>
           <button id="resetStyleButton" class="secondary" type="button">Reset Style</button>
+          <div class="sidebar-style-preview-section">
+            <div class="panel-header compact-header">
+              <h3>Preview</h3>
+              <p>Preview only. Your actual GHL sidebar may vary slightly.</p>
+            </div>
+            <div id="sidebarStylePreview" class="sidebar-style-preview">
+              <div id="sidebarStylePreviewHeader" class="sidebar-preview-header">
+                <img id="sidebarStylePreviewLogo" alt="">
+                <span id="sidebarStylePreviewHeaderText">AgencySkin</span>
+              </div>
+              <div class="sidebar-preview-item">Dashboard</div>
+              <div class="sidebar-preview-item">Conversations</div>
+              <div class="sidebar-preview-item active">Pipeline</div>
+              <div class="sidebar-preview-item">Contacts</div>
+              <div class="sidebar-preview-divider"></div>
+              <div class="sidebar-preview-item quick-link">Pricing Sheet</div>
+              <div class="sidebar-preview-spacer"></div>
+              <div class="sidebar-preview-item settings">Settings</div>
+            </div>
+          </div>
         </section>
 
         <section class="tab-panel" data-tab-panel="locations">
@@ -118,7 +142,7 @@
         </section>
 
         <div class="sticky-actions">
-          <button id="savePresetButton" type="button">Save View</button>
+          <button id="savePresetButton" class="secondary" type="button">Save View</button>
           <button id="saveApplyPresetButton" type="button">Save and Apply</button>
         </div>
       </section>

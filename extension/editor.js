@@ -22,7 +22,22 @@
   var currentLocationLabel = document.getElementById("currentLocationLabel");
   var sidebarStyleEnabled = document.getElementById("sidebarStyleEnabled");
   var sidebarStylePreset = document.getElementById("sidebarStylePreset");
+  var sidebarBackgroundType = document.getElementById("sidebarBackgroundType");
   var sidebarStyleEditor = document.getElementById("sidebarStyleEditor");
+  var sidebarStylePreview = document.getElementById("sidebarStylePreview");
+  var sidebarStylePreviewHeaderText = document.getElementById("sidebarStylePreviewHeaderText");
+  var sidebarStylePreviewLogo = document.getElementById("sidebarStylePreviewLogo");
+  var sidebarBackgroundTypes = [
+    { value: "solid", label: "Solid Color" },
+    { value: "gradient", label: "Gradient" }
+  ];
+  var gradientDirections = [
+    { value: "180deg", label: "Top to Bottom" },
+    { value: "90deg", label: "Left to Right" },
+    { value: "135deg", label: "Diagonal" },
+    { value: "45deg", label: "Diagonal Reverse" },
+    { value: "0deg", label: "Bottom to Top" }
+  ];
   var quickLinkPlacements = [
     { value: "top", label: "Top of menu" },
     { value: "bottom", label: "Bottom of menu, above Settings" },
@@ -34,15 +49,18 @@
     { value: "after_settings", label: "After Settings" }
   ];
   var sidebarStyleFields = [
-    { key: "backgroundColor", label: "Sidebar Background", type: "text" },
-    { key: "textColor", label: "Menu Text", type: "text" },
-    { key: "activeBackgroundColor", label: "Active Item Background", type: "text" },
-    { key: "activeTextColor", label: "Active Item Text", type: "text" },
-    { key: "hoverBackgroundColor", label: "Hover Background", type: "text" },
-    { key: "borderRadius", label: "Menu Item Radius", type: "text" },
+    { section: "Solid Background", key: "backgroundColor", label: "Sidebar Background", type: "color", mode: "solid" },
+    { section: "Gradient Background", key: "gradientStartColor", label: "Start Color", type: "color", mode: "gradient" },
+    { key: "gradientEndColor", label: "End Color", type: "color", mode: "gradient" },
+    { key: "gradientDirection", label: "Direction", type: "select", options: gradientDirections, mode: "gradient" },
+    { section: "Menu Colors", key: "textColor", label: "Menu Text", type: "color" },
+    { key: "activeBackgroundColor", label: "Active Item Background", type: "color" },
+    { key: "activeTextColor", label: "Active Item Text", type: "color" },
+    { key: "hoverBackgroundColor", label: "Hover Background", type: "color" },
+    { section: "Shape", key: "borderRadius", label: "Menu Item Radius", type: "text" },
     { key: "itemSpacing", label: "Menu Item Spacing", type: "text" },
     { key: "sidebarPadding", label: "Sidebar Padding", type: "text" },
-    { key: "logoUrl", label: "Optional Logo URL", type: "url" },
+    { section: "Branding", key: "logoUrl", label: "Optional Logo URL", type: "url" },
     { key: "headerLabel", label: "Optional Header Label", type: "text" }
   ];
 
@@ -242,6 +260,67 @@
     return label;
   }
 
+  function createSectionHeading(text) {
+    var heading = document.createElement("h3");
+    heading.className = "form-section-heading";
+    heading.textContent = text;
+    return heading;
+  }
+
+  function isValidHexColor(value) {
+    return /^#([0-9A-F]{3}){1,2}$/i.test(String(value || "").trim());
+  }
+
+  function normalizeHexColor(value, fallback) {
+    var trimmed = String(value || "").trim();
+
+    if (isValidHexColor(trimmed)) {
+      return trimmed.length === 4 ?
+        "#" + trimmed[1] + trimmed[1] + trimmed[2] + trimmed[2] + trimmed[3] + trimmed[3] :
+        trimmed;
+    }
+
+    return fallback || "#000000";
+  }
+
+  function bindColorControl(pickerEl, textEl, onChange) {
+    if (!pickerEl || !textEl) {
+      return;
+    }
+
+    pickerEl.addEventListener("input", function updateFromPicker() {
+      textEl.value = pickerEl.value;
+      onChange(pickerEl.value);
+      updateSidebarStylePreview();
+    });
+
+    textEl.addEventListener("input", function updateFromText() {
+      var value = textEl.value.trim();
+
+      if (isValidHexColor(value)) {
+        var normalized = normalizeHexColor(value);
+        pickerEl.value = normalized;
+        onChange(normalized);
+        updateSidebarStylePreview();
+        return;
+      }
+
+      onChange(value);
+      updateSidebarStylePreview();
+    });
+  }
+
+  function getSidebarBackground(style) {
+    if (style.backgroundType === "gradient") {
+      var start = style.gradientStartColor || style.backgroundColor || "#0f172a";
+      var end = style.gradientEndColor || style.backgroundColor || "#1d4ed8";
+      var direction = style.gradientDirection || "135deg";
+      return "linear-gradient(" + direction + ", " + start + ", " + end + ")";
+    }
+
+    return style.backgroundColor || "#ffffff";
+  }
+
   function addPlacementOptions(select, selectedPlacement) {
     quickLinkPlacements.forEach(function addOption(placement) {
       var option = document.createElement("option");
@@ -311,20 +390,104 @@
     });
   }
 
+  function renderSidebarBackgroundTypeOptions(selectedValue) {
+    sidebarBackgroundType.innerHTML = "";
+    sidebarBackgroundTypes.forEach(function addOption(backgroundType) {
+      var option = document.createElement("option");
+      option.value = backgroundType.value;
+      option.textContent = backgroundType.label;
+      sidebarBackgroundType.appendChild(option);
+    });
+    sidebarBackgroundType.value = selectedValue || "solid";
+  }
+
+  function createSelectField(field, style) {
+    var select = document.createElement("select");
+    (field.options || []).forEach(function addOption(optionDefinition) {
+      var option = document.createElement("option");
+      option.value = optionDefinition.value;
+      option.textContent = optionDefinition.label;
+      select.appendChild(option);
+    });
+    select.value = style[field.key] || field.defaultValue || "";
+    select.dataset.sidebarStyleField = field.key;
+    select.addEventListener("change", updateSidebarStylePreview);
+    return createFieldLabel(field.label, select);
+  }
+
+  function createColorField(field, style) {
+    var wrapper = document.createElement("label");
+    var controls = document.createElement("span");
+    var picker = document.createElement("input");
+    var textInput = document.createElement("input");
+    var value = style[field.key] || "";
+
+    wrapper.className = "inline-field color-field";
+    controls.className = "color-control";
+    picker.type = "color";
+    picker.value = normalizeHexColor(value);
+    textInput.type = "text";
+    textInput.value = value;
+    textInput.placeholder = "#0f172a";
+    textInput.dataset.sidebarStyleField = field.key;
+
+    bindColorControl(picker, textInput, function syncColor(value) {
+      textInput.value = value;
+    });
+
+    wrapper.appendChild(document.createTextNode(field.label));
+    controls.appendChild(picker);
+    controls.appendChild(textInput);
+    wrapper.appendChild(controls);
+    return wrapper;
+  }
+
+  function createTextField(field, style) {
+    var input = document.createElement("input");
+    input.type = field.type;
+    input.value = style[field.key] || "";
+    input.dataset.sidebarStyleField = field.key;
+    input.addEventListener("input", updateSidebarStylePreview);
+    return createFieldLabel(field.label, input);
+  }
+
+  function syncSidebarModeState() {
+    var backgroundType = sidebarBackgroundType.value || "solid";
+    sidebarStyleEditor.querySelectorAll("[data-sidebar-style-mode]").forEach(function updateMode(element) {
+      element.classList.toggle("is-muted", element.dataset.sidebarStyleMode !== backgroundType);
+    });
+  }
+
   function renderSidebarStyle() {
     var preset = selectedPreset();
     var style = storage.normalizeSidebarStyle(preset.sidebarStyle);
     sidebarStyleEnabled.checked = style.enabled === true;
     sidebarStylePreset.value = style.preset || "default";
+    renderSidebarBackgroundTypeOptions(style.backgroundType);
     sidebarStyleEditor.innerHTML = "";
 
     sidebarStyleFields.forEach(function renderStyleField(field) {
-      var input = document.createElement("input");
-      input.type = field.type;
-      input.value = style[field.key] || "";
-      input.dataset.sidebarStyleField = field.key;
-      sidebarStyleEditor.appendChild(createFieldLabel(field.label, input));
+      var label = null;
+
+      if (field.section) {
+        sidebarStyleEditor.appendChild(createSectionHeading(field.section));
+      }
+
+      if (field.type === "color") {
+        label = createColorField(field, style);
+      } else if (field.type === "select") {
+        label = createSelectField(field, style);
+      } else {
+        label = createTextField(field, style);
+      }
+
+      if (field.mode) {
+        label.dataset.sidebarStyleMode = field.mode;
+      }
+      sidebarStyleEditor.appendChild(label);
     });
+    syncSidebarModeState();
+    updateSidebarStylePreview();
   }
 
   function renderLocationRules() {
@@ -377,12 +540,66 @@
     var style = storage.normalizeSidebarStyle(sidebarStylePresets[sidebarStylePreset.value] || {});
     style.enabled = sidebarStyleEnabled.checked;
     style.preset = sidebarStylePreset.value || "default";
+    style.backgroundType = sidebarBackgroundType.value || "solid";
 
     sidebarStyleEditor.querySelectorAll("[data-sidebar-style-field]").forEach(function collectField(input) {
       style[input.dataset.sidebarStyleField] = input.value.trim();
     });
 
     return style;
+  }
+
+  function getCurrentWorkingSidebarStyle() {
+    return collectSidebarStyleFromForm();
+  }
+
+  function updateSidebarStylePreview() {
+    if (!sidebarStylePreview) {
+      return;
+    }
+
+    var style = getCurrentWorkingSidebarStyle();
+    var background = getSidebarBackground(style);
+    var textColor = style.textColor || "#111827";
+    var activeBackgroundColor = style.activeBackgroundColor || "#e5e7eb";
+    var activeTextColor = style.activeTextColor || textColor;
+    var borderRadius = style.borderRadius || "8px";
+    var itemSpacing = style.itemSpacing || "4px";
+    var sidebarPadding = style.sidebarPadding || "12px";
+    var headerLabel = style.headerLabel || "AgencySkin";
+
+    sidebarStylePreview.style.background = background;
+    sidebarStylePreview.style.color = textColor;
+    sidebarStylePreview.style.padding = sidebarPadding;
+    sidebarStylePreview.classList.toggle("is-disabled", style.enabled !== true);
+
+    if (sidebarStylePreviewHeaderText) {
+      sidebarStylePreviewHeaderText.textContent = headerLabel;
+      sidebarStylePreviewHeaderText.style.color = textColor;
+    }
+
+    if (sidebarStylePreviewLogo) {
+      sidebarStylePreviewLogo.src = style.logoUrl || "";
+      sidebarStylePreviewLogo.hidden = !style.logoUrl;
+      sidebarStylePreviewLogo.onerror = function hideBrokenLogo() {
+        sidebarStylePreviewLogo.hidden = true;
+      };
+    }
+
+    sidebarStylePreview.querySelectorAll(".sidebar-preview-item").forEach(function updateItem(item) {
+      item.style.color = textColor;
+      item.style.borderRadius = borderRadius;
+      item.style.marginTop = itemSpacing;
+      item.style.marginBottom = itemSpacing;
+      item.style.padding = "8px 12px";
+      item.style.background = "transparent";
+    });
+
+    var activeItem = sidebarStylePreview.querySelector(".sidebar-preview-item.active");
+    if (activeItem) {
+      activeItem.style.background = activeBackgroundColor;
+      activeItem.style.color = activeTextColor;
+    }
   }
 
   function collectPresetFromForm() {
@@ -484,9 +701,18 @@
   function applySidebarPresetToForm(presetKey) {
     var style = storage.normalizeSidebarStyle(sidebarStylePresets[presetKey] || {});
     sidebarStyleEnabled.checked = style.enabled === true;
+    sidebarBackgroundType.value = style.backgroundType || "solid";
     sidebarStyleEditor.querySelectorAll("[data-sidebar-style-field]").forEach(function updateField(input) {
       input.value = style[input.dataset.sidebarStyleField] || "";
+      if (input.closest(".color-control")) {
+        var picker = input.closest(".color-control").querySelector("input[type='color']");
+        if (picker) {
+          picker.value = normalizeHexColor(input.value);
+        }
+      }
     });
+    syncSidebarModeState();
+    updateSidebarStylePreview();
   }
 
   function refreshActiveLocation() {
@@ -688,6 +914,13 @@
 
   sidebarStylePreset.addEventListener("change", function chooseStylePreset() {
     applySidebarPresetToForm(sidebarStylePreset.value);
+  });
+
+  sidebarStyleEnabled.addEventListener("change", updateSidebarStylePreview);
+
+  sidebarBackgroundType.addEventListener("change", function changeBackgroundType() {
+    syncSidebarModeState();
+    updateSidebarStylePreview();
   });
 
   locationRules.addEventListener("click", function handleRuleClick(event) {

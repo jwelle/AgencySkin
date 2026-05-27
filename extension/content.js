@@ -176,6 +176,17 @@
     return String(value || "").trim();
   }
 
+  function getSidebarBackground(style) {
+    if (style.backgroundType === "gradient") {
+      var start = styleValue(style.gradientStartColor) || styleValue(style.backgroundColor) || "#0f172a";
+      var end = styleValue(style.gradientEndColor) || styleValue(style.backgroundColor) || "#1d4ed8";
+      var direction = styleValue(style.gradientDirection) || "135deg";
+      return "linear-gradient(" + direction + ", " + start + ", " + end + ")";
+    }
+
+    return styleValue(style.backgroundColor);
+  }
+
   function isActiveMenuItem(element) {
     var className = element.className && element.className.toString ? element.className.toString().toLowerCase() : "";
     return element.getAttribute("aria-current") === "page" ||
@@ -259,8 +270,8 @@
     }
 
     markStyledElement(sidebar, "sidebar");
-    if (styleValue(style.backgroundColor)) {
-      sidebar.style.backgroundColor = style.backgroundColor;
+    if (getSidebarBackground(style)) {
+      sidebar.style.background = getSidebarBackground(style);
     }
     if (styleValue(style.sidebarPadding)) {
       sidebar.style.padding = style.sidebarPadding;

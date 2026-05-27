@@ -20,7 +20,11 @@
     return Object.assign({
       enabled: false,
       preset: "default",
+      backgroundType: "solid",
       backgroundColor: "",
+      gradientStartColor: "",
+      gradientEndColor: "",
+      gradientDirection: "135deg",
       textColor: "",
       activeBackgroundColor: "",
       activeTextColor: "",
@@ -37,6 +41,8 @@
     var normalized = Object.assign(defaultSidebarStyle(), style || {});
     normalized.enabled = normalized.enabled === true;
     normalized.preset = normalized.preset || "default";
+    normalized.backgroundType = normalized.backgroundType === "gradient" ? "gradient" : "solid";
+    normalized.gradientDirection = normalized.gradientDirection || "135deg";
     return normalized;
   }
 
