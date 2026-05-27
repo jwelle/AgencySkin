@@ -314,6 +314,12 @@ button.secondary:hover {
   padding-top: 1rem;
 }
 
+.sidebar-style-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .status.error {
   color: var(--as-danger);
 }

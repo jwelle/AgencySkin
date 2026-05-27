@@ -38,6 +38,100 @@
     { value: "45deg", label: "Diagonal Reverse" },
     { value: "0deg", label: "Bottom to Top" }
   ];
+  var randomGradientDirections = ["135deg", "180deg", "90deg", "45deg"];
+  var borderRadiusOptions = ["6px", "8px", "10px", "12px"];
+  var itemSpacingOptions = ["2px", "3px", "4px", "6px"];
+  var sidebarPaddingOptions = ["8px", "10px", "12px"];
+  var randomStylePalettes = [
+    {
+      name: "Midnight Blue",
+      backgroundType: "gradient",
+      backgroundColor: "#0f172a",
+      gradientStartColor: "#020617",
+      gradientEndColor: "#1d4ed8",
+      textColor: "#e5e7eb",
+      activeBackgroundColor: "#2563eb",
+      activeTextColor: "#ffffff",
+      hoverBackgroundColor: "#1e293b"
+    },
+    {
+      name: "Emerald Night",
+      backgroundType: "gradient",
+      backgroundColor: "#064e3b",
+      gradientStartColor: "#022c22",
+      gradientEndColor: "#047857",
+      textColor: "#ecfdf5",
+      activeBackgroundColor: "#10b981",
+      activeTextColor: "#052e16",
+      hoverBackgroundColor: "#065f46"
+    },
+    {
+      name: "Purple Slate",
+      backgroundType: "gradient",
+      backgroundColor: "#312e81",
+      gradientStartColor: "#111827",
+      gradientEndColor: "#7c3aed",
+      textColor: "#f5f3ff",
+      activeBackgroundColor: "#8b5cf6",
+      activeTextColor: "#ffffff",
+      hoverBackgroundColor: "#4c1d95"
+    },
+    {
+      name: "Ocean Steel",
+      backgroundType: "gradient",
+      backgroundColor: "#0f172a",
+      gradientStartColor: "#0f172a",
+      gradientEndColor: "#0891b2",
+      textColor: "#ecfeff",
+      activeBackgroundColor: "#06b6d4",
+      activeTextColor: "#083344",
+      hoverBackgroundColor: "#155e75"
+    },
+    {
+      name: "Graphite",
+      backgroundType: "solid",
+      backgroundColor: "#18181b",
+      gradientStartColor: "",
+      gradientEndColor: "",
+      textColor: "#f4f4f5",
+      activeBackgroundColor: "#3f3f46",
+      activeTextColor: "#ffffff",
+      hoverBackgroundColor: "#27272a"
+    },
+    {
+      name: "Clean Cloud",
+      backgroundType: "solid",
+      backgroundColor: "#ffffff",
+      gradientStartColor: "",
+      gradientEndColor: "",
+      textColor: "#111827",
+      activeBackgroundColor: "#dbeafe",
+      activeTextColor: "#1e3a8a",
+      hoverBackgroundColor: "#f1f5f9"
+    },
+    {
+      name: "Royal Night",
+      backgroundType: "gradient",
+      backgroundColor: "#1e1b4b",
+      gradientStartColor: "#0f172a",
+      gradientEndColor: "#4f46e5",
+      textColor: "#eef2ff",
+      activeBackgroundColor: "#6366f1",
+      activeTextColor: "#ffffff",
+      hoverBackgroundColor: "#312e81"
+    },
+    {
+      name: "Copper Slate",
+      backgroundType: "gradient",
+      backgroundColor: "#292524",
+      gradientStartColor: "#1c1917",
+      gradientEndColor: "#b45309",
+      textColor: "#fffbeb",
+      activeBackgroundColor: "#f59e0b",
+      activeTextColor: "#1c1917",
+      hoverBackgroundColor: "#78350f"
+    }
+  ];
   var quickLinkPlacements = [
     { value: "top", label: "Top of menu" },
     { value: "bottom", label: "Bottom of menu, above Settings" },
@@ -321,6 +415,10 @@
     return style.backgroundColor || "#ffffff";
   }
 
+  function pickRandom(items) {
+    return items[Math.floor(Math.random() * items.length)];
+  }
+
   function addPlacementOptions(select, selectedPlacement) {
     quickLinkPlacements.forEach(function addOption(placement) {
       var option = document.createElement("option");
@@ -388,6 +486,18 @@
       option.textContent = sidebarStylePresets[key].name || key;
       sidebarStylePreset.appendChild(option);
     });
+  }
+
+  function ensureCustomStyleOption(labelText) {
+    var option = sidebarStylePreset.querySelector("option[value='custom']");
+
+    if (!option) {
+      option = document.createElement("option");
+      option.value = "custom";
+      sidebarStylePreset.appendChild(option);
+    }
+
+    option.textContent = labelText || "Custom Draft";
   }
 
   function renderSidebarBackgroundTypeOptions(selectedValue) {
@@ -458,11 +568,33 @@
     });
   }
 
+  function populateSidebarStyleForm(style, options) {
+    var normalizedStyle = storage.normalizeSidebarStyle(style);
+    var presetValue = options && options.presetValue ? options.presetValue : normalizedStyle.preset || "default";
+
+    if (!sidebarStylePresets[presetValue]) {
+      ensureCustomStyleOption(options && options.optionLabel ? options.optionLabel : "Custom Draft");
+    }
+
+    sidebarStyleEnabled.checked = normalizedStyle.enabled === true;
+    sidebarStylePreset.value = presetValue;
+    sidebarBackgroundType.value = normalizedStyle.backgroundType || "solid";
+    sidebarStyleEditor.querySelectorAll("[data-sidebar-style-field]").forEach(function updateField(input) {
+      input.value = normalizedStyle[input.dataset.sidebarStyleField] || "";
+      if (input.closest(".color-control")) {
+        var picker = input.closest(".color-control").querySelector("input[type='color']");
+        if (picker) {
+          picker.value = normalizeHexColor(input.value);
+        }
+      }
+    });
+    syncSidebarModeState();
+    updateSidebarStylePreview();
+  }
+
   function renderSidebarStyle() {
     var preset = selectedPreset();
     var style = storage.normalizeSidebarStyle(preset.sidebarStyle);
-    sidebarStyleEnabled.checked = style.enabled === true;
-    sidebarStylePreset.value = style.preset || "default";
     renderSidebarBackgroundTypeOptions(style.backgroundType);
     sidebarStyleEditor.innerHTML = "";
 
@@ -486,8 +618,7 @@
       }
       sidebarStyleEditor.appendChild(label);
     });
-    syncSidebarModeState();
-    updateSidebarStylePreview();
+    populateSidebarStyleForm(style, { presetValue: style.preset || "default" });
   }
 
   function renderLocationRules() {
@@ -700,19 +831,36 @@
 
   function applySidebarPresetToForm(presetKey) {
     var style = storage.normalizeSidebarStyle(sidebarStylePresets[presetKey] || {});
-    sidebarStyleEnabled.checked = style.enabled === true;
-    sidebarBackgroundType.value = style.backgroundType || "solid";
-    sidebarStyleEditor.querySelectorAll("[data-sidebar-style-field]").forEach(function updateField(input) {
-      input.value = style[input.dataset.sidebarStyleField] || "";
-      if (input.closest(".color-control")) {
-        var picker = input.closest(".color-control").querySelector("input[type='color']");
-        if (picker) {
-          picker.value = normalizeHexColor(input.value);
-        }
-      }
+    populateSidebarStyleForm(style, { presetValue: presetKey || "default" });
+  }
+
+  function randomizeSidebarStyle() {
+    var palette = pickRandom(randomStylePalettes);
+    var backgroundType = palette.backgroundType === "gradient" ? "gradient" : "solid";
+    var randomizedStyle = storage.normalizeSidebarStyle({
+      enabled: true,
+      preset: "custom",
+      backgroundType: backgroundType,
+      backgroundColor: palette.backgroundColor,
+      gradientStartColor: backgroundType === "gradient" ? palette.gradientStartColor : "",
+      gradientEndColor: backgroundType === "gradient" ? palette.gradientEndColor : "",
+      gradientDirection: backgroundType === "gradient" ? pickRandom(randomGradientDirections) : "135deg",
+      textColor: palette.textColor,
+      activeBackgroundColor: palette.activeBackgroundColor,
+      activeTextColor: palette.activeTextColor,
+      hoverBackgroundColor: palette.hoverBackgroundColor,
+      borderRadius: pickRandom(borderRadiusOptions),
+      itemSpacing: pickRandom(itemSpacingOptions),
+      sidebarPadding: pickRandom(sidebarPaddingOptions),
+      logoUrl: "",
+      headerLabel: "AgencySkin"
     });
-    syncSidebarModeState();
-    updateSidebarStylePreview();
+
+    populateSidebarStyleForm(randomizedStyle, {
+      presetValue: "custom",
+      optionLabel: "Custom Draft - " + palette.name
+    });
+    setStatus("Randomized style preview. Save this view to keep it.");
   }
 
   function refreshActiveLocation() {
@@ -858,6 +1006,8 @@
     applySidebarPresetToForm("default");
     setStatus("Sidebar style reset.");
   });
+
+  document.getElementById("randomizeStyleButton").addEventListener("click", randomizeSidebarStyle);
 
   document.getElementById("assignCurrentLocationButton").addEventListener("click", function assignCurrentLocation() {
     if (!activeLocationId) {
