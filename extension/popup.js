@@ -3,12 +3,9 @@
   var storage = namespace.storage;
   var presetSelect = document.getElementById("presetSelect");
   var enabledToggle = document.getElementById("enabledToggle");
-  var locationLabel = document.getElementById("locationLabel");
-  var assignLocationButton = document.getElementById("assignLocationButton");
   var resetPageButton = document.getElementById("resetPageButton");
   var editorButton = document.getElementById("editorButton");
   var statusMessage = document.getElementById("statusMessage");
-  var activeLocationId = null;
   var currentState = null;
 
   function setStatus(message, isError) {
@@ -39,22 +36,38 @@
     });
   }
 
-  function optionLabel(preset) {
-    return preset.source === "builtin" ? preset.name + " (Built-in)" : preset.name;
+  function isVisibleInPopup(preset) {
+    return preset && preset.showInPopup !== false && preset.archived !== true;
+  }
+
+  function optionLabel(preset, isHiddenActive) {
+    return preset.name + (preset.source === "builtin" ? " (Built-in)" : " (Custom)") + (isHiddenActive ? " (Hidden from popup)" : "");
   }
 
   function populatePresets(state) {
     var allPresets = storage.getAllPresets(state);
+    var activePresetId = state.activePresetId || "builtin:simple";
+    var activePreset = allPresets[activePresetId];
+    var popupPresetIds = Object.keys(allPresets).filter(function keepPopupPreset(presetId) {
+      return isVisibleInPopup(allPresets[presetId]);
+    });
+
+    if (activePreset && popupPresetIds.indexOf(activePresetId) === -1) {
+      popupPresetIds.unshift(activePresetId);
+    }
+
     presetSelect.innerHTML = "";
 
-    Object.keys(allPresets).forEach(function addOption(presetId) {
+    popupPresetIds.forEach(function addOption(presetId) {
       var option = document.createElement("option");
+      var preset = allPresets[presetId];
+      var isHiddenActive = presetId === activePresetId && !isVisibleInPopup(preset);
       option.value = presetId;
-      option.textContent = optionLabel(allPresets[presetId]);
+      option.textContent = optionLabel(preset, isHiddenActive);
       presetSelect.appendChild(option);
     });
 
-    presetSelect.value = state.activePresetId || "builtin:simple";
+    presetSelect.value = activePreset && popupPresetIds.indexOf(activePresetId) !== -1 ? activePresetId : popupPresetIds[0] || "builtin:simple";
   }
 
   function refreshState() {
@@ -67,20 +80,6 @@
       currentState = state;
       enabledToggle.checked = state.enabled !== false;
       populatePresets(state);
-
-      sendToContentScript({ type: "getPageContext" }, function handleContext(result) {
-        if (!result.ok) {
-          locationLabel.textContent = "Current location: open GoHighLevel";
-          return;
-        }
-
-        activeLocationId = result.locationId || null;
-        locationLabel.textContent = activeLocationId ? "Current location: " + activeLocationId : "Current location: not detected";
-
-        if (activeLocationId && state.locationRules[activeLocationId]) {
-          presetSelect.value = state.locationRules[activeLocationId].presetId;
-        }
-      });
     });
   }
 
@@ -96,22 +95,6 @@
         return;
       }
       setStatus((result.presetName || "View") + " applied.");
-      refreshState();
-    });
-  }
-
-  function assignToLocation() {
-    if (!activeLocationId) {
-      setStatus("No GHL location detected on this page.", true);
-      return;
-    }
-
-    sendToContentScript({ type: "applyPresetForLocation", presetId: presetSelect.value }, function handleAssigned(result) {
-      if (!result.ok) {
-        setStatus(result.error || "Unable to assign location rule.", true);
-        return;
-      }
-      setStatus("This view will be used automatically for this GHL location.");
       refreshState();
     });
   }
@@ -138,7 +121,6 @@
   }
 
   presetSelect.addEventListener("change", applyPreset);
-  assignLocationButton.addEventListener("click", assignToLocation);
   enabledToggle.addEventListener("change", setEnabled);
   resetPageButton.addEventListener("click", resetPage);
   editorButton.addEventListener("click", openEditor);

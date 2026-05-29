@@ -43,6 +43,14 @@
           </label>
         </div>
 
+        <div class="form-grid">
+          <p class="help-text">View Visibility</p>
+          <label class="toggle-row" for="showInPopupToggle">
+            <span>Show this view in popup</span>
+            <input id="showInPopupToggle" type="checkbox">
+          </label>
+        </div>
+
         <p id="builtInNotice" class="help-text"></p>
       </section>
 
@@ -52,7 +60,7 @@
           <button class="tab-button" type="button" data-tab-button="rename">Rename Labels</button>
           <button class="tab-button" type="button" data-tab-button="links">Quick Links</button>
           <button class="tab-button" type="button" data-tab-button="style">Sidebar Style</button>
-          <button class="tab-button" type="button" data-tab-button="locations">Location Rules</button>
+          <button class="tab-button" type="button" data-tab-button="locations" data-location-defaults-ui hidden>Location Rules</button>
         </nav>
 
         <section class="tab-panel active" data-tab-panel="menu">
@@ -91,46 +99,60 @@
             <h2>Sidebar Style</h2>
             <p>Control how the GHL sidebar looks when this view is active.</p>
           </div>
-          <label class="toggle-row">
-            <span>Apply sidebar styling for this view</span>
-            <input id="sidebarStyleEnabled" type="checkbox">
-          </label>
-          <label class="field" for="sidebarStylePreset">
-            Style Preset
-            <select id="sidebarStylePreset"></select>
-          </label>
-          <label class="field" for="sidebarBackgroundType">
-            Sidebar Background Type
-            <select id="sidebarBackgroundType"></select>
-          </label>
-          <div class="sidebar-style-actions">
-            <button id="randomizeStyleButton" class="secondary" type="button">Randomize Style</button>
-          </div>
-          <div id="sidebarStyleEditor" class="form-grid two-columns"></div>
-          <button id="resetStyleButton" class="secondary" type="button">Reset Style</button>
-          <div class="sidebar-style-preview-section">
-            <div class="panel-header compact-header">
-              <h3>Preview</h3>
-              <p>Preview only. Your actual GHL sidebar may vary slightly.</p>
+          <div class="sidebar-style-layout">
+            <div class="sidebar-style-controls">
+              <section class="style-card">
+                <div class="style-panel-header">
+                  <label class="field" for="sidebarStylePreset">
+                    Style Preset
+                    <select id="sidebarStylePreset"></select>
+                  </label>
+                  <label class="toggle-row compact-toggle">
+                    <span>Apply styling</span>
+                    <input id="sidebarStyleEnabled" type="checkbox">
+                  </label>
+                </div>
+                <div class="compact-field-grid">
+                  <label class="field" for="sidebarBackgroundType">
+                    Sidebar Background Type
+                    <select id="sidebarBackgroundType"></select>
+                  </label>
+                </div>
+                <div class="sidebar-style-actions">
+                  <button id="randomizeStyleButton" class="secondary" type="button">Randomize Style</button>
+                  <button id="resetStyleButton" class="secondary" type="button">Reset Style</button>
+                </div>
+              </section>
+
+              <section class="style-card">
+                <div id="sidebarStyleEditor" class="form-grid two-columns compact-style-editor"></div>
+              </section>
             </div>
-            <div id="sidebarStylePreview" class="sidebar-style-preview">
-              <div id="sidebarStylePreviewHeader" class="sidebar-preview-header">
-                <img id="sidebarStylePreviewLogo" alt="">
-                <span id="sidebarStylePreviewHeaderText">AgencySkin</span>
+
+            <aside class="sidebar-style-preview-panel">
+              <div class="panel-header compact-header">
+                <h3>Preview</h3>
+                <p>Preview only. Your actual GHL sidebar may vary slightly.</p>
               </div>
-              <div class="sidebar-preview-item">Dashboard</div>
-              <div class="sidebar-preview-item">Conversations</div>
-              <div class="sidebar-preview-item active">Pipeline</div>
-              <div class="sidebar-preview-item">Contacts</div>
-              <div class="sidebar-preview-divider"></div>
-              <div class="sidebar-preview-item quick-link">Pricing Sheet</div>
-              <div class="sidebar-preview-spacer"></div>
-              <div class="sidebar-preview-item settings">Settings</div>
-            </div>
+              <div id="sidebarStylePreview" class="sidebar-style-preview">
+                <div id="sidebarStylePreviewHeader" class="sidebar-preview-header">
+                  <img id="sidebarStylePreviewLogo" alt="">
+                  <span id="sidebarStylePreviewHeaderText">AgencySkin</span>
+                </div>
+                <div class="sidebar-preview-item">Dashboard</div>
+                <div class="sidebar-preview-item">Conversations</div>
+                <div class="sidebar-preview-item active">Pipeline</div>
+                <div class="sidebar-preview-item">Contacts</div>
+                <div class="sidebar-preview-divider"></div>
+                <div class="sidebar-preview-item quick-link">Pricing Sheet</div>
+                <div class="sidebar-preview-spacer"></div>
+                <div class="sidebar-preview-item settings">Settings</div>
+              </div>
+            </aside>
           </div>
         </section>
 
-        <section class="tab-panel" data-tab-panel="locations">
+        <section class="tab-panel" data-tab-panel="locations" data-location-defaults-ui hidden>
           <div class="panel-header">
             <h2>Location Rules</h2>
             <p>Choose which view should be used automatically for specific GHL locations.</p>
@@ -145,8 +167,7 @@
         </section>
 
         <div class="sticky-actions">
-          <button id="savePresetButton" class="secondary" type="button">Save View</button>
-          <button id="saveApplyPresetButton" type="button">Save and Apply</button>
+          <button id="savePresetButton" type="button">Save View</button>
         </div>
       </section>
     </main>

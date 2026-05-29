@@ -4,6 +4,7 @@
   var registry = namespace.selectorRegistry;
   var allMenuKeys = namespace.allMenuKeys;
   var sidebarStylePresets = namespace.sidebarStylePresets || {};
+  var enableLocationViewDefaults = namespace.ENABLE_LOCATION_VIEW_DEFAULTS === true;
   var state = null;
   var selectedPresetId = "builtin:simple";
   var activeTab = "menu";
@@ -13,6 +14,7 @@
   var defaultPresetSelect = document.getElementById("defaultPresetSelect");
   var presetName = document.getElementById("presetName");
   var presetDescription = document.getElementById("presetDescription");
+  var showInPopupToggle = document.getElementById("showInPopupToggle");
   var builtInNotice = document.getElementById("builtInNotice");
   var menuEditor = document.getElementById("menuEditor");
   var renameEditor = document.getElementById("renameEditor");
@@ -29,14 +31,49 @@
   var sidebarStylePreviewLogo = document.getElementById("sidebarStylePreviewLogo");
   var sidebarBackgroundTypes = [
     { value: "solid", label: "Solid Color" },
-    { value: "gradient", label: "Gradient" }
+    { value: "gradient", label: "Gradient" },
+    { value: "image", label: "Image" }
   ];
+
+  function configureLocationDefaultsUi() {
+    document.querySelectorAll("[data-location-defaults-ui]").forEach(function configureLocationDefaultsElement(element) {
+      element.hidden = !enableLocationViewDefaults;
+    });
+
+    if (!enableLocationViewDefaults && activeTab === "locations") {
+      activeTab = "menu";
+    }
+  }
   var gradientDirections = [
     { value: "180deg", label: "Top to Bottom" },
     { value: "90deg", label: "Left to Right" },
     { value: "135deg", label: "Diagonal" },
     { value: "45deg", label: "Diagonal Reverse" },
     { value: "0deg", label: "Bottom to Top" }
+  ];
+  var backgroundImageFitOptions = [
+    { value: "cover", label: "Cover" },
+    { value: "contain", label: "Contain" },
+    { value: "auto", label: "Auto" }
+  ];
+  var backgroundImagePositionOptions = [
+    { value: "center", label: "Center" },
+    { value: "top", label: "Top" },
+    { value: "bottom", label: "Bottom" },
+    { value: "left", label: "Left" },
+    { value: "right", label: "Right" },
+    { value: "center top", label: "Center Top" },
+    { value: "center bottom", label: "Center Bottom" }
+  ];
+  var sidebarBrandingModes = [
+    { value: "keep", label: "Keep default" },
+    { value: "hide", label: "Hide default" },
+    { value: "replace", label: "Replace with custom" }
+  ];
+  var sidebarBrandingAlignmentOptions = [
+    { value: "left", label: "Left" },
+    { value: "center", label: "Center" },
+    { value: "right", label: "Right" }
   ];
   var randomGradientDirections = ["135deg", "180deg", "90deg", "45deg"];
   var borderRadiusOptions = ["6px", "8px", "10px", "12px"];
@@ -147,6 +184,11 @@
     { section: "Gradient Background", key: "gradientStartColor", label: "Start Color", type: "color", mode: "gradient" },
     { key: "gradientEndColor", label: "End Color", type: "color", mode: "gradient" },
     { key: "gradientDirection", label: "Direction", type: "select", options: gradientDirections, mode: "gradient" },
+    { section: "Image Background", key: "backgroundImageUrl", label: "Image URL", type: "url", mode: "image" },
+    { key: "backgroundImageFit", label: "Image Fit", type: "select", options: backgroundImageFitOptions, mode: "image" },
+    { key: "backgroundImagePosition", label: "Image Position", type: "select", options: backgroundImagePositionOptions, mode: "image" },
+    { key: "backgroundOverlayColor", label: "Overlay Color", type: "color", mode: "image" },
+    { key: "backgroundOverlayOpacity", label: "Overlay Opacity", type: "range", mode: "image" },
     { section: "Menu Colors", key: "textColor", label: "Menu Text", type: "color" },
     { key: "activeBackgroundColor", label: "Active Item Background", type: "color" },
     { key: "activeTextColor", label: "Active Item Text", type: "color" },
@@ -154,8 +196,11 @@
     { section: "Shape", key: "borderRadius", label: "Menu Item Radius", type: "text" },
     { key: "itemSpacing", label: "Menu Item Spacing", type: "text" },
     { key: "sidebarPadding", label: "Sidebar Padding", type: "text" },
-    { section: "Branding", key: "logoUrl", label: "Optional Logo URL", type: "url" },
-    { key: "headerLabel", label: "Optional Header Label", type: "text" }
+    { section: "Branding", key: "sidebarBrandingMode", label: "Sidebar Branding", type: "select", options: sidebarBrandingModes },
+    { key: "logoUrl", label: "Logo URL", type: "url" },
+    { key: "headerLabel", label: "Header Text", type: "text" },
+    { key: "logoSize", label: "Logo Size", type: "text" },
+    { key: "headerAlignment", label: "Alignment", type: "select", options: sidebarBrandingAlignmentOptions }
   ];
 
   function setStatus(message, isError) {
@@ -217,7 +262,7 @@
   }
 
   function optionLabel(preset) {
-    return (preset.name || preset.label) + (preset.source === "builtin" ? " (Built-in)" : "");
+    return (preset.name || preset.label) + (preset.source === "builtin" ? " (Built-in)" : " (Custom)");
   }
 
   function fillPresetSelect(select, selectedValue) {
@@ -254,6 +299,7 @@
 
     presetName.value = preset.name || preset.label || "";
     presetDescription.value = preset.description || "";
+    showInPopupToggle.checked = preset.showInPopup !== false;
     presetName.disabled = !isEditable;
     presetDescription.disabled = !isEditable;
     document.getElementById("deletePresetButton").disabled = !isEditable;
@@ -346,6 +392,32 @@
     return /^https?:\/\//i.test(trimmed) ? trimmed : "https://" + trimmed;
   }
 
+  function clampOpacity(value) {
+    var numeric = Number(value);
+
+    if (Number.isNaN(numeric)) {
+      return 0.35;
+    }
+
+    return Math.min(1, Math.max(0, numeric));
+  }
+
+  function hexToRgb(hex) {
+    var normalized = normalizeHexColor(hex || "#000000", "#000000").replace("#", "");
+    var bigint = parseInt(normalized, 16);
+
+    return {
+      r: (bigint >> 16) & 255,
+      g: (bigint >> 8) & 255,
+      b: bigint & 255
+    };
+  }
+
+  function getOverlayRgba(color, opacity) {
+    var rgb = hexToRgb(color || "#000000");
+    return "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + clampOpacity(opacity) + ")";
+  }
+
   function createFieldLabel(text, input) {
     var label = document.createElement("label");
     label.className = "inline-field";
@@ -404,7 +476,12 @@
     });
   }
 
-  function getSidebarBackground(style) {
+  function getSidebarBackgroundValue(style) {
+    if (style.backgroundType === "image" && style.backgroundImageUrl) {
+      var overlay = getOverlayRgba(style.backgroundOverlayColor || "#000000", style.backgroundOverlayOpacity);
+      return "linear-gradient(" + overlay + ", " + overlay + "), url(\"" + style.backgroundImageUrl + "\")";
+    }
+
     if (style.backgroundType === "gradient") {
       var start = style.gradientStartColor || style.backgroundColor || "#0f172a";
       var end = style.gradientEndColor || style.backgroundColor || "#1d4ed8";
@@ -413,6 +490,28 @@
     }
 
     return style.backgroundColor || "#ffffff";
+  }
+
+  function resolveBrandLogoUrl(style) {
+    var brandSettings = namespace.brandSettings || {};
+    return normalizeUrl(style.logoUrl || brandSettings.logoUrl || namespace.defaultBrandLogoUrl || "");
+  }
+
+  function resolveBrandHeaderLabel(style) {
+    var brandSettings = namespace.brandSettings || {};
+    return style.headerLabel || brandSettings.brandName || "AgencySkin";
+  }
+
+  function getAlignmentFlexValue(alignment) {
+    if (alignment === "left") {
+      return "flex-start";
+    }
+
+    if (alignment === "right") {
+      return "flex-end";
+    }
+
+    return "center";
   }
 
   function pickRandom(items) {
@@ -561,6 +660,35 @@
     return createFieldLabel(field.label, input);
   }
 
+  function createRangeField(field, style) {
+    var wrapper = document.createElement("label");
+    var controls = document.createElement("span");
+    var input = document.createElement("input");
+    var valueLabel = document.createElement("span");
+
+    wrapper.className = "inline-field range-field";
+    controls.className = "range-control";
+    input.type = "range";
+    input.min = "0";
+    input.max = "1";
+    input.step = "0.05";
+    input.value = clampOpacity(style[field.key]);
+    input.dataset.sidebarStyleField = field.key;
+    valueLabel.className = "range-value";
+    valueLabel.textContent = Math.round(clampOpacity(input.value) * 100) + "%";
+
+    input.addEventListener("input", function updateRangeValue() {
+      valueLabel.textContent = Math.round(clampOpacity(input.value) * 100) + "%";
+      updateSidebarStylePreview();
+    });
+
+    wrapper.appendChild(document.createTextNode(field.label));
+    controls.appendChild(input);
+    controls.appendChild(valueLabel);
+    wrapper.appendChild(controls);
+    return wrapper;
+  }
+
   function syncSidebarModeState() {
     var backgroundType = sidebarBackgroundType.value || "solid";
     sidebarStyleEditor.querySelectorAll("[data-sidebar-style-mode]").forEach(function updateMode(element) {
@@ -580,7 +708,14 @@
     sidebarStylePreset.value = presetValue;
     sidebarBackgroundType.value = normalizedStyle.backgroundType || "solid";
     sidebarStyleEditor.querySelectorAll("[data-sidebar-style-field]").forEach(function updateField(input) {
-      input.value = normalizedStyle[input.dataset.sidebarStyleField] || "";
+      var value = normalizedStyle[input.dataset.sidebarStyleField];
+      input.value = value === undefined || value === null ? "" : value;
+      if (input.type === "range") {
+        input.value = clampOpacity(value);
+        if (input.closest(".range-control")) {
+          input.closest(".range-control").querySelector(".range-value").textContent = Math.round(clampOpacity(input.value) * 100) + "%";
+        }
+      }
       if (input.closest(".color-control")) {
         var picker = input.closest(".color-control").querySelector("input[type='color']");
         if (picker) {
@@ -609,6 +744,8 @@
         label = createColorField(field, style);
       } else if (field.type === "select") {
         label = createSelectField(field, style);
+      } else if (field.type === "range") {
+        label = createRangeField(field, style);
       } else {
         label = createTextField(field, style);
       }
@@ -622,6 +759,11 @@
   }
 
   function renderLocationRules() {
+    if (!enableLocationViewDefaults) {
+      locationRules.innerHTML = "";
+      return;
+    }
+
     var presets = allPresets();
     var rules = state.locationRules || {};
     locationRules.innerHTML = "";
@@ -655,6 +797,31 @@
     }
   }
 
+  function setContainerControlsDisabled(container, disabled) {
+    container.querySelectorAll("input, select, button").forEach(function updateControl(control) {
+      control.disabled = disabled;
+    });
+  }
+
+  function syncPresetEditability() {
+    var isEditable = isCustomPreset(selectedPreset());
+
+    setContainerControlsDisabled(menuEditor, !isEditable);
+    setContainerControlsDisabled(renameEditor, !isEditable);
+    setContainerControlsDisabled(linkEditor, !isEditable);
+    setContainerControlsDisabled(sidebarStyleEditor, !isEditable);
+    sidebarStyleEnabled.disabled = !isEditable;
+    sidebarStylePreset.disabled = !isEditable;
+    sidebarBackgroundType.disabled = !isEditable;
+    document.getElementById("selectAllMenusButton").disabled = !isEditable;
+    document.getElementById("deselectAllMenusButton").disabled = !isEditable;
+    document.getElementById("resetMenuDefaultsButton").disabled = !isEditable;
+    document.getElementById("addRenameButton").disabled = !isEditable;
+    document.getElementById("addLinkButton").disabled = !isEditable;
+    document.getElementById("randomizeStyleButton").disabled = !isEditable;
+    document.getElementById("resetStyleButton").disabled = !isEditable;
+  }
+
   function render() {
     renderPresetSelects();
     renderTabState();
@@ -665,6 +832,7 @@
     renderSidebarStylePresetOptions();
     renderSidebarStyle();
     renderLocationRules();
+    syncPresetEditability();
   }
 
   function collectSidebarStyleFromForm() {
@@ -674,10 +842,21 @@
     style.backgroundType = sidebarBackgroundType.value || "solid";
 
     sidebarStyleEditor.querySelectorAll("[data-sidebar-style-field]").forEach(function collectField(input) {
-      style[input.dataset.sidebarStyleField] = input.value.trim();
+      var key = input.dataset.sidebarStyleField;
+      if (key === "backgroundOverlayOpacity") {
+        style[key] = clampOpacity(input.value);
+        return;
+      }
+
+      if (key === "backgroundImageUrl" || key === "logoUrl") {
+        style[key] = normalizeUrl(input.value);
+        return;
+      }
+
+      style[key] = input.value.trim();
     });
 
-    return style;
+    return storage.normalizeSidebarStyle(style);
   }
 
   function getCurrentWorkingSidebarStyle() {
@@ -690,16 +869,32 @@
     }
 
     var style = getCurrentWorkingSidebarStyle();
-    var background = getSidebarBackground(style);
+    var background = getSidebarBackgroundValue(style);
     var textColor = style.textColor || "#111827";
     var activeBackgroundColor = style.activeBackgroundColor || "#e5e7eb";
     var activeTextColor = style.activeTextColor || textColor;
     var borderRadius = style.borderRadius || "8px";
     var itemSpacing = style.itemSpacing || "4px";
     var sidebarPadding = style.sidebarPadding || "12px";
-    var headerLabel = style.headerLabel || "AgencySkin";
+    var brandingMode = style.sidebarBrandingMode || "keep";
+    var headerLabel = brandingMode === "keep" ? "GHL Default" : resolveBrandHeaderLabel(style);
+    var logoUrl = brandingMode === "replace" ? resolveBrandLogoUrl(style) : "";
+    var alignment = style.headerAlignment || "center";
+    var alignItems = getAlignmentFlexValue(alignment);
 
-    sidebarStylePreview.style.background = background;
+    sidebarStylePreview.style.background = "";
+    sidebarStylePreview.style.backgroundImage = "";
+    sidebarStylePreview.style.backgroundSize = "";
+    sidebarStylePreview.style.backgroundPosition = "";
+    sidebarStylePreview.style.backgroundRepeat = "";
+    if (style.backgroundType === "image" && style.backgroundImageUrl) {
+      sidebarStylePreview.style.backgroundImage = background;
+      sidebarStylePreview.style.backgroundSize = style.backgroundImageFit || "cover";
+      sidebarStylePreview.style.backgroundPosition = style.backgroundImagePosition || "center";
+      sidebarStylePreview.style.backgroundRepeat = "no-repeat";
+    } else {
+      sidebarStylePreview.style.background = background || "#ffffff";
+    }
     sidebarStylePreview.style.color = textColor;
     sidebarStylePreview.style.padding = sidebarPadding;
     sidebarStylePreview.classList.toggle("is-disabled", style.enabled !== true);
@@ -709,9 +904,17 @@
       sidebarStylePreviewHeaderText.style.color = textColor;
     }
 
+    if (sidebarStylePreviewHeaderText && sidebarStylePreviewHeaderText.parentElement) {
+      sidebarStylePreviewHeaderText.parentElement.hidden = brandingMode === "hide";
+      sidebarStylePreviewHeaderText.parentElement.style.alignItems = alignItems;
+      sidebarStylePreviewHeaderText.parentElement.style.flexDirection = brandingMode === "replace" ? "column" : "row";
+      sidebarStylePreviewHeaderText.parentElement.style.textAlign = alignment;
+    }
+
     if (sidebarStylePreviewLogo) {
-      sidebarStylePreviewLogo.src = style.logoUrl || "";
-      sidebarStylePreviewLogo.hidden = !style.logoUrl;
+      sidebarStylePreviewLogo.src = logoUrl;
+      sidebarStylePreviewLogo.hidden = !logoUrl || brandingMode !== "replace";
+      sidebarStylePreviewLogo.style.maxHeight = style.logoSize || "32px";
       sidebarStylePreviewLogo.onerror = function hideBrokenLogo() {
         sidebarStylePreviewLogo.hidden = true;
       };
@@ -779,15 +982,33 @@
     preset.labelOverrides = labelOverrides;
     preset.customLinks = customLinks;
     preset.sidebarStyle = collectSidebarStyleFromForm();
+    preset.showInPopup = showInPopupToggle.checked;
     preset.updatedAt = namespace.nowIso();
     return storage.normalizePreset(preset);
   }
 
-  function persistPreset(preset, message, shouldApply) {
+  function reapplySavedPresetIfActive(presetId, message, reapplyIfActive, nextState) {
+    if (!reapplyIfActive || presetId !== nextState.activePresetId) {
+      setStatus(message);
+      render();
+      return;
+    }
+
+    sendToContentScript({ type: "applyPreset", presetId: presetId }, function handleApplied(result) {
+      if (result.ok && result.skipped) {
+        setStatus(message + " CleanView is off; turn it on to apply.");
+      } else {
+        setStatus(result.ok ? message + " Applied to current page." : message);
+      }
+      render();
+    });
+  }
+
+  function persistPreset(preset, message, reapplyIfActive) {
     storage.updateState(function updatePreset(nextState) {
       nextState.presets[preset.id] = storage.normalizePreset(preset);
-      if (shouldApply) {
-        nextState.activePresetId = preset.id;
+      if (nextState.presetPreferences) {
+        delete nextState.presetPreferences[preset.id];
       }
     }, function handleSaved(nextState, error) {
       if (error) {
@@ -796,21 +1017,33 @@
       }
       state = nextState;
       selectedPresetId = preset.id;
+      reapplySavedPresetIfActive(preset.id, message, reapplyIfActive, nextState);
+    });
+  }
 
-      if (!shouldApply) {
-        setStatus(message);
-        render();
+  function persistSelectedView(message, reapplyIfActive) {
+    var preset = selectedPreset();
+
+    if (isCustomPreset(preset)) {
+      persistPreset(collectPresetFromForm(), message, reapplyIfActive);
+      return;
+    }
+
+    storage.updateState(function updateBuiltInPreference(nextState) {
+      nextState.presetPreferences = nextState.presetPreferences || {};
+      nextState.presetPreferences[selectedPresetId] = storage.normalizePresetPreference(Object.assign({}, nextState.presetPreferences[selectedPresetId] || {}, {
+        showInPopup: showInPopupToggle.checked,
+        updatedAt: namespace.nowIso()
+      }));
+    }, function handleSaved(nextState, error) {
+      if (error) {
+        setStatus("Unable to save CleanView view.", true);
         return;
       }
 
-      sendToContentScript({ type: "applyPreset", presetId: preset.id }, function handleApplied(result) {
-        if (result.ok && result.skipped) {
-          setStatus(message + " CleanView is off; turn it on to apply.");
-        } else {
-          setStatus(result.ok ? message + " Applied to current page." : message + " Saved; open GHL to apply.", !result.ok);
-        }
-        render();
-      });
+      state = nextState;
+      selectedPresetId = preset.id;
+      reapplySavedPresetIfActive(preset.id, message, reapplyIfActive, nextState);
     });
   }
 
@@ -852,8 +1085,11 @@
       borderRadius: pickRandom(borderRadiusOptions),
       itemSpacing: pickRandom(itemSpacingOptions),
       sidebarPadding: pickRandom(sidebarPaddingOptions),
+      sidebarBrandingMode: "keep",
       logoUrl: "",
-      headerLabel: "AgencySkin"
+      headerLabel: "AgencySkin",
+      logoSize: "32px",
+      headerAlignment: "center"
     });
 
     populateSidebarStyleForm(randomizedStyle, {
@@ -864,6 +1100,12 @@
   }
 
   function refreshActiveLocation() {
+    if (!enableLocationViewDefaults) {
+      activeLocationId = null;
+      currentLocationLabel.textContent = "";
+      return;
+    }
+
     sendToContentScript({ type: "getPageContext" }, function handleContext(result) {
       activeLocationId = result.ok ? result.locationId || null : null;
       currentLocationLabel.textContent = activeLocationId ? "Current GHL Location: " + activeLocationId : "Current GHL Location: not detected";
@@ -910,11 +1152,7 @@
   });
 
   document.getElementById("savePresetButton").addEventListener("click", function savePreset() {
-    persistPreset(collectPresetFromForm(), "View saved.", false);
-  });
-
-  document.getElementById("saveApplyPresetButton").addEventListener("click", function saveAndApplyPreset() {
-    persistPreset(collectPresetFromForm(), "View saved.", true);
+    persistSelectedView("View saved.", true);
   });
 
   document.getElementById("selectAllMenusButton").addEventListener("click", function selectAllMenus() {
@@ -1009,30 +1247,36 @@
 
   document.getElementById("randomizeStyleButton").addEventListener("click", randomizeSidebarStyle);
 
-  document.getElementById("assignCurrentLocationButton").addEventListener("click", function assignCurrentLocation() {
-    if (!activeLocationId) {
-      setStatus("No GHL location detected on this page.", true);
-      return;
-    }
-
-    storage.updateState(function assignRule(nextState) {
-      nextState.locationRules[activeLocationId] = {
-        presetId: selectedPresetId,
-        updatedAt: namespace.nowIso()
-      };
-    }, function handleSaved(nextState, error) {
-      if (error) {
-        setStatus("Unable to save location rule.", true);
+  if (enableLocationViewDefaults) {
+    document.getElementById("assignCurrentLocationButton").addEventListener("click", function assignCurrentLocation() {
+      if (!activeLocationId) {
+        setStatus("No GHL location detected on this page.", true);
         return;
       }
-      state = nextState;
-      setStatus("This view will be used automatically for this GHL location.");
-      render();
+
+      storage.updateState(function assignRule(nextState) {
+        nextState.locationRules[activeLocationId] = {
+          presetId: selectedPresetId,
+          updatedAt: namespace.nowIso()
+        };
+      }, function handleSaved(nextState, error) {
+        if (error) {
+          setStatus("Unable to save location rule.", true);
+          return;
+        }
+        state = nextState;
+        setStatus("This view will be used automatically for this GHL location.");
+        render();
+      });
     });
-  });
+  }
 
   presetSelect.addEventListener("change", function selectPreset() {
     selectedPresetId = presetSelect.value;
+    console.log("[AgencySkin CleanView] View selected:", {
+      id: selectedPresetId,
+      name: selectedPreset() && (selectedPreset().name || selectedPreset().label)
+    });
     render();
   });
 
@@ -1073,23 +1317,26 @@
     updateSidebarStylePreview();
   });
 
-  locationRules.addEventListener("click", function handleRuleClick(event) {
-    if (!event.target.dataset.removeRuleId) {
-      return;
-    }
-
-    storage.updateState(function removeRule(nextState) {
-      delete nextState.locationRules[event.target.dataset.removeRuleId];
-    }, function handleSaved(nextState, error) {
-      if (error) {
-        setStatus("Unable to remove location rule.", true);
+  if (enableLocationViewDefaults) {
+    locationRules.addEventListener("click", function handleRuleClick(event) {
+      if (!event.target.dataset.removeRuleId) {
         return;
       }
-      state = nextState;
-      setStatus("Location rule removed.");
-      render();
-    });
-  });
 
+      storage.updateState(function removeRule(nextState) {
+        delete nextState.locationRules[event.target.dataset.removeRuleId];
+      }, function handleSaved(nextState, error) {
+        if (error) {
+          setStatus("Unable to remove location rule.", true);
+          return;
+        }
+        state = nextState;
+        setStatus("Location rule removed.");
+        render();
+      });
+    });
+  }
+
+  configureLocationDefaultsUi();
   loadState();
 })();

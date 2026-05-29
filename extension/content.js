@@ -160,7 +160,30 @@
     }
   }
 
+  function removeCustomSidebarBranding() {
+    document.querySelectorAll("[data-agencyskin-custom-sidebar-branding='true']").forEach(function removeBranding(branding) {
+      branding.remove();
+    });
+  }
+
+  function restoreNativeSidebarBranding() {
+    document.querySelectorAll("[data-agencyskin-hidden-native-branding='true']").forEach(function restoreBranding(element) {
+      var originalStyle = element.getAttribute("data-agencyskin-native-branding-original-style") || "";
+
+      if (originalStyle) {
+        element.setAttribute("style", originalStyle);
+      } else {
+        element.removeAttribute("style");
+      }
+
+      element.removeAttribute("data-agencyskin-hidden-native-branding");
+      element.removeAttribute("data-agencyskin-native-branding-original-style");
+    });
+  }
+
   function resetSidebarStyle() {
+    removeCustomSidebarBranding();
+    restoreNativeSidebarBranding();
     removeSidebarStyleBlock();
     document.querySelectorAll("[data-agencyskin-cleanview-style-role='header']").forEach(function removeHeader(header) {
       header.remove();
@@ -176,7 +199,50 @@
     return String(value || "").trim();
   }
 
-  function getSidebarBackground(style) {
+  function clampOpacity(value) {
+    var numeric = Number(value);
+
+    if (Number.isNaN(numeric)) {
+      return 0.35;
+    }
+
+    return Math.min(1, Math.max(0, numeric));
+  }
+
+  function normalizeHexColor(value, fallback) {
+    var trimmed = String(value || "").trim();
+
+    if (/^#([0-9A-F]{3}){1,2}$/i.test(trimmed)) {
+      return trimmed.length === 4 ?
+        "#" + trimmed[1] + trimmed[1] + trimmed[2] + trimmed[2] + trimmed[3] + trimmed[3] :
+        trimmed;
+    }
+
+    return fallback || "#000000";
+  }
+
+  function hexToRgb(hex) {
+    var normalized = normalizeHexColor(hex || "#000000", "#000000").replace("#", "");
+    var bigint = parseInt(normalized, 16);
+
+    return {
+      r: (bigint >> 16) & 255,
+      g: (bigint >> 8) & 255,
+      b: bigint & 255
+    };
+  }
+
+  function getOverlayRgba(color, opacity) {
+    var rgb = hexToRgb(color || "#000000");
+    return "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + clampOpacity(opacity) + ")";
+  }
+
+  function getSidebarBackgroundValue(style) {
+    if (style.backgroundType === "image" && styleValue(style.backgroundImageUrl)) {
+      var overlay = getOverlayRgba(style.backgroundOverlayColor || "#000000", style.backgroundOverlayOpacity);
+      return "linear-gradient(" + overlay + ", " + overlay + "), url(\"" + styleValue(style.backgroundImageUrl) + "\")";
+    }
+
     if (style.backgroundType === "gradient") {
       var start = styleValue(style.gradientStartColor) || styleValue(style.backgroundColor) || "#0f172a";
       var end = styleValue(style.gradientEndColor) || styleValue(style.backgroundColor) || "#1d4ed8";
@@ -185,6 +251,28 @@
     }
 
     return styleValue(style.backgroundColor);
+  }
+
+  function applySidebarBackground(sidebar, style) {
+    var backgroundValue = getSidebarBackgroundValue(style);
+
+    sidebar.style.background = "";
+    sidebar.style.backgroundImage = "";
+    sidebar.style.backgroundSize = "";
+    sidebar.style.backgroundPosition = "";
+    sidebar.style.backgroundRepeat = "";
+
+    if (style.backgroundType === "image" && styleValue(style.backgroundImageUrl)) {
+      sidebar.style.backgroundImage = backgroundValue;
+      sidebar.style.backgroundSize = styleValue(style.backgroundImageFit) || "cover";
+      sidebar.style.backgroundPosition = styleValue(style.backgroundImagePosition) || "center";
+      sidebar.style.backgroundRepeat = "no-repeat";
+      return;
+    }
+
+    if (backgroundValue) {
+      sidebar.style.background = backgroundValue;
+    }
   }
 
   function isActiveMenuItem(element) {
@@ -212,49 +300,196 @@
     document.documentElement.appendChild(styleBlock);
   }
 
-  function injectSidebarHeader(sidebar, style) {
-    var hasHeader = styleValue(style.headerLabel) || styleValue(style.logoUrl);
-    var header = document.createElement("div");
+  function hasKnownMenuText(element) {
+    var text = normalizeText(element && element.textContent);
+    return text.indexOf("conversations") !== -1 ||
+      text.indexOf("contacts") !== -1 ||
+      text.indexOf("opportunities") !== -1 ||
+      text.indexOf("calendars") !== -1 ||
+      text.indexOf("marketing") !== -1 ||
+      text.indexOf("settings") !== -1;
+  }
+
+  function isBeforeElement(element, reference) {
+    if (!element || !reference || element === reference) {
+      return true;
+    }
+
+    return Boolean(element.compareDocumentPosition(reference) & Node.DOCUMENT_POSITION_FOLLOWING);
+  }
+
+  function getElementSignalText(element) {
+    return normalizeText([
+      element.tagName,
+      element.id,
+      element.className && element.className.toString ? element.className.toString() : "",
+      element.getAttribute("alt"),
+      element.getAttribute("aria-label"),
+      element.getAttribute("title"),
+      element.getAttribute("src")
+    ].join(" "));
+  }
+
+  function findBrandingContainer(sidebar, candidate) {
+    var container = candidate.closest("a[href], button, [class*='logo'], [id*='logo'], [class*='brand'], [id*='brand']") || candidate;
+
+    if (!sidebar.contains(container)) {
+      return candidate;
+    }
+
+    if (hasKnownMenuText(container) || normalizeText(container.textContent).length > 80) {
+      return candidate;
+    }
+
+    return container;
+  }
+
+  function findGhlSidebarBrandingBlock(sidebar) {
+    var sidebarRect = sidebar.getBoundingClientRect();
+    var firstMenuItem = getFirstVisibleNormalMenuItem(sidebar);
+    var candidates = Array.prototype.slice.call(sidebar.querySelectorAll("img, svg, [class*='logo'], [id*='logo'], [class*='brand'], [id*='brand'], [aria-label], [title]"));
+
+    for (var index = 0; index < candidates.length; index += 1) {
+      var candidate = candidates[index];
+      var signal = getElementSignalText(candidate);
+      var isBrandSignal = signal.indexOf("highlevel") !== -1 ||
+        signal.indexOf("leadconnector") !== -1 ||
+        signal.indexOf("gohighlevel") !== -1 ||
+        signal.indexOf("logo") !== -1 ||
+        signal.indexOf("brand") !== -1;
+      var candidateRect = candidate.getBoundingClientRect();
+      var isNearTop = candidateRect.top <= sidebarRect.top + Math.max(140, sidebarRect.height * 0.25);
+
+      if (candidate.closest("[data-agencyskin-custom-sidebar-branding='true']")) {
+        continue;
+      }
+
+      if (!isBrandSignal && candidate.tagName.toLowerCase() !== "img") {
+        continue;
+      }
+
+      if (!isNearTop || !isBeforeElement(candidate, firstMenuItem)) {
+        continue;
+      }
+
+      return findBrandingContainer(sidebar, candidate);
+    }
+
+    console.warn("[AgencySkin CleanView] Could not confidently find native sidebar branding block.");
+    return null;
+  }
+
+  function hideNativeSidebarBranding(brandingElement) {
+    if (!brandingElement) {
+      return false;
+    }
+
+    if (!brandingElement.hasAttribute("data-agencyskin-native-branding-original-style")) {
+      brandingElement.setAttribute("data-agencyskin-native-branding-original-style", brandingElement.getAttribute("style") || "");
+    }
+
+    brandingElement.setAttribute("data-agencyskin-hidden-native-branding", "true");
+    brandingElement.style.setProperty("display", "none", "important");
+    return true;
+  }
+
+  function getAlignmentFlexValue(alignment) {
+    if (alignment === "left") {
+      return "flex-start";
+    }
+
+    if (alignment === "right") {
+      return "flex-end";
+    }
+
+    return "center";
+  }
+
+  function resolveBrandLogoUrl(style) {
+    var brandSettings = namespace.brandSettings || {};
+    return styleValue(style.logoUrl) || styleValue(brandSettings.logoUrl) || styleValue(namespace.defaultBrandLogoUrl);
+  }
+
+  function resolveBrandHeaderLabel(style) {
+    var brandSettings = namespace.brandSettings || {};
+    return styleValue(style.headerLabel) || styleValue(brandSettings.brandName) || "AgencySkin";
+  }
+
+  function injectCustomSidebarBranding(sidebar, style) {
+    var alignment = style.headerAlignment || "center";
+    var branding = document.createElement("div");
+    var logoUrl = resolveBrandLogoUrl(style);
+    var labelText = resolveBrandHeaderLabel(style);
+    var alignItems = getAlignmentFlexValue(alignment);
     var logo = null;
     var label = null;
 
-    if (!hasHeader) {
-      return;
-    }
+    removeCustomSidebarBranding();
+    branding.setAttribute("data-agencyskin-custom-sidebar-branding", "true");
+    markStyledElement(branding, "header");
+    branding.style.display = "flex";
+    branding.style.flexDirection = "column";
+    branding.style.alignItems = alignItems;
+    branding.style.justifyContent = "center";
+    branding.style.gap = "6px";
+    branding.style.padding = "10px 8px 12px";
+    branding.style.color = styleValue(style.textColor) || "#ffffff";
+    branding.style.textAlign = alignment;
+    branding.style.fontWeight = "700";
 
-    header.setAttribute("data-agencyskin-cleanview-custom-link", "true");
-    markStyledElement(header, "header");
-    header.style.display = "flex";
-    header.style.alignItems = "center";
-    header.style.gap = "8px";
-    header.style.padding = "10px 12px";
-    header.style.margin = "0 8px 8px";
-    header.style.fontWeight = "700";
-    header.style.color = styleValue(style.textColor) || "inherit";
-
-    if (styleValue(style.logoUrl)) {
+    if (logoUrl) {
       logo = document.createElement("img");
-      logo.src = style.logoUrl;
-      logo.alt = "";
-      logo.style.maxHeight = "24px";
-      logo.style.maxWidth = "120px";
+      logo.src = logoUrl;
+      logo.alt = labelText;
+      logo.style.maxHeight = style.logoSize || "32px";
+      logo.style.maxWidth = "100%";
       logo.style.objectFit = "contain";
-      header.appendChild(logo);
+      logo.onerror = function hideBrokenLogo() {
+        logo.hidden = true;
+      };
+      branding.appendChild(logo);
     }
 
-    if (styleValue(style.headerLabel)) {
-      label = document.createElement("span");
-      label.textContent = style.headerLabel;
-      header.appendChild(label);
+    if (labelText) {
+      label = document.createElement("div");
+      label.className = "agencyskin-sidebar-branding-label";
+      label.textContent = labelText;
+      branding.appendChild(label);
     }
 
-    sidebar.insertBefore(header, sidebar.firstChild);
+    sidebar.insertBefore(branding, sidebar.firstChild);
+  }
+
+  function applySidebarBranding(sidebar, style) {
+    var brandingMode = style.sidebarBrandingMode || "keep";
+    var nativeBranding = null;
+    var changedCount = 0;
+
+    removeCustomSidebarBranding();
+    restoreNativeSidebarBranding();
+
+    if (brandingMode === "keep") {
+      return changedCount;
+    }
+
+    nativeBranding = findGhlSidebarBrandingBlock(sidebar);
+    if (hideNativeSidebarBranding(nativeBranding)) {
+      changedCount += 1;
+    }
+
+    if (brandingMode === "replace") {
+      injectCustomSidebarBranding(sidebar, style);
+      changedCount += 1;
+    }
+
+    return changedCount;
   }
 
   function applySidebarStyle(sidebarStyle) {
     var style = sidebarStyle || {};
     var sidebar = null;
     var menuItems = [];
+    var brandingCount = 0;
 
     resetSidebarStyle();
 
@@ -270,9 +505,7 @@
     }
 
     markStyledElement(sidebar, "sidebar");
-    if (getSidebarBackground(style)) {
-      sidebar.style.background = getSidebarBackground(style);
-    }
+    applySidebarBackground(sidebar, style);
     if (styleValue(style.sidebarPadding)) {
       sidebar.style.padding = style.sidebarPadding;
     }
@@ -281,7 +514,7 @@
     }
 
     injectSidebarStyleBlock(style);
-    injectSidebarHeader(sidebar, style);
+    brandingCount = applySidebarBranding(sidebar, style);
 
     menuItems = Array.prototype.slice.call(sidebar.querySelectorAll("a, button, [role='button']"));
     menuItems.forEach(function styleMenuItem(element) {
@@ -306,7 +539,7 @@
       }
     });
 
-    return menuItems.length + 1;
+    return menuItems.length + brandingCount + 1;
   }
 
   function findMenuItemByLabel(label, root) {
@@ -545,9 +778,19 @@
 
   function resolvePreset(state) {
     var locationId = getLocationId();
-    var locationRule = locationId && state.locationRules ? state.locationRules[locationId] : null;
-    var presetId = locationRule && locationRule.presetId ? locationRule.presetId : state.activePresetId;
-    return storage.getPresetById(state, presetId) || storage.getPresetById(state, "builtin:simple");
+    var locationRule = namespace.ENABLE_LOCATION_VIEW_DEFAULTS === true && locationId && state.locationRules ? state.locationRules[locationId] : null;
+    var locationPreset = locationRule && locationRule.presetId ? storage.getPresetById(state, locationRule.presetId) : null;
+    var activePreset = storage.getPresetById(state, state.activePresetId);
+    var preset = locationPreset || activePreset || storage.getPresetById(state, "builtin:simple");
+
+    if (preset) {
+      console.log("[AgencySkin CleanView] Active view applied:", {
+        id: preset.id,
+        name: preset.name || preset.label
+      });
+    }
+
+    return preset;
   }
 
   function applyPresetObject(preset) {

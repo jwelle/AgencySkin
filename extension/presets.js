@@ -31,6 +31,11 @@
     gradientStartColor: "",
     gradientEndColor: "",
     gradientDirection: "135deg",
+    backgroundImageUrl: "",
+    backgroundImageFit: "cover",
+    backgroundImagePosition: "center",
+    backgroundOverlayColor: "#000000",
+    backgroundOverlayOpacity: 0.35,
     textColor: "",
     activeBackgroundColor: "",
     activeTextColor: "",
@@ -38,8 +43,11 @@
     borderRadius: "",
     itemSpacing: "",
     sidebarPadding: "",
+    sidebarBrandingMode: "keep",
     logoUrl: "",
-    headerLabel: ""
+    headerLabel: "",
+    logoSize: "32px",
+    headerAlignment: "center"
   };
   var sidebarStylePresets = {
     default: Object.assign({ name: "Default" }, defaultSidebarStyle),

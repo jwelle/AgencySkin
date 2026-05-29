@@ -12,7 +12,6 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 - Hide registered GoHighLevel sidebar menu items.
 - Rename registered GoHighLevel sidebar labels for your browser.
 - Add CleanView Quick Links as personal shortcuts in the sidebar.
-- Assign a view to the current GoHighLevel location with CleanView Location Rules.
 - Apply optional per-view sidebar styling.
 - Reset the current page back to the original GoHighLevel sidebar.
 - Enable or disable CleanView without deleting saved views.
@@ -34,14 +33,21 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 5. Confirm the selected view applies immediately.
 6. Click `Edit views`.
 7. Duplicate a built-in view or create a new custom view.
-8. Use the Menu Items, Rename Labels, Quick Links, Sidebar Style, and Location Rules tabs.
-9. Save the view, then use `Save and Apply` to apply it to the active GHL tab.
-10. Add a Quick Link with `LOCATION_ID` in the URL if needed.
-11. Enable a Sidebar Style preset and confirm the GHL sidebar updates.
-12. Click `Use this view for this location` to assign the selected view to the current GHL location.
-13. Navigate inside GoHighLevel and confirm the sidebar state reapplies after rerenders.
-14. Click `Restore current page` to restore the original sidebar for the current page.
-15. Toggle CleanView off and confirm the original sidebar remains visible.
+8. Use the Menu Items, Rename Labels, Quick Links, and Sidebar Style tabs.
+9. Click `Save View`. If the saved view is the active Current View, CleanView reapplies it to the active GHL tab.
+10. Uncheck `Show this view in popup`, save, and confirm the view is hidden from the popup dropdown.
+11. Recheck `Show this view in popup`, save, and confirm the view returns to the popup dropdown.
+12. Add a Quick Link with `LOCATION_ID` in the URL if needed.
+13. Enable a Sidebar Style preset and confirm the GHL sidebar updates.
+14. Change Sidebar Background Type to `Image`, enter an image URL, and confirm the preview updates.
+15. Adjust Image Fit, Image Position, Overlay Color, and Overlay Opacity, then click `Save View`.
+16. Set Sidebar Branding to `Keep default`, `Hide default`, and `Replace with custom` to confirm the preview updates.
+17. Save/apply `Hide default` and confirm the native GHL logo/header is hidden without removing it.
+18. Save/apply `Replace with custom` and confirm the custom logo/header appears once.
+19. Switch back to Solid or Gradient and confirm the old image background is removed after saving/applying.
+20. Navigate inside GoHighLevel and confirm the sidebar state reapplies after rerenders without duplicate branding.
+21. Click `Restore current page` to restore the original sidebar for the current page.
+22. Toggle CleanView off and confirm the original sidebar remains visible.
 
 ## Built-In Views
 
@@ -59,9 +65,11 @@ Built-in views are read-only. Duplicate a built-in view or create a personal vie
 - Visible sidebar items
 - Personal menu label overrides
 - CleanView Quick Links
-- Sidebar Style
+- Sidebar Style, including solid, gradient, URL-based image backgrounds, and sidebar branding mode
 
 Personal views are stored in `chrome.storage.local` on this browser.
+
+Use `Show this view in popup` to keep the popup Current View dropdown focused. Hidden views remain available in the View Builder and are not deleted.
 
 ## CleanView Quick Links
 
@@ -71,7 +79,7 @@ Use `LOCATION_ID` in a link URL when you want CleanView to substitute the curren
 
 ## CleanView Location Rules
 
-CleanView Location Rules map a GoHighLevel location id to a view. When a location rule exists, it takes priority over the global current view.
+CleanView Location Rules are feature-flagged off for the current MVP. Existing stored rules are preserved for future defaults work, but the popup and View Builder do not show location assignment controls.
 
 ## Restore All Items
 

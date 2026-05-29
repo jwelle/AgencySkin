@@ -8,12 +8,18 @@
   function defaultState() {
     return {
       version: namespace.version,
+      schemaVersion: 1,
       enabled: true,
       activePresetId: "builtin:simple",
       presets: {},
+      presetPreferences: {},
       locationRules: {},
       updatedAt: namespace.nowIso()
     };
+  }
+
+  function isPresetId(value) {
+    return /^(builtin|custom|view)[:_]/.test(String(value || ""));
   }
 
   function defaultSidebarStyle() {
@@ -25,6 +31,11 @@
       gradientStartColor: "",
       gradientEndColor: "",
       gradientDirection: "135deg",
+      backgroundImageUrl: "",
+      backgroundImageFit: "cover",
+      backgroundImagePosition: "center",
+      backgroundOverlayColor: "#000000",
+      backgroundOverlayOpacity: 0.35,
       textColor: "",
       activeBackgroundColor: "",
       activeTextColor: "",
@@ -32,18 +43,54 @@
       borderRadius: "",
       itemSpacing: "",
       sidebarPadding: "",
+      sidebarBrandingMode: "keep",
       logoUrl: "",
-      headerLabel: ""
+      headerLabel: "",
+      logoSize: "32px",
+      headerAlignment: "center"
     }, namespace.defaultSidebarStyle || {});
   }
 
   function normalizeSidebarStyle(style) {
     var normalized = Object.assign(defaultSidebarStyle(), style || {});
+    var allowedBackgroundTypes = ["solid", "gradient", "image"];
+    var allowedBrandingModes = ["keep", "hide", "replace"];
+    var allowedHeaderAlignments = ["left", "center", "right"];
     normalized.enabled = normalized.enabled === true;
     normalized.preset = normalized.preset || "default";
-    normalized.backgroundType = normalized.backgroundType === "gradient" ? "gradient" : "solid";
+    normalized.backgroundType = allowedBackgroundTypes.indexOf(normalized.backgroundType) === -1 ? "solid" : normalized.backgroundType;
     normalized.gradientDirection = normalized.gradientDirection || "135deg";
+    normalized.backgroundImageUrl = normalizeUrl(normalized.backgroundImageUrl);
+    normalized.backgroundImageFit = ["cover", "contain", "auto"].indexOf(normalized.backgroundImageFit) === -1 ? "cover" : normalized.backgroundImageFit;
+    normalized.backgroundImagePosition = normalized.backgroundImagePosition || "center";
+    normalized.backgroundOverlayColor = normalized.backgroundOverlayColor || "#000000";
+    normalized.backgroundOverlayOpacity = clampOpacity(normalized.backgroundOverlayOpacity);
+    normalized.sidebarBrandingMode = allowedBrandingModes.indexOf(normalized.sidebarBrandingMode) === -1 ? "keep" : normalized.sidebarBrandingMode;
+    normalized.logoUrl = normalizeUrl(normalized.logoUrl);
+    normalized.headerLabel = normalized.headerLabel || "";
+    normalized.logoSize = normalized.logoSize || "32px";
+    normalized.headerAlignment = allowedHeaderAlignments.indexOf(normalized.headerAlignment) === -1 ? "center" : normalized.headerAlignment;
     return normalized;
+  }
+
+  function normalizeUrl(url) {
+    var trimmed = String(url || "").trim();
+
+    if (!trimmed) {
+      return "";
+    }
+
+    return /^https?:\/\//i.test(trimmed) ? trimmed : "https://" + trimmed;
+  }
+
+  function clampOpacity(value) {
+    var numeric = Number(value);
+
+    if (Number.isNaN(numeric)) {
+      return 0.35;
+    }
+
+    return Math.min(1, Math.max(0, numeric));
   }
 
   function normalizeCustomLink(link) {
@@ -57,9 +104,19 @@
     };
   }
 
-  function normalizePreset(preset) {
+  function normalizePreset(preset, fallbackId) {
+    preset = preset || {};
+
+    var canUsePresetId = isPresetId(preset.id);
+    var canUseFallbackId = isPresetId(fallbackId);
+    var presetId = canUsePresetId ? preset.id : (canUseFallbackId ? fallbackId : namespace.createId("custom"));
+
+    if (!canUsePresetId && !canUseFallbackId) {
+      console.warn("[AgencySkin CleanView] Missing preset ID, generated fallback ID:", preset);
+    }
+
     return {
-      id: preset.id,
+      id: presetId,
       name: preset.name || preset.label || "Untitled Preset",
       description: preset.description || "",
       source: preset.source || "custom",
@@ -67,7 +124,19 @@
       labelOverrides: Object.assign({}, preset.labelOverrides || {}),
       customLinks: Array.isArray(preset.customLinks) ? preset.customLinks.map(normalizeCustomLink) : [],
       sidebarStyle: normalizeSidebarStyle(preset.sidebarStyle),
+      showInPopup: preset.showInPopup !== false,
+      archived: preset.archived === true,
       updatedAt: preset.updatedAt || namespace.nowIso()
+    };
+  }
+
+  function normalizePresetPreference(preference) {
+    preference = preference || {};
+
+    return {
+      showInPopup: preference.showInPopup !== false,
+      archived: preference.archived === true,
+      updatedAt: preference.updatedAt || namespace.nowIso()
     };
   }
 
@@ -90,11 +159,55 @@
 
   function normalizeState(state) {
     var normalized = Object.assign(defaultState(), state || {});
-    normalized.presets = normalized.presets || {};
+    var allPresets = null;
+    if (Array.isArray(normalized.presets)) {
+      normalized.presets = normalized.presets.reduce(function collectPresets(presets, preset) {
+        var normalizedPreset = normalizePreset(preset);
+        presets[normalizedPreset.id] = normalizedPreset;
+        return presets;
+      }, {});
+    } else {
+      normalized.presets = normalized.presets || {};
+    }
+    normalized.schemaVersion = normalized.schemaVersion || 1;
+    normalized.presetPreferences = normalized.presetPreferences && !Array.isArray(normalized.presetPreferences) ? normalized.presetPreferences : {};
     Object.keys(normalized.presets).forEach(function normalizeStoredPreset(presetId) {
-      normalized.presets[presetId] = normalizePreset(normalized.presets[presetId]);
+      var normalizedPreset = normalizePreset(normalized.presets[presetId], presetId);
+      if (normalizedPreset.id !== presetId) {
+        delete normalized.presets[presetId];
+      }
+      normalized.presets[normalizedPreset.id] = normalizedPreset;
     });
-    normalized.locationRules = normalized.locationRules || {};
+    Object.keys(normalized.presetPreferences).forEach(function normalizeStoredPreference(presetId) {
+      if (!isPresetId(presetId)) {
+        delete normalized.presetPreferences[presetId];
+        return;
+      }
+
+      normalized.presetPreferences[presetId] = normalizePresetPreference(normalized.presetPreferences[presetId]);
+    });
+    normalized.locationRules = normalized.locationRules && !Array.isArray(normalized.locationRules) ? normalized.locationRules : {};
+    allPresets = getAllPresets(normalized);
+    if (!allPresets[normalized.activePresetId]) {
+      console.warn("[AgencySkin CleanView] Active preset ID missing, falling back to built-in Simple View:", normalized.activePresetId);
+      normalized.activePresetId = "builtin:simple";
+    }
+    Object.keys(normalized.locationRules).forEach(function normalizeLocationRule(locationId) {
+      var rule = normalized.locationRules[locationId];
+      var presetId = typeof rule === "string" ? rule : rule && rule.presetId;
+
+      if (!presetId || !allPresets[presetId]) {
+        if (!isPresetId(presetId)) {
+          delete normalized.locationRules[locationId];
+          return;
+        }
+      }
+
+      normalized.locationRules[locationId] = {
+        presetId: presetId,
+        updatedAt: rule.updatedAt || normalized.updatedAt || namespace.nowIso()
+      };
+    });
     normalized.updatedAt = normalized.updatedAt || namespace.nowIso();
     return normalized;
   }
@@ -149,7 +262,23 @@
   }
 
   function getAllPresets(state) {
-    return Object.assign({}, namespace.builtInPresets || {}, (state && state.presets) || {});
+    var presets = Object.assign({}, namespace.builtInPresets || {}, (state && state.presets) || {});
+    var preferences = state && state.presetPreferences ? state.presetPreferences : {};
+    var normalized = {};
+
+    Object.keys(presets).forEach(function applyPresetPreference(presetId) {
+      var preset = normalizePreset(presets[presetId], presetId);
+      var preference = preferences[presetId];
+
+      if (preference) {
+        preset.showInPopup = preference.showInPopup !== false;
+        preset.archived = preference.archived === true;
+      }
+
+      normalized[preset.id] = preset;
+    });
+
+    return normalized;
   }
 
   function getPresetById(state, presetId) {
@@ -183,6 +312,7 @@
     normalizeCustomLink: normalizeCustomLink,
     normalizeSidebarStyle: normalizeSidebarStyle,
     normalizePreset: normalizePreset,
+    normalizePresetPreference: normalizePresetPreference,
     getState: getState,
     saveState: saveState,
     updateState: updateState,
