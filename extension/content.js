@@ -346,6 +346,7 @@
 
   function applySidebarBackground(sidebar, style) {
     var backgroundValue = getSidebarBackgroundValue(style);
+    var wrapper = null;
     var layer = null;
     var overlay = null;
     var imageOpacity = clampOpacity(getByPath(style, "imageSettings.opacity", 0.85));
@@ -362,12 +363,21 @@
 
     if (style.backgroundType === "image" || style.backgroundType === "pattern") {
       sidebar.style.background = styleValue(style.backgroundColor) || "#0f172a";
+      wrapper = document.createElement("div");
       layer = document.createElement("div");
       overlay = document.createElement("div");
+      wrapper.setAttribute("data-agencyskin-sidebar-bg-layer", "true");
+      wrapper.setAttribute("data-agencyskin-sidebar-bg-kind", "wrapper");
       layer.setAttribute("data-agencyskin-sidebar-bg-layer", "true");
       overlay.setAttribute("data-agencyskin-sidebar-bg-layer", "true");
       layer.setAttribute("data-agencyskin-sidebar-bg-kind", style.backgroundType);
       overlay.setAttribute("data-agencyskin-sidebar-bg-kind", "overlay");
+      wrapper.style.position = "absolute";
+      wrapper.style.inset = "0";
+      wrapper.style.pointerEvents = "none";
+      wrapper.style.zIndex = "0";
+      wrapper.style.overflow = "hidden";
+      wrapper.style.borderRadius = "inherit";
       layer.style.position = "absolute";
       layer.style.inset = "0";
       layer.style.pointerEvents = "none";
@@ -392,8 +402,9 @@
         layer.style.opacity = patternOpacity;
       }
 
-      sidebar.insertBefore(overlay, sidebar.firstChild);
-      sidebar.insertBefore(layer, sidebar.firstChild);
+      wrapper.appendChild(layer);
+      wrapper.appendChild(overlay);
+      sidebar.insertBefore(wrapper, sidebar.firstChild);
       return;
     }
 
@@ -428,7 +439,6 @@
       "}",
       "[data-agencyskin-cleanview-style-role='sidebar'] {",
       "isolation: isolate !important;",
-      "overflow: hidden !important;",
       "position: relative !important;",
       "}",
       "[data-agencyskin-cleanview-style-role='sidebar'] > *:not([data-agencyskin-sidebar-bg-layer='true']) {",

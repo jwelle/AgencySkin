@@ -242,6 +242,7 @@
       labelOverrides: Object.assign({}, preset.labelOverrides || {}),
       customLinks: Array.isArray(preset.customLinks) ? preset.customLinks.map(normalizeCustomLink) : [],
       sidebarStyle: normalizeSidebarStyle(preset.sidebarStyle),
+      profileMetadata: preset.profileMetadata && typeof preset.profileMetadata === "object" && !Array.isArray(preset.profileMetadata) ? clone(preset.profileMetadata) : null,
       showInPopup: preset.showInPopup !== false,
       archived: preset.archived === true,
       updatedAt: preset.updatedAt || namespace.nowIso()
@@ -424,7 +425,8 @@
         nextLink.id = namespace.createId("link");
         return nextLink;
       }),
-      sidebarStyle: normalizeSidebarStyle(sourcePreset.sidebarStyle)
+      sidebarStyle: normalizeSidebarStyle(sourcePreset.sidebarStyle),
+      profileMetadata: sourcePreset.profileMetadata || null
     });
   }
 

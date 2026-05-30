@@ -7,6 +7,9 @@
 - Sidebar background settings now store structured image, pattern, readability, favorite, and rotation configuration.
 - GoHighLevel sidebar backgrounds now apply through internal non-click-blocking background layers.
 - Phase 1 Profile JSON import/export was added to the CleanView Profile Builder.
+- Repository documentation now identifies the AgencySkin CleanView Chrome extension as the current shipping product.
+- The earlier client/server/live site theme builder docs were moved into `docs/legacy-theme-builder.md`.
+- `docs/extension-roadmap.md` now tracks MVP, post-MVP, hosted sync, and Chrome Web Store launch readiness.
 - Install Code Generator added to the AgencySkin dashboard.
 - Generated CSS uses current theme settings and hides only menu items disabled in the dashboard.
 - Optional hosted loader script snippet is shown separately and remains experimental.
@@ -27,6 +30,8 @@
 - `extension/assets/backgrounds/*.webp`
 - `README.md`
 - `CURRENT_STATE.md`
+- `docs/legacy-theme-builder.md`
+- `docs/extension-roadmap.md`
 
 ## How To Test
 
@@ -50,6 +55,7 @@
 
 ## Known Limitations
 
+- The Chrome extension is the current shipping product; the React/Express theme builder is retained as legacy/deferred reference.
 - Generated CSS is intended for MVP copy/paste testing and has not been validated against live GoHighLevel DOM updates.
 - The hosted loader script remains non-mutating and is reserved for a future hosted configuration workflow.
 - Selector coverage is limited to the current MVP menu registry.
@@ -59,4 +65,4 @@
 
 ## Recommended Next Step
 
-Deploy the Express app to a stable URL and replace the local loader snippet URL with the deployed loader URL once hosting is ready.
+Prepare the CleanView Chrome extension for Chrome Web Store submission using the launch checklist in `docs/extension-roadmap.md`. Treat Express deployment and hosted loader work as deferred legacy/future-hosted-sync work.

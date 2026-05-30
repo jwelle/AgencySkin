@@ -927,6 +927,139 @@
     return text;
   }
 
+  function isSafeHttpsUrl(value, maxLength) {
+    var text = String(value || "").trim();
+    var parsed = null;
+
+    if (!text || text.length > (maxLength || 1000)) {
+      return false;
+    }
+    if (!/^https:\/\//i.test(text) || hasUnsafeText(text) || /[\u0000-\u001f\u007f]/.test(text) || /javascript:|data:text\/html|expression\s*\(|<script/i.test(text)) {
+      return false;
+    }
+    try {
+      parsed = new URL(text);
+    } catch (error) {
+      return false;
+    }
+    return parsed.protocol === "https:" && Boolean(parsed.hostname);
+  }
+
+  function isSafeExternalImageUrl(value) {
+    var text = String(value || "").trim();
+    var parsed = null;
+    var path = "";
+
+    if (!isSafeHttpsUrl(text, 1000)) {
+      return false;
+    }
+    if (/[\u0000-\u001f\u007f]/.test(text) || /javascript:|data:|blob:|file:|chrome-extension:/i.test(text)) {
+      return false;
+    }
+    try {
+      parsed = new URL(text);
+    } catch (error) {
+      return false;
+    }
+    path = parsed.pathname.toLowerCase();
+    return /\.(png|jpe?g|webp|gif|svg)$/.test(path);
+  }
+
+  function sanitizeOptionalMetadataText(value, maxLength, fieldName, errors) {
+    if (value === undefined || value === null || value === "") {
+      return "";
+    }
+    return sanitizeProfileText(value, maxLength, fieldName, errors, false);
+  }
+
+  function validateBusinessContext(context, errors) {
+    var metadata = {};
+
+    if (context === undefined || context === null) {
+      return metadata;
+    }
+    if (typeof context !== "object" || Array.isArray(context)) {
+      errors.push("businessContext must be an object.");
+      return metadata;
+    }
+
+    metadata.companyName = sanitizeOptionalMetadataText(context.companyName, 120, "businessContext.companyName", errors);
+    if (context.website !== undefined && context.website !== null && context.website !== "") {
+      if (typeof context.website !== "string" || !isSafeHttpsUrl(context.website, 500)) {
+        errors.push("businessContext.website must be a safe HTTPS URL.");
+      } else {
+        metadata.website = context.website.trim();
+      }
+    }
+    metadata.industry = sanitizeOptionalMetadataText(context.industry, 80, "businessContext.industry", errors);
+    metadata.role = sanitizeOptionalMetadataText(context.role, 80, "businessContext.role", errors);
+    metadata.audience = sanitizeOptionalMetadataText(context.audience, 160, "businessContext.audience", errors);
+    return metadata;
+  }
+
+  function validateDesignContext(context, errors) {
+    var metadata = {};
+
+    if (context === undefined || context === null) {
+      return metadata;
+    }
+    if (typeof context !== "object" || Array.isArray(context)) {
+      errors.push("designContext must be an object.");
+      return metadata;
+    }
+
+    metadata.styleIntent = sanitizeOptionalMetadataText(context.styleIntent, 160, "designContext.styleIntent", errors);
+    if (context.primaryColor !== undefined && context.primaryColor !== null && context.primaryColor !== "") {
+      metadata.primaryColor = requireHexProfileColor(context.primaryColor, "", "designContext.primaryColor", errors);
+    }
+    if (context.accentColor !== undefined && context.accentColor !== null && context.accentColor !== "") {
+      metadata.accentColor = requireHexProfileColor(context.accentColor, "", "designContext.accentColor", errors);
+    }
+    metadata.reasoningSummary = sanitizeOptionalMetadataText(context.reasoningSummary, 300, "designContext.reasoningSummary", errors);
+    return metadata;
+  }
+
+  function validateAiSummary(summary, errors) {
+    var metadata = {};
+
+    if (summary === undefined || summary === null) {
+      return metadata;
+    }
+    if (typeof summary !== "object" || Array.isArray(summary)) {
+      errors.push("aiSummary must be an object.");
+      return metadata;
+    }
+
+    metadata.plainEnglishSummary = sanitizeOptionalMetadataText(summary.plainEnglishSummary, 300, "aiSummary.plainEnglishSummary", errors);
+    metadata.hiddenBecause = sanitizeOptionalMetadataText(summary.hiddenBecause, 300, "aiSummary.hiddenBecause", errors);
+    metadata.bestFor = sanitizeOptionalMetadataText(summary.bestFor, 240, "aiSummary.bestFor", errors);
+    return metadata;
+  }
+
+  function pruneEmptyMetadataGroup(group) {
+    var cleaned = {};
+
+    Object.keys(group || {}).forEach(function keepValue(key) {
+      if (group[key]) {
+        cleaned[key] = group[key];
+      }
+    });
+    return cleaned;
+  }
+
+  function normalizeProfileMetadata(profile, errors) {
+    var metadata = {
+      businessContext: pruneEmptyMetadataGroup(validateBusinessContext(profile.businessContext, errors)),
+      designContext: pruneEmptyMetadataGroup(validateDesignContext(profile.designContext, errors)),
+      aiSummary: pruneEmptyMetadataGroup(validateAiSummary(profile.aiSummary, errors))
+    };
+
+    if (!Object.keys(metadata.businessContext).length && !Object.keys(metadata.designContext).length && !Object.keys(metadata.aiSummary).length) {
+      return null;
+    }
+    return metadata;
+  }
+
   function findDangerousProfileFields(value, path, errors) {
     if (typeof value === "string") {
       if (/<[^>]*>|javascript:|data:text\/html|expression\s*\(/i.test(value)) {
@@ -1199,8 +1332,8 @@
     };
 
     if (normalized.sidebarBrandingMode === "replace") {
-      exportedStyle.global.logo.source = normalized.customLogoDataUrl ? "uploaded" : "default";
-      exportedStyle.global.logo.url = normalized.customLogoDataUrl || normalized.logoUrl || null;
+      exportedStyle.global.logo.source = normalized.customLogoDataUrl ? "uploaded" : isSafeExternalImageUrl(normalized.logoUrl) ? "external" : "default";
+      exportedStyle.global.logo.url = normalized.customLogoDataUrl || (isSafeExternalImageUrl(normalized.logoUrl) ? normalized.logoUrl : null);
     }
 
     if (exportedStyle.mode === "custom") {
@@ -1219,9 +1352,9 @@
           fade: 1 - clampOpacity(normalized.backgroundOpacity === undefined ? 1 : normalized.backgroundOpacity)
         } : null,
         visual: customType === "visual" ? {
-          assetId: normalized.backgroundAssetId || null,
-          assetSource: normalized.customImageDataUrl ? "uploaded" : "curated",
-          assetUrl: normalized.customImageDataUrl || null,
+          assetId: normalized.backgroundImageUrl && !normalized.customImageDataUrl ? null : normalized.backgroundAssetId || null,
+          assetSource: normalized.customImageDataUrl ? "uploaded" : isSafeExternalImageUrl(normalized.backgroundImageUrl) ? "external" : "curated",
+          assetUrl: normalized.customImageDataUrl || (isSafeExternalImageUrl(normalized.backgroundImageUrl) ? normalized.backgroundImageUrl : null),
           positionX: getByPath(normalized, "imageSettings.positionX", 50),
           positionY: getByPath(normalized, "imageSettings.positionY", 50),
           zoom: getByPath(normalized, "imageSettings.scale", 1),
@@ -1239,7 +1372,7 @@
     var logo = globalSettings && globalSettings.logo ? globalSettings.logo : {};
     var shape = globalSettings && globalSettings.shape ? globalSettings.shape : {};
     var menuColors = globalSettings && globalSettings.menuColors ? globalSettings.menuColors : {};
-    var allowedLogoSources = ["default", "uploaded", "none"];
+    var allowedLogoSources = ["default", "uploaded", "external", "none"];
     var allowedLogoSizes = ["small", "medium", "large"];
     var allowedSpacing = ["compact", "comfortable", "spacious"];
     var allowedShadows = ["none", "soft", "medium", "strong"];
@@ -1259,8 +1392,19 @@
       style.sidebarBrandingMode = "replace";
       if (logo.url && isSafeImageDataUrl(logo.url)) {
         style.customLogoDataUrl = logo.url;
+        style.logoUrl = "";
       } else if (logo.url) {
         errors.push("sidebarStyle.global.logo.url must be a safe uploaded image data URL.");
+      } else {
+        errors.push("sidebarStyle.global.logo.url is required for uploaded logos.");
+      }
+    } else if (logo.source === "external") {
+      style.sidebarBrandingMode = "replace";
+      if (logo.url && isSafeExternalImageUrl(logo.url)) {
+        style.logoUrl = logo.url.trim();
+        style.customLogoDataUrl = "";
+      } else {
+        errors.push("sidebarStyle.global.logo.url must be a safe HTTPS image URL.");
       }
     } else if (logo.source === "default") {
       style.sidebarBrandingMode = logo.showBrandName === false ? "keep" : "replace";
@@ -1386,11 +1530,23 @@
         } else if (custom.visual && custom.visual.assetSource === "uploaded") {
           if (custom.visual.assetUrl && isSafeImageDataUrl(custom.visual.assetUrl)) {
             style.customImageDataUrl = custom.visual.assetUrl;
+            style.backgroundImageUrl = "";
+            style.backgroundAssetId = "";
           } else if (custom.visual.assetUrl) {
             errors.push("sidebarStyle.custom.visual.assetUrl must be a safe uploaded image data URL.");
           }
+        } else if (custom.visual && custom.visual.assetSource === "external") {
+          if (custom.visual.assetUrl && isSafeExternalImageUrl(custom.visual.assetUrl)) {
+            style.backgroundImageUrl = custom.visual.assetUrl.trim();
+            style.customImageDataUrl = "";
+            style.backgroundAssetId = "";
+            style.backgroundType = "image";
+            style.stylePath = "custom";
+          } else {
+            errors.push("sidebarStyle.custom.visual.assetUrl must be a safe HTTPS image URL.");
+          }
         } else if (custom.visual && custom.visual.assetSource) {
-          errors.push("sidebarStyle.custom.visual.assetSource must be curated or uploaded.");
+          errors.push("sidebarStyle.custom.visual.assetSource must be curated, uploaded, or external.");
         }
         style.imageSettings = Object.assign({}, style.imageSettings || {}, {
           positionX: clampNumber(custom.visual && custom.visual.positionX, 0, 100, 50),
@@ -1412,13 +1568,15 @@
       return !visibleSet.has(key);
     });
     var renameLabels = {};
+    var profileMetadata = preset.profileMetadata && typeof preset.profileMetadata === "object" && !Array.isArray(preset.profileMetadata) ? preset.profileMetadata : null;
+    var exportedJson = null;
 
     Object.keys(preset.labelOverrides || {}).forEach(function exportRename(key) {
       var label = registry[key] && registry[key].label ? registry[key].label : key;
       renameLabels[label] = preset.labelOverrides[key];
     });
 
-    return {
+    exportedJson = {
       cleanViewProfile: true,
       schemaVersion: cleanViewProfileSchemaVersion,
       type: "profile",
@@ -1446,6 +1604,20 @@
         })
       }
     };
+
+    if (profileMetadata) {
+      if (profileMetadata.businessContext) {
+        exportedJson.profile.businessContext = Object.assign({}, profileMetadata.businessContext);
+      }
+      if (profileMetadata.designContext) {
+        exportedJson.profile.designContext = Object.assign({}, profileMetadata.designContext);
+      }
+      if (profileMetadata.aiSummary) {
+        exportedJson.profile.aiSummary = Object.assign({}, profileMetadata.aiSummary);
+      }
+    }
+
+    return exportedJson;
   }
 
   function importProfileJsonObject(profileJson) {
@@ -1454,6 +1626,7 @@
     var profile = profileJson && profileJson.profile;
     var name = "";
     var description = "";
+    var profileMetadata = null;
     var preset = null;
 
     if (!profileJson || typeof profileJson !== "object" || Array.isArray(profileJson)) {
@@ -1478,6 +1651,7 @@
 
     name = sanitizeProfileText(profile.name, 80, "profile.name", errors, true);
     description = sanitizeProfileText(profile.description || "", 240, "profile.description", errors, false);
+    profileMetadata = normalizeProfileMetadata(profile, errors);
 
     preset = storage.normalizePreset({
       id: namespace.createId("custom"),
@@ -1487,6 +1661,7 @@
       labelOverrides: resolveRenameLabelsFromProfileJson(profile.renameLabels, errors),
       customLinks: resolveQuickLinksFromProfileJson(profile.quickLinks, errors),
       sidebarStyle: importSidebarStyleFromProfileJson(profile.sidebarStyle, errors, warnings),
+      profileMetadata: profileMetadata,
       showInPopup: true
     });
 
@@ -1495,7 +1670,8 @@
       errors: errors,
       warnings: warnings,
       preset: preset,
-      source: profile.source || null
+      source: profile.source || null,
+      profileMetadata: profileMetadata
     };
   }
 
@@ -1541,10 +1717,28 @@
     container.appendChild(list);
   }
 
+  function appendPreviewText(container, title, text) {
+    var heading = document.createElement("p");
+    var body = document.createElement("p");
+
+    if (!text) {
+      return;
+    }
+    heading.textContent = title;
+    body.textContent = text;
+    container.appendChild(heading);
+    container.appendChild(body);
+  }
+
   function renderImportPreview(result) {
     var title = document.createElement("h3");
     var description = document.createElement("p");
     var source = document.createElement("p");
+    var metadata = null;
+    var businessContext = null;
+    var designContext = null;
+    var aiSummary = null;
+    var businessSummary = "";
     var visibleSet = null;
     var hiddenMenus = [];
     var visibleMenus = [];
@@ -1588,6 +1782,11 @@
     quickLinks = (result.preset.customLinks || []).map(function labelLink(link) {
       return link.label;
     });
+    metadata = result.preset.profileMetadata || result.profileMetadata || null;
+    businessContext = metadata && metadata.businessContext ? metadata.businessContext : {};
+    designContext = metadata && metadata.designContext ? metadata.designContext : {};
+    aiSummary = metadata && metadata.aiSummary ? metadata.aiSummary : {};
+    businessSummary = [businessContext.companyName, businessContext.industry, businessContext.role].filter(Boolean).join(" - ");
     style = result.preset.sidebarStyle || {};
     styleSummary = style.stylePath === "custom" ?
       "Custom " + (style.backgroundType === "image" || style.backgroundType === "pattern" ? "Visual" : style.backgroundType || "Solid") :
@@ -1601,6 +1800,11 @@
       source.textContent = "Source: " + JSON.stringify(result.source);
       profileImportPreview.appendChild(source);
     }
+    appendPreviewText(profileImportPreview, "Best For", aiSummary.bestFor);
+    appendPreviewText(profileImportPreview, "Plain-English Summary", aiSummary.plainEnglishSummary);
+    appendPreviewText(profileImportPreview, "Why These Menus Were Hidden", aiSummary.hiddenBecause);
+    appendPreviewText(profileImportPreview, "Business", businessSummary);
+    appendPreviewText(profileImportPreview, "Design Intent", designContext.styleIntent);
     appendPreviewList(profileImportPreview, "Includes", [
       "Sidebar Style: " + styleSummary,
       "Hidden Menus: " + hiddenMenus.length + (hiddenMenus.length ? " (" + hiddenMenus.join(", ") + ")" : ""),
