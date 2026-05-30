@@ -193,8 +193,16 @@ button.secondary:hover {
   justify-content: flex-end;
 }
 
+.profile-header-actions {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
 .profile-actions-field {
-  min-width: 220px;
+  min-width: 160px;
 }
 
 .onboarding-panel {
@@ -263,6 +271,25 @@ button.secondary:hover {
 .profile-transfer-section {
   display: grid;
   gap: 0.85rem;
+}
+
+.create-profile-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.create-profile-option {
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-sm);
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.85rem;
+}
+
+.create-profile-option button {
+  align-self: end;
 }
 
 textarea {
@@ -792,9 +819,14 @@ textarea {
   }
 
   .onboarding-choice-grid,
-  .template-notice {
+  .template-notice,
+  .create-profile-grid {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .profile-header-actions {
+    justify-content: flex-start;
   }
 
   .curated-preset-grid {

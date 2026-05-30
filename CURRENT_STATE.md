@@ -46,7 +46,7 @@
 14. Confirm the Sidebar Style tab uses a guided `Use Preset` / `Custom Configuration` editor.
 15. Confirm the right panel keeps a tall sticky sidebar preview, Menu Colors, and Save / Reset controls visible while scrolling.
 16. Save a custom Profile and apply it on a supported GoHighLevel page.
-17. Export a Profile JSON file from Profile Actions, then import it as a new editable Profile.
+17. Export a Profile JSON file from `More`, then import it as a new editable Profile through `Create Profile`.
 
 ## Known Limitations
 

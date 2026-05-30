@@ -20,7 +20,8 @@
   var blankProfileName = document.getElementById("blankProfileName");
   var onboardingCreateBlankButton = document.getElementById("onboardingCreateBlankButton");
   var onboardingImportProfileButton = document.getElementById("onboardingImportProfileButton");
-  var profileActionsSelect = document.getElementById("profileActionsSelect");
+  var createProfileButton = document.getElementById("createProfileButton");
+  var moreProfileActionsSelect = document.getElementById("moreProfileActionsSelect");
   var defaultPresetSelect = document.getElementById("defaultPresetSelect");
   var presetName = document.getElementById("presetName");
   var presetDescription = document.getElementById("presetDescription");
@@ -61,6 +62,12 @@
   var profileTransferTitle = document.getElementById("profileTransferTitle");
   var profileTransferSubtitle = document.getElementById("profileTransferSubtitle");
   var profileTransferCloseButton = document.getElementById("profileTransferCloseButton");
+  var profileCreatePanel = document.getElementById("profileCreatePanel");
+  var createBlankProfileName = document.getElementById("createBlankProfileName");
+  var createBlankProfileModalButton = document.getElementById("createBlankProfileModalButton");
+  var createTemplateSelect = document.getElementById("createTemplateSelect");
+  var createFromTemplateModalButton = document.getElementById("createFromTemplateModalButton");
+  var createImportProfileButton = document.getElementById("createImportProfileButton");
   var profileImportPanel = document.getElementById("profileImportPanel");
   var profileExportPanel = document.getElementById("profileExportPanel");
   var profileImportTextarea = document.getElementById("profileImportTextarea");
@@ -381,17 +388,21 @@
   }
 
   function renderOnboardingTemplateSelect() {
-    if (!onboardingTemplateSelect) {
+    fillTemplateSelect(onboardingTemplateSelect);
+  }
+
+  function fillTemplateSelect(select) {
+    if (!select) {
       return;
     }
 
-    onboardingTemplateSelect.innerHTML = "";
+    select.innerHTML = "";
     templateIds().forEach(function addTemplateOption(presetId) {
       var option = document.createElement("option");
       var preset = allPresets()[presetId];
       option.value = presetId;
       option.textContent = templateDisplayName(preset);
-      onboardingTemplateSelect.appendChild(option);
+      select.appendChild(option);
     });
   }
 
@@ -1620,6 +1631,21 @@
     }
 
     profileTransferModal.hidden = false;
+    if (mode === "create") {
+      pendingImportedProfile = null;
+      profileTransferTitle.textContent = "How would you like to start?";
+      profileTransferSubtitle.textContent = "Create a new editable CleanView Profile.";
+      profileCreatePanel.hidden = false;
+      profileImportPanel.hidden = true;
+      profileExportPanel.hidden = true;
+      fillTemplateSelect(createTemplateSelect);
+      if (createBlankProfileName) {
+        createBlankProfileName.value = "My CleanView";
+        createBlankProfileName.focus();
+      }
+      return;
+    }
+
     if (mode === "export") {
       if (!isEditableProfile(preset)) {
         closeProfileTransferModal();
@@ -1630,6 +1656,7 @@
       currentExportFilename = safeProfileFilename(preset.name || preset.label);
       profileTransferTitle.textContent = "Export Profile";
       profileTransferSubtitle.textContent = "Export this Profile as CleanView JSON.";
+      profileCreatePanel.hidden = true;
       profileImportPanel.hidden = true;
       profileExportPanel.hidden = false;
       profileExportTextarea.value = currentExportJson;
@@ -1640,6 +1667,7 @@
     pendingImportedProfile = null;
     profileTransferTitle.textContent = "Import Profile";
     profileTransferSubtitle.textContent = "Paste CleanView Profile JSON or upload a .json file.";
+    profileCreatePanel.hidden = true;
     profileImportPanel.hidden = false;
     profileExportPanel.hidden = true;
     profileImportTextarea.value = "";
@@ -3165,24 +3193,16 @@
     persistPreset(pendingImportedProfile, "Imported successfully. Active Profile: " + pendingImportedProfile.name + ".", false);
   }
 
-  function handleProfileAction(action) {
-    var selectedTemplateId = templateIds()[0] || "builtin:simple";
-
+  function handleMoreAction(action) {
     if (!action) {
       return;
     }
 
-    if (action === "create_blank") {
-      document.getElementById("createPresetButton").click();
-    } else if (action === "create_template") {
-      if (selectedPreset() && selectedPreset().source === "builtin") {
-        createProfileFromPreset(selectedPresetId);
-      } else {
-        selectedPresetId = selectedTemplateId;
-        render();
-        setStatus("Choose a Template, then select Create My Profile.");
+    if (action === "duplicate") {
+      if (!isEditableProfile(selectedPreset())) {
+        setStatus("Create My Profile before duplicating a Template.", true);
+        return;
       }
-    } else if (action === "duplicate") {
       document.getElementById("duplicatePresetButton").click();
     } else if (action === "rename") {
       if (!isEditableProfile(selectedPreset())) {
@@ -3192,8 +3212,6 @@
         presetName.select();
         setStatus("Update the Profile Name field, then Save Profile.");
       }
-    } else if (action === "import") {
-      openProfileTransferModal("import");
     } else if (action === "export") {
       openProfileTransferModal("export");
     } else if (action === "copy") {
@@ -3227,6 +3245,32 @@
     persistSelectedView("Profile saved.", true);
   });
 
+  if (createProfileButton) {
+    createProfileButton.addEventListener("click", function openCreateProfile() {
+      openProfileTransferModal("create");
+    });
+  }
+
+  if (createBlankProfileModalButton) {
+    createBlankProfileModalButton.addEventListener("click", function createBlankFromModal() {
+      closeProfileTransferModal();
+      createBlankProfile(createBlankProfileName.value || "My CleanView");
+    });
+  }
+
+  if (createFromTemplateModalButton) {
+    createFromTemplateModalButton.addEventListener("click", function createFromTemplateModal() {
+      closeProfileTransferModal();
+      createProfileFromPreset(createTemplateSelect.value || "builtin:simple");
+    });
+  }
+
+  if (createImportProfileButton) {
+    createImportProfileButton.addEventListener("click", function chooseImportCreationPath() {
+      openProfileTransferModal("import");
+    });
+  }
+
   if (createProfileFromTemplateButton) {
     createProfileFromTemplateButton.addEventListener("click", function createFromSelectedTemplate() {
       createProfileFromPreset(selectedPresetId);
@@ -3251,10 +3295,10 @@
     });
   }
 
-  if (profileActionsSelect) {
-    profileActionsSelect.addEventListener("change", function chooseProfileAction() {
-      handleProfileAction(profileActionsSelect.value);
-      profileActionsSelect.value = "";
+  if (moreProfileActionsSelect) {
+    moreProfileActionsSelect.addEventListener("change", function chooseMoreProfileAction() {
+      handleMoreAction(moreProfileActionsSelect.value);
+      moreProfileActionsSelect.value = "";
     });
   }
 
@@ -3325,6 +3369,12 @@
 
   document.getElementById("deletePresetButton").addEventListener("click", function deletePreset() {
     if (!isCustomPreset(selectedPreset())) {
+      setStatus("Create My Profile before deleting a Template.", true);
+      return;
+    }
+
+    if (!window.confirm("Delete this Profile? This cannot be undone.")) {
+      setStatus("Delete cancelled.");
       return;
     }
 

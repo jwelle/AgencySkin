@@ -53,20 +53,20 @@
       <section id="profileManagementPanel" class="panel">
         <div class="panel-header">
           <h2>My Profiles</h2>
-          <label class="field profile-actions-field" for="profileActionsSelect">
-            Profile Actions
-            <select id="profileActionsSelect">
-              <option value="">Choose action...</option>
-              <option value="create_blank">Create New Profile</option>
-              <option value="create_template">Create from Template</option>
-              <option value="duplicate">Duplicate Profile</option>
-              <option value="rename">Rename Profile</option>
-              <option value="import">Import Profile</option>
-              <option value="export">Export Profile</option>
-              <option value="copy">Copy Profile JSON</option>
-              <option value="delete">Delete Profile</option>
-            </select>
-          </label>
+          <div class="profile-header-actions">
+            <button id="createProfileButton" type="button">Create Profile</button>
+            <label class="field profile-actions-field" for="moreProfileActionsSelect">
+              More
+              <select id="moreProfileActionsSelect">
+                <option value="">Choose action...</option>
+                <option value="duplicate">Duplicate Profile</option>
+                <option value="rename">Rename Profile</option>
+                <option value="export">Export Profile</option>
+                <option value="copy">Copy Profile JSON</option>
+                <option value="delete">Delete Profile</option>
+              </select>
+            </label>
+          </div>
           <div class="button-row compact" hidden>
             <button id="duplicatePresetButton" class="secondary" type="button">Create My Profile</button>
             <button id="createPresetButton" type="button">Create Blank Profile</button>
@@ -305,6 +305,34 @@
               <p id="profileTransferSubtitle">Paste CleanView Profile JSON or upload a .json file.</p>
             </div>
             <button id="profileTransferCloseButton" class="secondary" type="button">Cancel</button>
+          </div>
+
+          <div id="profileCreatePanel" class="profile-transfer-section" hidden>
+            <div class="create-profile-grid">
+              <section class="create-profile-option">
+                <h3>Start Blank</h3>
+                <p class="help-text">Create a new editable Profile from scratch.</p>
+                <label class="field" for="createBlankProfileName">
+                  Profile Name
+                  <input id="createBlankProfileName" type="text" value="My CleanView">
+                </label>
+                <button id="createBlankProfileModalButton" type="button">Create Profile</button>
+              </section>
+              <section class="create-profile-option">
+                <h3>Start From Template</h3>
+                <p class="help-text">Choose a prebuilt Template and create your own editable version.</p>
+                <label class="field" for="createTemplateSelect">
+                  Template
+                  <select id="createTemplateSelect"></select>
+                </label>
+                <button id="createFromTemplateModalButton" type="button">Create My Profile</button>
+              </section>
+              <section class="create-profile-option">
+                <h3>Import Profile JSON</h3>
+                <p class="help-text">Paste or upload a CleanView Profile shared by an admin, teammate, or AI agent.</p>
+                <button id="createImportProfileButton" type="button">Import Profile JSON</button>
+              </section>
+            </div>
           </div>
 
           <div id="profileImportPanel" class="profile-transfer-section">
