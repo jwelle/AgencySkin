@@ -1097,7 +1097,7 @@
     var preset = locationPreset || activePreset || storage.getPresetById(state, "builtin:simple");
 
     if (preset) {
-      console.log("[AgencySkin CleanView] Active view applied:", {
+      console.log("[AgencySkin CleanView] Active Profile applied:", {
         id: preset.id,
         name: preset.name || preset.label
       });

@@ -93,6 +93,10 @@ h3 {
   padding: 1rem;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .builder-panel {
   align-items: stretch;
 }
@@ -187,6 +191,41 @@ button.secondary:hover {
 
 .button-row.compact {
   justify-content: flex-end;
+}
+
+.onboarding-panel {
+  gap: 1.25rem;
+}
+
+.onboarding-choice-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.onboarding-choice {
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-sm);
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.template-notice {
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--as-radius-sm);
+  display: flex;
+  gap: 0.85rem;
+  justify-content: space-between;
+  padding: 0.85rem;
+}
+
+.template-notice p {
+  color: var(--as-text);
+  font-size: 0.9rem;
+  margin: 0;
 }
 
 .menu-actions {
@@ -682,6 +721,12 @@ button.secondary:hover {
   }
 
   .two-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .onboarding-choice-grid,
+  .template-notice {
+    display: grid;
     grid-template-columns: 1fr;
   }
 

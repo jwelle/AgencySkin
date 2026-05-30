@@ -200,8 +200,8 @@
   namespace.builtInPresets = {
     "builtin:simple": {
       id: "builtin:simple",
-      label: "Simple View",
-      name: "Simple View",
+      label: "Simple Template",
+      name: "Simple Template",
       description: "A clean workspace with core day-to-day menu items.",
       source: "builtin",
       visibleItems: without(["memberships", "communities", "app_marketplace", "payments", "sites"]),
@@ -213,8 +213,8 @@
     },
     "builtin:sales": {
       id: "builtin:sales",
-      label: "Sales View",
-      name: "Sales View",
+      label: "Sales Template",
+      name: "Sales Template",
       description: "Clean workspace for sales reps and appointment setters.",
       source: "builtin",
       visibleItems: without(["memberships", "communities", "app_marketplace", "sites"]),
@@ -227,8 +227,8 @@
     },
     "builtin:marketing": {
       id: "builtin:marketing",
-      label: "Marketing View",
-      name: "Marketing View",
+      label: "Marketing Template",
+      name: "Marketing Template",
       description: "Workspace focused on marketing, sites, and campaign work.",
       source: "builtin",
       visibleItems: without(["payments", "memberships", "communities", "app_marketplace"]),
@@ -240,8 +240,8 @@
     },
     "builtin:admin": {
       id: "builtin:admin",
-      label: "Admin View",
-      name: "Admin View",
+      label: "Admin Template",
+      name: "Admin Template",
       description: "Administrative workspace with most standard tools visible.",
       source: "builtin",
       visibleItems: without(["communities", "memberships", "app_marketplace"]),
@@ -252,8 +252,8 @@
     },
     "builtin:loan_officer": {
       id: "builtin:loan_officer",
-      label: "Loan Officer View",
-      name: "Loan Officer View",
+      label: "Loan Officer Template",
+      name: "Loan Officer Template",
       description: "Workspace for loan officers and mortgage teams.",
       source: "builtin",
       visibleItems: without(["memberships", "communities", "app_marketplace", "payments"]),
@@ -267,8 +267,8 @@
     },
     "builtin:blank": {
       id: "builtin:blank",
-      label: "Blank Custom View",
-      name: "Blank Custom View",
+      label: "Blank Profile Template",
+      name: "Blank Profile Template",
       description: "A starting point with no hidden items or label changes.",
       source: "builtin",
       visibleItems: allMenuKeys.slice(),

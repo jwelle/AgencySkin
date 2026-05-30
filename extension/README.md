@@ -6,15 +6,15 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 
 ## What CleanView Does
 
-- Switch between built-in sidebar views instantly.
-- Create personal CleanView Views.
-- Duplicate built-in views into editable personal views.
+- Switch between sidebar Profiles instantly.
+- Create personal CleanView Profiles.
+- Create editable Profiles from Templates.
 - Hide registered GoHighLevel sidebar menu items.
 - Rename registered GoHighLevel sidebar labels for your browser.
 - Add CleanView Quick Links as personal shortcuts in the sidebar.
-- Apply optional per-view sidebar styling.
+- Apply optional per-Profile sidebar styling.
 - Reset the current page back to the original GoHighLevel sidebar.
-- Enable or disable CleanView without deleting saved views.
+- Enable or disable CleanView without deleting saved Profiles.
 
 ## Load Unpacked in Chrome
 
@@ -29,18 +29,18 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 1. Open `https://app.gohighlevel.com/`.
 2. Open the AgencySkin extension popup.
 3. Confirm the popup shows `CleanView`.
-4. Choose `Simple View` or another Current View.
-5. Confirm the selected view applies immediately.
-6. Click `Edit views`.
-7. Duplicate a built-in view or create a new custom view.
+4. Choose an Active Profile.
+5. Confirm the selected Profile applies immediately.
+6. Click `Open Builder`.
+7. Create a Profile from a Template or create a blank Profile.
 8. Use the Menu Items, Rename Labels, Quick Links, and Sidebar Style tabs.
-9. Click `Save View`. If the saved view is the active Current View, CleanView reapplies it to the active GHL tab.
-10. Uncheck `Show this view in popup`, save, and confirm the view is hidden from the popup dropdown.
-11. Recheck `Show this view in popup`, save, and confirm the view returns to the popup dropdown.
+9. Click `Save Profile`. If the saved Profile is active, CleanView reapplies it to the active GHL tab.
+10. Uncheck `Show this Profile in popup`, save, and confirm the Profile is hidden from the popup dropdown.
+11. Recheck `Show this Profile in popup`, save, and confirm the Profile returns to the popup dropdown.
 12. Add a Quick Link with `LOCATION_ID` in the URL if needed.
 13. Enable a Sidebar Style preset and confirm the GHL sidebar updates.
 14. Confirm Sidebar Style uses a two-column guided editor with Global Sidebar Styling and a `Use Preset` / `Custom Configuration` selector on the left, plus sticky preview and Menu Colors on the right.
-15. Confirm `Use Preset` hides custom background controls, then switch to `Custom Configuration` and test Solid, Gradient, and Visual Image before clicking `Save View`.
+15. Confirm `Use Preset` hides custom background controls, then switch to `Custom Configuration` and test Solid, Gradient, and Visual Image before clicking `Save Profile`.
 16. Set Sidebar Branding to `Keep default`, `Hide default`, and `Replace with custom` to confirm the preview updates.
 17. Save/apply `Hide default` and confirm the native GHL logo/header is hidden without removing it.
 18. Save/apply `Replace with custom` and confirm the custom logo/header appears once.
@@ -49,27 +49,26 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 21. Click `Restore current page` to restore the original sidebar for the current page.
 22. Toggle CleanView off and confirm the original sidebar remains visible.
 
-## Built-In Views
+## Templates
 
-- Simple View
-- Sales View
-- Marketing View
-- Admin View
-- Loan Officer View
-- Blank Custom View
+- Simple Template
+- Sales Template
+- Marketing Template
+- Admin Template
+- Loan Officer Template
 
-## CleanView Views
+## CleanView Profiles
 
-Built-in views are read-only. Duplicate a built-in view or create a personal view to edit:
+Templates are read-only starting points. Create a Profile from a Template or create a blank Profile to edit:
 
 - Visible sidebar items
 - Personal menu label overrides
 - CleanView Quick Links
 - Sidebar Style, including curated presets, visual backgrounds, controlled rotation, and sidebar branding mode
 
-Personal views are stored in `chrome.storage.local` on this browser.
+Personal Profiles are stored in `chrome.storage.local` on this browser.
 
-Use `Show this view in popup` to keep the popup Current View dropdown focused. Hidden views remain available in the View Builder and are not deleted.
+Use `Show this Profile in popup` to keep the popup Active Profile dropdown focused. Hidden Profiles remain available in the Profile Builder and are not deleted.
 
 ## CleanView Quick Links
 
@@ -79,11 +78,11 @@ Use `LOCATION_ID` in a link URL when you want CleanView to substitute the curren
 
 ## CleanView Location Rules
 
-CleanView Location Rules are feature-flagged off for the current MVP. Existing stored rules are preserved for future defaults work, but the popup and View Builder do not show location assignment controls.
+CleanView Location Rules are feature-flagged off for the current MVP. Existing stored rules are preserved for future defaults work, but the popup and Profile Builder do not show location assignment controls.
 
 ## Restore All Items
 
-Use `Restore current page` to restore the current page to the original GoHighLevel sidebar. This does not delete saved views or location rules.
+Use `Restore current page` to restore the current page to the original GoHighLevel sidebar. This does not delete saved Profiles or location rules.
 
 Turn off `Enable CleanView` to stop automatic reapplication.
 

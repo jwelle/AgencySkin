@@ -2,7 +2,7 @@
 
 ## Added
 
-- CleanView Sidebar Style is now the first View Builder tab.
+- CleanView Sidebar Style is now the first Profile Builder tab.
 - Curated sidebar style cards, bundled visual backgrounds, pattern-backed presets, and controlled Curated Rotation were added to the Chrome extension.
 - Sidebar background settings now store structured image, pattern, readability, favorite, and rotation configuration.
 - GoHighLevel sidebar backgrounds now apply through internal non-click-blocking background layers.
@@ -40,11 +40,11 @@
 9. Confirm hidden menu items generate `display: none !important` CSS rules.
 10. Use both copy buttons and confirm feedback appears.
 11. Load the unpacked Chrome extension from `extension/`.
-12. Open the View Builder and confirm Sidebar Style is the first tab.
+12. Open the Profile Builder and confirm Sidebar Style is the first tab.
 13. Apply curated sidebar preset cards and confirm the preview updates.
 14. Confirm the Sidebar Style tab uses a guided `Use Preset` / `Custom Configuration` editor.
 15. Confirm the right panel keeps a tall sticky sidebar preview, Menu Colors, and Save / Reset controls visible while scrolling.
-16. Save a custom view and apply it on a supported GoHighLevel page.
+16. Save a custom Profile and apply it on a supported GoHighLevel page.
 
 ## Known Limitations
 

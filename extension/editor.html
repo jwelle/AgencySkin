@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AgencySkin - CleanView View Builder</title>
+    <title>AgencySkin - CleanView Profile Builder</title>
     <link rel="stylesheet" href="editor.css">
   </head>
   <body>
@@ -11,29 +11,58 @@
       <header class="topbar">
         <div>
           <p class="eyebrow">AgencySkin</p>
-          <h1>CleanView View Builder</h1>
+          <h1>CleanView Profile Builder</h1>
         </div>
         <p id="statusMessage" class="status" role="status"></p>
       </header>
 
-      <section class="panel">
+      <section id="firstTimeProfileOnboarding" class="panel onboarding-panel" hidden>
         <div class="panel-header">
-          <h2>Views</h2>
+          <div>
+            <h2>Create your first Profile</h2>
+            <p>A Profile saves sidebar style, menu items, renamed labels, and quick links for your browser.</p>
+          </div>
+        </div>
+        <div class="onboarding-choice-grid">
+          <section class="onboarding-choice">
+            <h3>Start From Template</h3>
+            <p class="help-text">Choose a prebuilt starting point, then create an editable Profile from it.</p>
+            <label class="field" for="onboardingTemplateSelect">
+              Template
+              <select id="onboardingTemplateSelect"></select>
+            </label>
+            <button id="onboardingCreateFromTemplateButton" type="button">Create My Profile</button>
+          </section>
+          <section class="onboarding-choice">
+            <h3>Create Blank Profile</h3>
+            <p class="help-text">Start with default CleanView settings and configure only what you need.</p>
+            <label class="field" for="blankProfileName">
+              Profile Name
+              <input id="blankProfileName" type="text" value="My CleanView">
+            </label>
+            <button id="onboardingCreateBlankButton" class="secondary" type="button">Create Blank Profile</button>
+          </section>
+        </div>
+      </section>
+
+      <section id="profileManagementPanel" class="panel">
+        <div class="panel-header">
+          <h2>My Profiles</h2>
           <div class="button-row compact">
-            <button id="duplicatePresetButton" class="secondary" type="button">Duplicate View</button>
-            <button id="createPresetButton" type="button">New Custom View</button>
-            <button id="deletePresetButton" class="danger" type="button">Delete View</button>
+            <button id="duplicatePresetButton" class="secondary" type="button">Create My Profile</button>
+            <button id="createPresetButton" type="button">Create Blank Profile</button>
+            <button id="deletePresetButton" class="danger" type="button">Delete Profile</button>
           </div>
         </div>
 
         <label class="field" for="presetSelect">
-          Current View
+          Active Profile
           <select id="presetSelect"></select>
         </label>
 
         <div class="form-grid two-columns">
           <label class="field" for="presetName">
-            View Name
+            Profile Name
             <input id="presetName" type="text">
           </label>
 
@@ -44,18 +73,22 @@
         </div>
 
         <div class="form-grid">
-          <p class="help-text">View Visibility</p>
+          <p class="help-text">Profile Visibility</p>
           <label class="toggle-row" for="showInPopupToggle">
-            <span>Show this view in popup</span>
+            <span>Show this Profile in popup</span>
             <input id="showInPopupToggle" type="checkbox">
           </label>
         </div>
 
         <p id="builtInNotice" class="help-text"></p>
+        <div id="templateNotice" class="template-notice" hidden>
+          <p>This is a Template. Templates are starting points. Create your own Profile to customize it.</p>
+          <button id="createProfileFromTemplateButton" type="button">Create My Profile</button>
+        </div>
       </section>
 
-      <section class="panel builder-panel">
-        <nav class="tabs" aria-label="View Builder sections">
+      <section id="builderPanel" class="panel builder-panel">
+        <nav class="tabs" aria-label="Profile Builder sections">
           <button class="tab-button active" type="button" data-tab-button="style" data-tab-icon="palette">Sidebar Style</button>
           <button class="tab-button" type="button" data-tab-button="menu" data-tab-icon="menu">Menu Items</button>
           <button class="tab-button" type="button" data-tab-button="rename" data-tab-icon="tag">Rename Labels</button>
@@ -191,7 +224,7 @@
                 <div id="menuColorEditor" class="form-grid compact-style-editor"></div>
               </section>
               <div class="sidebar-style-actions">
-                <button id="savePresetButton" type="button">Save View</button>
+                <button id="savePresetButton" type="button">Save Profile</button>
                 <button id="resetStyleButton" class="secondary" type="button">Reset Style</button>
               </div>
             </aside>
@@ -201,7 +234,7 @@
         <section class="tab-panel" data-tab-panel="menu">
           <div class="panel-header">
             <h2>Menu Items</h2>
-            <p>Choose which GHL menu items should remain visible in this view.</p>
+            <p>Choose which GHL menu items should remain visible in this Profile.</p>
           </div>
           <div class="button-row menu-actions" aria-label="GHL menu item selection shortcuts">
             <button id="selectAllMenusButton" class="secondary" type="button">Select All</button>
@@ -232,14 +265,14 @@
         <section class="tab-panel" data-tab-panel="locations" data-location-defaults-ui hidden>
           <div class="panel-header">
             <h2>Location Rules</h2>
-            <p>Choose which view should be used automatically for specific GHL locations.</p>
+            <p>Choose which Profile should be used automatically for specific GHL locations.</p>
           </div>
           <label class="field" for="defaultPresetSelect">
-            Default View
+            Default Profile
             <select id="defaultPresetSelect"></select>
           </label>
           <p id="currentLocationLabel" class="help-text">Current GHL Location: detecting...</p>
-          <button id="assignCurrentLocationButton" class="secondary" type="button">Use current view for this location</button>
+          <button id="assignCurrentLocationButton" class="secondary" type="button">Use current Profile for this location</button>
           <div id="locationRules" class="location-rules"></div>
         </section>
 

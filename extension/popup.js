@@ -41,7 +41,15 @@
   }
 
   function optionLabel(preset, isHiddenActive) {
-    return preset.name + (preset.source === "builtin" ? " (Built-in)" : " (Custom)") + (isHiddenActive ? " (Hidden from popup)" : "");
+    var typeLabel = preset.source === "builtin" ? "Template" : "Profile";
+    var name = preset.name || preset.label || typeLabel;
+    name = preset.source === "builtin" ? name.replace(/\s+(View|Template|Profile)$/i, "") + " Template" : name;
+    return name + " (" + typeLabel + ")" + (isHiddenActive ? " (Hidden from popup)" : "");
+  }
+
+  function selectedOptionName() {
+    var option = presetSelect.options[presetSelect.selectedIndex];
+    return option ? option.textContent.replace(/\s+\((Template|Profile)\)(\s+\(Hidden from popup\))?$/, "") : "Profile";
   }
 
   function populatePresets(state) {
@@ -86,15 +94,15 @@
   function applyPreset() {
     sendToContentScript({ type: "applyPreset", presetId: presetSelect.value }, function handleApplied(result) {
       if (!result.ok) {
-        setStatus(result.error || "Unable to apply view.", true);
+        setStatus(result.error || "Unable to apply Profile.", true);
         return;
       }
       if (result.skipped) {
-        setStatus("Current view saved. Turn CleanView on to apply.");
+        setStatus("Active Profile saved. Turn CleanView on to apply.");
         refreshState();
         return;
       }
-      setStatus((result.presetName || "View") + " applied.");
+      setStatus(selectedOptionName() + " applied.");
       refreshState();
     });
   }

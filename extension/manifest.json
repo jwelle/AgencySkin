@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AgencySkin",
   "version": "0.1.0",
-  "description": "CleanView personal sidebar views for GoHighLevel.",
+  "description": "CleanView personal sidebar Profiles for GoHighLevel.",
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "https://app.gohighlevel.com/*",

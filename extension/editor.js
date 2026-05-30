@@ -6,17 +6,26 @@
   var sidebarStylePresets = namespace.sidebarStylePresets || {};
   var enableLocationViewDefaults = namespace.ENABLE_LOCATION_VIEW_DEFAULTS === true;
   var state = null;
-  var selectedPresetId = "builtin:simple";
+  var selectedPresetId = "";
   var activeTab = "style";
   var activeLocationId = null;
   var draftSidebarStyle = null;
 
   var presetSelect = document.getElementById("presetSelect");
+  var firstTimeProfileOnboarding = document.getElementById("firstTimeProfileOnboarding");
+  var profileManagementPanel = document.getElementById("profileManagementPanel");
+  var builderPanel = document.getElementById("builderPanel");
+  var onboardingTemplateSelect = document.getElementById("onboardingTemplateSelect");
+  var onboardingCreateFromTemplateButton = document.getElementById("onboardingCreateFromTemplateButton");
+  var blankProfileName = document.getElementById("blankProfileName");
+  var onboardingCreateBlankButton = document.getElementById("onboardingCreateBlankButton");
   var defaultPresetSelect = document.getElementById("defaultPresetSelect");
   var presetName = document.getElementById("presetName");
   var presetDescription = document.getElementById("presetDescription");
   var showInPopupToggle = document.getElementById("showInPopupToggle");
   var builtInNotice = document.getElementById("builtInNotice");
+  var templateNotice = document.getElementById("templateNotice");
+  var createProfileFromTemplateButton = document.getElementById("createProfileFromTemplateButton");
   var menuEditor = document.getElementById("menuEditor");
   var renameEditor = document.getElementById("renameEditor");
   var linkEditor = document.getElementById("linkEditor");
@@ -181,12 +190,68 @@
     return storage.getAllPresets(state);
   }
 
+  function isEditableProfile(preset) {
+    return preset && preset.source !== "builtin" && preset.archived !== true;
+  }
+
+  function editableProfileIds(nextState) {
+    var presets = storage.getAllPresets(nextState || state);
+    return Object.keys(presets).filter(function keepEditableProfile(presetId) {
+      return isEditableProfile(presets[presetId]);
+    });
+  }
+
+  function templateIds() {
+    var presets = allPresets();
+    return Object.keys(presets).filter(function keepTemplate(presetId) {
+      return presets[presetId] && presets[presetId].source === "builtin" && presetId !== "builtin:blank";
+    });
+  }
+
+  function normalizeDisplayName(name, fallback) {
+    return String(name || fallback || "CleanView")
+      .replace(/\s+(View|Template|Profile)$/i, "")
+      .trim();
+  }
+
+  function templateDisplayName(preset) {
+    return normalizeDisplayName(preset && (preset.name || preset.label), "CleanView") + " Template";
+  }
+
+  function profileNameFromTemplate(preset) {
+    return normalizeDisplayName(preset && (preset.name || preset.label), "CleanView") + " Profile";
+  }
+
+  function nextCopyName(name) {
+    return normalizeDisplayName(name, "CleanView") + " Profile Copy";
+  }
+
+  function resolveInitialProfileId(nextState) {
+    var presets = storage.getAllPresets(nextState || state);
+    var profileIds = editableProfileIds(nextState || state);
+    var candidates = [
+      (nextState || state || {}).lastEditedProfileId,
+      (nextState || state || {}).activePresetId
+    ];
+    var selected = "";
+
+    candidates.some(function chooseCandidate(presetId) {
+      if (presetId && presets[presetId] && isEditableProfile(presets[presetId])) {
+        selected = presetId;
+        return true;
+      }
+      return false;
+    });
+
+    return selected || profileIds[0] || "";
+  }
+
   function selectedPreset() {
-    return storage.getPresetById(state, selectedPresetId) || storage.getPresetById(state, "builtin:simple");
+    return storage.getPresetById(state, selectedPresetId);
   }
 
   function isCustomPreset(preset) {
-    return preset && preset.source !== "builtin";
+    return isEditableProfile(preset);
   }
 
   function selectedEditablePreset() {
@@ -196,9 +261,18 @@
       return storage.normalizePreset(preset);
     }
 
+    preset = preset || storage.getPresetById(state, "builtin:blank") || {
+      name: "My CleanView",
+      description: "",
+      visibleItems: allMenuKeys.slice(),
+      labelOverrides: {},
+      customLinks: [],
+      sidebarStyle: namespace.defaultSidebarStyle
+    };
+
     return storage.normalizePreset({
       id: namespace.createId("custom"),
-      name: (preset.name || preset.label || "View") + " Copy",
+      name: nextCopyName(preset && (preset.name || preset.label)),
       description: preset.description || "",
       visibleItems: preset.visibleItems || [],
       labelOverrides: preset.labelOverrides || {},
@@ -231,11 +305,18 @@
   }
 
   function optionLabel(preset) {
-    return (preset.name || preset.label) + (preset.source === "builtin" ? " (Built-in)" : " (Custom)");
+    if (!preset) {
+      return "Unknown Profile";
+    }
+
+    return (preset.source === "builtin" ? templateDisplayName(preset) : preset.name || preset.label || "Untitled Profile") + (preset.source === "builtin" ? " (Template)" : " (Profile)");
   }
 
   function fillPresetSelect(select, selectedValue) {
     var presets = allPresets();
+    if (!select) {
+      return;
+    }
     select.innerHTML = "";
 
     Object.keys(presets).forEach(function addOption(presetId) {
@@ -246,6 +327,41 @@
     });
 
     select.value = selectedValue || selectedPresetId;
+  }
+
+  function renderOnboardingTemplateSelect() {
+    if (!onboardingTemplateSelect) {
+      return;
+    }
+
+    onboardingTemplateSelect.innerHTML = "";
+    templateIds().forEach(function addTemplateOption(presetId) {
+      var option = document.createElement("option");
+      var preset = allPresets()[presetId];
+      option.value = presetId;
+      option.textContent = templateDisplayName(preset);
+      onboardingTemplateSelect.appendChild(option);
+    });
+  }
+
+  function renderBuilderVisibility() {
+    if (selectedPresetId && !storage.getPresetById(state, selectedPresetId)) {
+      selectedPresetId = resolveInitialProfileId(state);
+    }
+    var showOnboarding = editableProfileIds(state).length === 0 && !selectedPresetId;
+    if (firstTimeProfileOnboarding) {
+      firstTimeProfileOnboarding.hidden = !showOnboarding;
+    }
+    if (profileManagementPanel) {
+      profileManagementPanel.hidden = showOnboarding;
+    }
+    if (builderPanel) {
+      builderPanel.hidden = showOnboarding;
+    }
+    if (showOnboarding) {
+      renderOnboardingTemplateSelect();
+    }
+    return showOnboarding;
   }
 
   function renderPresetSelects() {
@@ -265,14 +381,21 @@
   function renderHeader() {
     var preset = selectedPreset();
     var isEditable = isCustomPreset(preset);
+    if (!preset) {
+      return;
+    }
 
-    presetName.value = preset.name || preset.label || "";
+    presetName.value = isEditable ? preset.name || preset.label || "" : templateDisplayName(preset);
     presetDescription.value = preset.description || "";
     showInPopupToggle.checked = preset.showInPopup !== false;
     presetName.disabled = !isEditable;
     presetDescription.disabled = !isEditable;
+    showInPopupToggle.disabled = !isEditable;
     document.getElementById("deletePresetButton").disabled = !isEditable;
-    builtInNotice.textContent = isEditable ? "" : "Built-in views cannot be edited directly. Duplicate this view to customize it.";
+    builtInNotice.textContent = isEditable ? "" : "";
+    if (templateNotice) {
+      templateNotice.hidden = isEditable;
+    }
   }
 
   function renderMenuEditor() {
@@ -1036,7 +1159,7 @@
           overlayOpacity: Math.max(0.45, getByPath(nextStyle, "imageSettings.overlayOpacity", 0.55))
         });
         populateSidebarStyleForm(nextStyle, { presetValue: "custom", optionLabel: "Custom Image Draft" });
-        setStatus("Custom image loaded. Save this view to keep it.");
+        setStatus("Custom image loaded. Save this Profile to keep it.");
       };
       image.onerror = function handleImageError() {
         setStatus("Unable to read that image.", true);
@@ -1086,7 +1209,7 @@
         nextStyle.customLogoDataUrl = canvas.toDataURL("image/webp", 0.82);
         nextStyle.sidebarBrandingMode = "replace";
         populateSidebarStyleForm(nextStyle, { presetValue: "custom", optionLabel: "Custom Logo Draft" });
-        setStatus("Logo loaded. Save this view to keep it.");
+        setStatus("Logo loaded. Save this Profile to keep it.");
       };
       image.onerror = function handleLogoImageError() {
         setStatus("Unable to read that logo.", true);
@@ -1406,7 +1529,7 @@
       presetValue: "custom",
       optionLabel: "Custom Draft - " + preset.label
     });
-    setStatus(preset.label + " applied. Save this view to keep it.");
+    setStatus(preset.label + " applied. Save this Profile to keep it.");
   }
 
   function toggleFavoritePreset(presetId) {
@@ -1523,7 +1646,7 @@
       presetValue: "custom",
       optionLabel: "Custom Draft - " + selected.label
     });
-    setStatus("Curated Rotation picked " + selected.label + ". Save this view to keep it.");
+    setStatus("Curated Rotation picked " + selected.label + ". Save this Profile to keep it.");
   }
 
   function updateImagePositionFromPointer(event) {
@@ -1562,7 +1685,7 @@
 
       row.className = "rule-row";
       label.textContent = locationId;
-      presetLabel.textContent = preset ? preset.name || preset.label : "Unknown view";
+      presetLabel.textContent = preset ? optionLabel(preset) : "Unknown Profile";
       removeButton.type = "button";
       removeButton.className = "danger";
       removeButton.textContent = "Remove";
@@ -1623,9 +1746,13 @@
     document.getElementById("addLinkButton").disabled = !isEditable;
     curatedShuffleButton.disabled = !isEditable;
     document.getElementById("resetStyleButton").disabled = !isEditable;
+    document.getElementById("savePresetButton").disabled = !isEditable;
   }
 
   function render() {
+    if (renderBuilderVisibility()) {
+      return;
+    }
     renderPresetSelects();
     renderTabState();
     renderHeader();
@@ -1845,7 +1972,7 @@
     var labelOverrides = {};
     var customLinks = [];
 
-    preset.name = presetName.value.trim() || "Untitled View";
+    preset.name = presetName.value.trim() || "Untitled Profile";
     preset.description = presetDescription.value.trim();
 
     menuEditor.querySelectorAll("[data-menu-key]").forEach(function collectVisible(checkbox) {
@@ -1910,12 +2037,14 @@
   function persistPreset(preset, message, reapplyIfActive) {
     storage.updateState(function updatePreset(nextState) {
       nextState.presets[preset.id] = storage.normalizePreset(preset);
+      nextState.activePresetId = preset.id;
+      nextState.lastEditedProfileId = preset.id;
       if (nextState.presetPreferences) {
         delete nextState.presetPreferences[preset.id];
       }
     }, function handleSaved(nextState, error) {
       if (error) {
-        setStatus("Unable to save CleanView view.", true);
+        setStatus("Unable to save CleanView Profile.", true);
         return;
       }
       state = nextState;
@@ -1932,22 +2061,7 @@
       return;
     }
 
-    storage.updateState(function updateBuiltInPreference(nextState) {
-      nextState.presetPreferences = nextState.presetPreferences || {};
-      nextState.presetPreferences[selectedPresetId] = storage.normalizePresetPreference(Object.assign({}, nextState.presetPreferences[selectedPresetId] || {}, {
-        showInPopup: showInPopupToggle.checked,
-        updatedAt: namespace.nowIso()
-      }));
-    }, function handleSaved(nextState, error) {
-      if (error) {
-        setStatus("Unable to save CleanView view.", true);
-        return;
-      }
-
-      state = nextState;
-      selectedPresetId = preset.id;
-      reapplySavedPresetIfActive(preset.id, message, reapplyIfActive, nextState);
-    });
+    setStatus("Create My Profile to customize this Template.", true);
   }
 
   function setMenuCheckboxes(checked) {
@@ -1991,10 +2105,36 @@
         return;
       }
       state = nextState;
-      selectedPresetId = state.activePresetId || "builtin:simple";
+      selectedPresetId = resolveInitialProfileId(state);
       render();
       refreshActiveLocation();
     });
+  }
+
+  function createProfileFromPreset(sourcePresetId, nameOverride) {
+    var sourcePreset = storage.getPresetById(state, sourcePresetId);
+    var profile = storage.duplicatePreset(state, sourcePresetId);
+
+    if (!sourcePreset || !profile) {
+      setStatus("Unable to create Profile from this Template.", true);
+      return;
+    }
+
+    profile.name = nameOverride || profileNameFromTemplate(sourcePreset);
+    profile.description = sourcePreset.description || "";
+    persistPreset(profile, "Profile created.", false);
+  }
+
+  function createBlankProfile(nameOverride) {
+    persistPreset(storage.normalizePreset({
+      id: namespace.createId("custom"),
+      name: String(nameOverride || "My CleanView").trim() || "My CleanView",
+      description: "",
+      visibleItems: allMenuKeys.slice(),
+      labelOverrides: {},
+      customLinks: [],
+      sidebarStyle: namespace.defaultSidebarStyle
+    }), "Profile created.", false);
   }
 
   document.querySelectorAll("[data-tab-button]").forEach(function bindTab(button) {
@@ -2005,27 +2145,39 @@
   });
 
   document.getElementById("createPresetButton").addEventListener("click", function createPreset() {
-    persistPreset(storage.normalizePreset({
-      id: namespace.createId("custom"),
-      name: "New Custom View",
-      description: "",
-      visibleItems: allMenuKeys.slice(),
-      labelOverrides: {},
-      customLinks: [],
-      sidebarStyle: namespace.defaultSidebarStyle
-    }), "Custom view created.", false);
+    createBlankProfile(window.prompt("Profile name", "My CleanView") || "My CleanView");
   });
 
   document.getElementById("duplicatePresetButton").addEventListener("click", function duplicatePreset() {
+    var preset = selectedPreset();
     var duplicate = storage.duplicatePreset(state, selectedPresetId);
     if (duplicate) {
-      persistPreset(duplicate, "View duplicated.", false);
+      duplicate.name = preset && preset.source === "builtin" ? profileNameFromTemplate(preset) : nextCopyName(preset && (preset.name || preset.label));
+      persistPreset(duplicate, "Profile created.", false);
     }
   });
 
   document.getElementById("savePresetButton").addEventListener("click", function savePreset() {
-    persistSelectedView("View saved.", true);
+    persistSelectedView("Profile saved.", true);
   });
+
+  if (createProfileFromTemplateButton) {
+    createProfileFromTemplateButton.addEventListener("click", function createFromSelectedTemplate() {
+      createProfileFromPreset(selectedPresetId);
+    });
+  }
+
+  if (onboardingCreateFromTemplateButton) {
+    onboardingCreateFromTemplateButton.addEventListener("click", function createFromOnboardingTemplate() {
+      createProfileFromPreset(onboardingTemplateSelect.value || "builtin:simple");
+    });
+  }
+
+  if (onboardingCreateBlankButton) {
+    onboardingCreateBlankButton.addEventListener("click", function createBlankFromOnboarding() {
+      createBlankProfile(blankProfileName.value || "My CleanView");
+    });
+  }
 
   document.getElementById("selectAllMenusButton").addEventListener("click", function selectAllMenus() {
     setMenuCheckboxes(true);
@@ -2039,7 +2191,7 @@
 
   document.getElementById("resetMenuDefaultsButton").addEventListener("click", function resetMenuDefaults() {
     resetMenuCheckboxesToPresetDefault();
-    setStatus("Menu items reset to the selected view default.");
+    setStatus("Menu items reset to the selected Profile default.");
   });
 
   document.getElementById("deletePresetButton").addEventListener("click", function deletePreset() {
@@ -2055,16 +2207,19 @@
         }
       });
       if (nextState.activePresetId === selectedPresetId) {
-        nextState.activePresetId = "builtin:simple";
+        nextState.activePresetId = "";
+      }
+      if (nextState.lastEditedProfileId === selectedPresetId) {
+        nextState.lastEditedProfileId = "";
       }
     }, function handleDeleted(nextState, error) {
       if (error) {
-        setStatus("Unable to delete view.", true);
+        setStatus("Unable to delete Profile.", true);
         return;
       }
       state = nextState;
-      selectedPresetId = nextState.activePresetId || "builtin:simple";
-      setStatus("Custom view deleted.");
+      selectedPresetId = resolveInitialProfileId(nextState);
+      setStatus("Profile deleted.");
       render();
     });
   });
@@ -2135,7 +2290,7 @@
           return;
         }
         state = nextState;
-        setStatus("This view will be used automatically for this GHL location.");
+        setStatus("This Profile will be used automatically for this GHL location.");
         render();
       });
     });
@@ -2143,7 +2298,16 @@
 
   presetSelect.addEventListener("change", function selectPreset() {
     selectedPresetId = presetSelect.value;
-    console.log("[AgencySkin CleanView] View selected:", {
+    if (isEditableProfile(selectedPreset())) {
+      storage.updateState(function updateLastEdited(nextState) {
+        nextState.lastEditedProfileId = selectedPresetId;
+        nextState.activePresetId = selectedPresetId;
+      }, function handleSelected(nextState) {
+        state = nextState || state;
+        render();
+      });
+    }
+    console.log("[AgencySkin CleanView] Profile selected:", {
       id: selectedPresetId,
       name: selectedPreset() && (selectedPreset().name || selectedPreset().label)
     });
@@ -2155,11 +2319,11 @@
       nextState.activePresetId = defaultPresetSelect.value;
     }, function handleSaved(nextState, error) {
       if (error) {
-        setStatus("Unable to update default view.", true);
+        setStatus("Unable to update default Profile.", true);
         return;
       }
       state = nextState;
-      setStatus("Default view updated.");
+      setStatus("Default Profile updated.");
       renderPresetSelects();
     });
   });
@@ -2198,7 +2362,7 @@
       var style = getCurrentWorkingSidebarStyle();
       style.customImageDataUrl = "";
       populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
-      setStatus("Custom image removed. Save this view to keep the change.");
+      setStatus("Custom image removed. Save this Profile to keep the change.");
     }
   });
 
@@ -2208,7 +2372,7 @@
         var style = getCurrentWorkingSidebarStyle();
         style.customLogoDataUrl = "";
         populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
-        setStatus("Logo removed. Save this view to keep the change.");
+        setStatus("Logo removed. Save this Profile to keep the change.");
       }
     });
   }

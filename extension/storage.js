@@ -11,6 +11,7 @@
       schemaVersion: 1,
       enabled: true,
       activePresetId: "builtin:simple",
+      lastEditedProfileId: "",
       presets: {},
       presetPreferences: {},
       locationRules: {},
@@ -264,7 +265,7 @@
       state.activePresetId = store.selectedPreset ? "custom:migrated" : "builtin:admin";
       state.presets["custom:migrated"] = normalizePreset({
         id: "custom:migrated",
-        name: "Migrated CleanView Preset",
+        name: "Migrated CleanView Profile",
         visibleItems: store.visibleItems,
         sidebarStyle: defaultSidebarStyle(),
         updatedAt: store.updatedAt
@@ -305,8 +306,11 @@
     });
     normalized.locationRules = normalized.locationRules && !Array.isArray(normalized.locationRules) ? normalized.locationRules : {};
     allPresets = getAllPresets(normalized);
+    if (!normalized.lastEditedProfileId || !allPresets[normalized.lastEditedProfileId] || allPresets[normalized.lastEditedProfileId].source === "builtin" || allPresets[normalized.lastEditedProfileId].archived === true) {
+      normalized.lastEditedProfileId = "";
+    }
     if (!allPresets[normalized.activePresetId]) {
-      console.warn("[AgencySkin CleanView] Active preset ID missing, falling back to built-in Simple View:", normalized.activePresetId);
+      console.warn("[AgencySkin CleanView] Active preset ID missing, falling back to Simple Template:", normalized.activePresetId);
       normalized.activePresetId = "builtin:simple";
     }
     Object.keys(normalized.locationRules).forEach(function normalizeLocationRule(locationId) {
