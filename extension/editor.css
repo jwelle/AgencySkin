@@ -326,6 +326,11 @@ textarea {
   gap: 0.5rem;
 }
 
+.menu-actions.secondary-actions {
+  justify-content: flex-start;
+  padding-top: 0.25rem;
+}
+
 .tabs {
   border-bottom: 1px solid var(--as-border);
   display: flex;
@@ -410,6 +415,56 @@ textarea {
   gap: 0.5rem;
 }
 
+.menu-builder-layout {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.menu-builder-column {
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-md);
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.85rem;
+}
+
+.menu-builder-column-header {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.menu-builder-column-header h3,
+.menu-builder-column-header p {
+  margin: 0;
+}
+
+.menu-builder-column-header p {
+  color: var(--as-muted);
+  font-size: 0.88rem;
+}
+
+.menu-builder-drop-zone {
+  align-content: start;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--as-radius-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-height: 8rem;
+  padding: 0.55rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.menu-builder-drop-zone.is-drop-target {
+  background: #eff6ff;
+  border-color: var(--as-primary);
+}
+
 .check-row {
   align-items: center;
   border-bottom: 1px solid #f1f5f9;
@@ -459,6 +514,142 @@ textarea {
 
 .rename-row {
   grid-template-columns: 1fr 1fr auto;
+}
+
+.menu-organization-panel {
+  border-top: 1px solid var(--as-border);
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.menu-group-editor {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.menu-group-card {
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-md);
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem;
+}
+
+.menu-group-card-header {
+  align-items: end;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.menu-group-assigned-list {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--as-radius-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0.5rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.compact-button {
+  min-height: 2rem;
+  padding: 0.35rem 0.6rem;
+}
+
+.menu-group-ungrouped {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.menu-group-ungrouped h3 {
+  color: var(--as-muted);
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.menu-group-chip-list {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--as-radius-sm);
+  color: var(--as-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-height: 3rem;
+  padding: 0.5rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.menu-group-chip-list.is-drop-target,
+.menu-group-assigned-list.is-drop-target {
+  background: #eff6ff;
+  border-color: var(--as-primary);
+}
+
+.menu-group-chip {
+  align-items: center;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  color: var(--as-text);
+  cursor: grab;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 700;
+  gap: 0.35rem;
+  line-height: 1;
+  max-width: 100%;
+  min-height: 2rem;
+  padding: 0.35rem 0.55rem;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.menu-group-chip:focus-visible {
+  outline: 2px solid var(--as-primary);
+  outline-offset: 2px;
+}
+
+.menu-group-chip.is-dragging {
+  cursor: grabbing;
+  opacity: 0.55;
+}
+
+.menu-group-chip[draggable="false"] {
+  cursor: default;
+  opacity: 0.78;
+}
+
+.menu-group-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-group-chip-remove {
+  background: transparent;
+  border: 0;
+  color: var(--as-muted);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+  min-height: auto;
+  max-width: 7.5rem;
+  overflow: hidden;
+  padding: 0.1rem 0.2rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-group-chip-remove:hover,
+.menu-group-chip-remove:focus-visible {
+  color: var(--as-danger);
 }
 
 .toggle-row {
@@ -815,6 +1006,10 @@ textarea {
   }
 
   .two-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-builder-layout {
     grid-template-columns: 1fr;
   }
 

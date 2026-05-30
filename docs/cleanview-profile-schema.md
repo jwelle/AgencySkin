@@ -31,6 +31,7 @@ This document is the public import/export contract for CleanView Profiles. Gener
   "aiSummary": {},
   "sidebarStyle": {},
   "menuItems": {},
+  "menuGroups": [],
   "renameLabels": {},
   "quickLinks": []
 }
@@ -89,6 +90,75 @@ Or hide specific items:
 ```
 
 If both `visible` and `hidden` are present, `visible` wins.
+
+## Menu Groups
+
+`menuGroups` organize visible native GoHighLevel menu items into one-level click-to-expand accordion sections. In the Profile Builder, the Menu Builder shows hidden native items as Available Items and visible native items in Your Sidebar. Users can add, hide, and drag visible native menu chips into group cards. Quick Links stay separate and must not be placed inside groups.
+
+```json
+{
+  "menuGroups": [
+    {
+      "label": "Client Work",
+      "items": ["conversations", "calendars", "contacts", "opportunities"],
+      "collapsed": false
+    },
+    {
+      "label": "Insights",
+      "items": ["dashboard", "reporting"],
+      "collapsed": false
+    }
+  ]
+}
+```
+
+Validation rules:
+
+```txt
+menuGroups: optional array, max 8 groups
+menuGroups[].label: required plain text, max 40 characters
+menuGroups[].items: required array, max 12 supported native menu IDs or labels
+menuGroups[].collapsed: optional boolean, defaults to false, controls initial sidebar state only
+Each native menu item may appear in only one group
+Nested menuGroups are not allowed
+URLs, hrefs, quickLinks, customLinks, and links are not allowed inside groups
+```
+
+Role examples:
+
+```json
+{
+  "menuGroups": [
+    {
+      "label": "Borrower Work",
+      "items": ["conversations", "calendars", "contacts", "opportunities"]
+    },
+    {
+      "label": "Performance",
+      "items": ["dashboard", "reporting"]
+    }
+  ]
+}
+```
+
+```json
+{
+  "menuGroups": [
+    {
+      "label": "Operations",
+      "items": ["dashboard", "reporting", "settings"]
+    },
+    {
+      "label": "Growth Tools",
+      "items": ["marketing", "automation", "sites"]
+    }
+  ]
+}
+```
+
+Runtime behavior is defensive because GoHighLevel can change its live sidebar DOM. Unknown/new GHL sidebar items are untouched, missing grouped items are skipped, empty groups do not render accordion parents, and incompatible DOM parents are not forced. CleanView moves existing native nodes under a click-to-expand group parent only when that can be done within a compatible parent container, so native click behavior is preserved and grouped child items are not duplicated elsewhere. If a group cannot be safely applied, CleanView preserves sidebar stability over perfect visual grouping.
+
+Accordion state is runtime-first in the MVP. The `collapsed` field controls the initial open/closed state, then user clicks persist during the current page session and normal CleanView reapply cycles. Native Menu Groups inherit existing global/sidebar menu colors for parent text, chevron, hover, and open states; there are no group-specific styling controls in the MVP. Quick Links remain separate shortcuts and are not styled or grouped as native menu children.
 
 ## Rename Labels
 
@@ -353,6 +423,18 @@ aiSummary.bestFor: 240 characters
     "menuItems": {
       "visible": ["dashboard", "conversations", "calendars", "contacts", "opportunities", "reporting"]
     },
+    "menuGroups": [
+      {
+        "label": "Client Work",
+        "items": ["conversations", "calendars", "contacts", "opportunities"],
+        "collapsed": false
+      },
+      {
+        "label": "Insights",
+        "items": ["dashboard", "reporting"],
+        "collapsed": false
+      }
+    ],
     "renameLabels": {
       "Conversations": "Client Messages",
       "Calendars": "Appointments",
@@ -385,11 +467,15 @@ trackingPixel
 
 Never generate arbitrary CSS, JavaScript, HTML, raw selectors, XPath, webhook URLs, tracking pixels, external quick links, or executable snippets.
 
+For `menuGroups`, never generate URLs, quick links, custom links, nested groups, custom menu items, or unsupported menu IDs.
+
 ## Manual Validation Fixtures
 
 Passing fixtures:
 
 - Existing profile with root shape, `name`, `sidebarStyle`, `menuItems`, `renameLabels`, and `quickLinks`.
+- Existing profile without `menuGroups`.
+- Valid profile with `menuGroups`; editor shows the visual Menu Builder with Available Items, Your Sidebar, draggable native chips, and click-to-expand accordion parents in the applied sidebar.
 - External sidebar visual using `https://example.com/sidebar.webp`.
 - External logo using `https://example.com/logo.png`.
 - AI metadata using the example metadata fields above.
@@ -412,4 +498,10 @@ businessContext.companyName contains "<script>"
 designContext.reasoningSummary contains "javascript:"
 aiSummary.bestFor is longer than 240 characters
 quickLinks[0].url = "https://example.com"
+menuGroups = "Client Work"
+menuGroups[0].items = ["not_a_supported_menu"]
+menuGroups[0].items = ["conversations"] and menuGroups[1].items = ["conversations"]
+menuGroups[0].url = "/v2/location/LOCATION_ID/contacts"
+menuGroups[0].quickLinks = []
+menuGroups[0].menuGroups = []
 ```

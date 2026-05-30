@@ -10,6 +10,7 @@
   var activeTab = "style";
   var activeLocationId = null;
   var draftSidebarStyle = null;
+  var draggedMenuGroupKey = "";
 
   var presetSelect = document.getElementById("presetSelect");
   var firstTimeProfileOnboarding = document.getElementById("firstTimeProfileOnboarding");
@@ -30,6 +31,8 @@
   var templateNotice = document.getElementById("templateNotice");
   var createProfileFromTemplateButton = document.getElementById("createProfileFromTemplateButton");
   var menuEditor = document.getElementById("menuEditor");
+  var menuGroupEditor = document.getElementById("menuGroupEditor");
+  var addMenuGroupButton = document.getElementById("addMenuGroupButton");
   var renameEditor = document.getElementById("renameEditor");
   var linkEditor = document.getElementById("linkEditor");
   var locationRules = document.getElementById("locationRules");
@@ -461,26 +464,385 @@
   }
 
   function renderMenuEditor() {
-    var preset = selectedPreset();
-    var visibleSet = new Set(preset.visibleItems || []);
+    var visibleSet = new Set(visibleMenuKeysFromEditor());
+    var hiddenKeys = allMenuKeys.filter(function keepHidden(key) {
+      return !visibleSet.has(key);
+    });
+
     menuEditor.innerHTML = "";
 
-    allMenuKeys.forEach(function renderMenuRow(key) {
-      var entry = registry[key];
-      var row = document.createElement("label");
-      var checkbox = document.createElement("input");
-      var name = document.createElement("span");
+    if (!hiddenKeys.length) {
+      var empty = document.createElement("p");
+      empty.className = "help-text";
+      empty.textContent = "All native menu items are in your sidebar.";
+      menuEditor.appendChild(empty);
+      return;
+    }
 
-      row.className = "check-row";
-      checkbox.type = "checkbox";
-      checkbox.checked = visibleSet.has(key);
-      checkbox.dataset.menuKey = key;
-      name.textContent = entry ? entry.label : key;
-
-      row.appendChild(checkbox);
-      row.appendChild(name);
-      menuEditor.appendChild(row);
+    hiddenKeys.forEach(function renderAvailableItem(key) {
+      menuEditor.appendChild(renderMenuGroupChip(key, {
+        available: true,
+        groupId: "available"
+      }));
     });
+  }
+
+  function menuLabel(key) {
+    var entry = registry[key];
+    var preset = selectedPreset();
+    var override = preset && preset.labelOverrides ? preset.labelOverrides[key] : "";
+
+    return override || (entry ? entry.label : key);
+  }
+
+  function visibleMenuKeysFromEditor() {
+    var preset = selectedPreset();
+
+    if (menuGroupEditor && menuGroupEditor.dataset.visibleMenuItems !== undefined) {
+      return normalizeMenuKeyList(String(menuGroupEditor.dataset.visibleMenuItems || "").split(","));
+    }
+
+    return normalizeMenuKeyList((preset && preset.visibleItems) || []);
+  }
+
+  function normalizeMenuKeyList(items) {
+    var seen = {};
+
+    (items || []).forEach(function markMenuKey(key) {
+      if (allMenuKeys.indexOf(key) !== -1) {
+        seen[key] = true;
+      }
+    });
+
+    return allMenuKeys.filter(function keepMenuKey(key) {
+      if (!seen[key]) {
+        return false;
+      }
+      seen[key] = true;
+      return true;
+    });
+  }
+
+  function setVisibleMenuKeysInEditor(items) {
+    if (!menuGroupEditor) {
+      return;
+    }
+
+    menuGroupEditor.dataset.visibleMenuItems = normalizeMenuKeyList(items).join(",");
+  }
+
+  function setMenuKeyVisibleInEditor(key, isVisible) {
+    var visibleItems = visibleMenuKeysFromEditor().filter(function keepOther(itemKey) {
+      return itemKey !== key;
+    });
+
+    if (isVisible && allMenuKeys.indexOf(key) !== -1) {
+      visibleItems.push(key);
+    }
+
+    setVisibleMenuKeysInEditor(visibleItems);
+  }
+
+  function menuGroupItemsFromCard(card) {
+    return String(card.dataset.menuGroupItems || "").split(",").filter(function keepItem(key) {
+      return allMenuKeys.indexOf(key) !== -1;
+    });
+  }
+
+  function setMenuGroupItems(card, items) {
+    var seen = {};
+    card.dataset.menuGroupItems = (items || []).filter(function keepItem(key) {
+      if (allMenuKeys.indexOf(key) === -1 || seen[key]) {
+        return false;
+      }
+      seen[key] = true;
+      return true;
+    }).join(",");
+  }
+
+  function assignedMenuKeysFromGroups(excludedCard) {
+    var assigned = {};
+
+    if (!menuGroupEditor) {
+      return assigned;
+    }
+
+    menuGroupEditor.querySelectorAll("[data-menu-group-card='true']").forEach(function collectAssigned(card) {
+      if (card === excludedCard) {
+        return;
+      }
+      menuGroupItemsFromCard(card).forEach(function markAssigned(key) {
+        assigned[key] = true;
+      });
+    });
+    return assigned;
+  }
+
+  function renderMenuGroupAssignedItems(card) {
+    var assignedList = card.querySelector("[data-menu-group-assigned]");
+    var visibleSet = new Set(visibleMenuKeysFromEditor());
+    var items = menuGroupItemsFromCard(card).filter(function keepVisibleAssigned(key) {
+      return visibleSet.has(key);
+    });
+
+    assignedList.innerHTML = "";
+    if (!items.length) {
+      var empty = document.createElement("p");
+      empty.className = "help-text";
+      empty.textContent = "Drop menu items here.";
+      assignedList.appendChild(empty);
+      return;
+    }
+
+    items.forEach(function renderAssignedItem(key, index) {
+      assignedList.appendChild(renderMenuGroupChip(key, {
+        assigned: true,
+        groupId: card.dataset.menuGroupId,
+        index: index
+      }));
+    });
+  }
+
+  function refreshMenuGroupOptions() {
+    var visibleKeys = visibleMenuKeysFromEditor();
+    var ungroupedItems = [];
+
+    if (!menuGroupEditor) {
+      return;
+    }
+
+    menuGroupEditor.querySelectorAll("[data-menu-group-card='true']").forEach(function refreshGroup(card) {
+      renderMenuGroupAssignedItems(card);
+    });
+
+    ungroupedItems = visibleKeys.filter(function keepUngrouped(key) {
+      return !assignedMenuKeysFromGroups()[key];
+    });
+    renderUngroupedMenuItems(ungroupedItems);
+    renderMenuEditor();
+  }
+
+  function renderUngroupedMenuItems(ungroupedItems) {
+    var container = menuGroupEditor.querySelector("[data-ungrouped-menu-items]");
+
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = "";
+    if (!ungroupedItems.length) {
+      container.textContent = "Drop visible menu items here.";
+      return;
+    }
+    ungroupedItems.forEach(function renderUngroupedItem(key) {
+      container.appendChild(renderMenuGroupChip(key, {
+        assigned: false,
+        groupId: "ungrouped"
+      }));
+    });
+  }
+
+  function renderMenuGroupChip(key, options) {
+    var chip = document.createElement("div");
+    var label = document.createElement("span");
+    var canEdit = isCustomPreset(selectedPreset());
+
+    options = options || {};
+    chip.className = "menu-group-chip";
+    chip.draggable = canEdit;
+    chip.tabIndex = canEdit ? 0 : -1;
+    chip.dataset.menuGroupDragKey = key;
+    chip.dataset.menuKey = key;
+    chip.dataset.menuGroupSource = options.groupId || "ungrouped";
+    if (options.index !== undefined) {
+      chip.dataset.menuGroupInsertIndex = String(options.index);
+    }
+    chip.title = canEdit ? "Drag to organize" : "";
+    label.textContent = menuLabel(key);
+    chip.appendChild(label);
+
+    if (options.available) {
+      chip.appendChild(createMenuGroupChipButton("Add", "addMenuItem", key, canEdit));
+    } else if (options.assigned) {
+      chip.appendChild(createMenuGroupChipButton("Remove from group", "removeGroupItem", key, canEdit));
+      chip.appendChild(createMenuGroupChipButton("Hide", "hideMenuItem", key, canEdit));
+    } else {
+      chip.appendChild(createMenuGroupChipButton("Hide", "hideMenuItem", key, canEdit));
+    }
+
+    return chip;
+  }
+
+  function createMenuGroupChipButton(label, dataKey, key, canEdit) {
+    var button = document.createElement("button");
+
+    button.type = "button";
+    button.className = "menu-group-chip-remove";
+    button.textContent = label;
+    button.dataset[dataKey] = key;
+    button.disabled = !canEdit;
+    return button;
+  }
+
+  function getMenuGroupDropTarget(eventTarget) {
+    var chip = eventTarget && eventTarget.closest ? eventTarget.closest("[data-menu-group-drag-key]") : null;
+
+    if (chip && chip.parentElement && chip.parentElement.dataset.menuGroupDropTarget) {
+      return chip.parentElement;
+    }
+
+    return eventTarget && eventTarget.closest ? eventTarget.closest("[data-menu-group-drop-target]") : null;
+  }
+
+  function getMenuGroupInsertIndex(event, dropTarget) {
+    var chip = event.target && event.target.closest ? event.target.closest("[data-menu-group-drag-key]") : null;
+    var index = Number(chip && chip.dataset.menuGroupInsertIndex);
+    var rect = chip && chip.getBoundingClientRect ? chip.getBoundingClientRect() : null;
+    var afterMidpoint = rect && (event.clientY > rect.top + rect.height / 2 || event.clientX > rect.left + rect.width / 2);
+
+    if (!chip || chip.parentElement !== dropTarget || Number.isNaN(index)) {
+      return undefined;
+    }
+
+    return afterMidpoint ? index + 1 : index;
+  }
+
+  function clearMenuGroupDropState() {
+    [menuEditor, menuGroupEditor].forEach(function clearContainer(container) {
+      if (!container) {
+        return;
+      }
+      container.querySelectorAll(".is-drop-target, .is-dragging").forEach(function clearState(element) {
+        element.classList.remove("is-drop-target");
+        element.classList.remove("is-dragging");
+      });
+      container.classList.remove("is-drop-target");
+    });
+  }
+
+  function removeMenuKeyFromAllGroups(key) {
+    menuGroupEditor.querySelectorAll("[data-menu-group-card='true']").forEach(function removeFromGroup(card) {
+      setMenuGroupItems(card, menuGroupItemsFromCard(card).filter(function keepItem(itemKey) {
+        return itemKey !== key;
+      }));
+    });
+  }
+
+  function moveMenuKeyToGroup(key, groupId, insertIndex) {
+    var sourceCard = null;
+    var sourceIndex = -1;
+    var targetCard = null;
+    var items = [];
+    var nextIndex = Number(insertIndex);
+
+    if (allMenuKeys.indexOf(key) === -1) {
+      return;
+    }
+
+    Array.prototype.slice.call(menuGroupEditor.querySelectorAll("[data-menu-group-card='true']")).some(function findSource(card) {
+      var cardItems = menuGroupItemsFromCard(card);
+
+      sourceIndex = cardItems.indexOf(key);
+      if (sourceIndex !== -1) {
+        sourceCard = card;
+        return true;
+      }
+      return false;
+    });
+    if (groupId === "available") {
+      removeMenuKeyFromAllGroups(key);
+      setMenuKeyVisibleInEditor(key, false);
+      refreshMenuGroupOptions();
+      return;
+    }
+
+    setMenuKeyVisibleInEditor(key, true);
+    removeMenuKeyFromAllGroups(key);
+    if (!groupId || groupId === "ungrouped") {
+      refreshMenuGroupOptions();
+      return;
+    }
+
+    targetCard = Array.prototype.slice.call(menuGroupEditor.querySelectorAll("[data-menu-group-card='true']")).find(function findCard(card) {
+      return card.dataset.menuGroupId === groupId;
+    });
+    if (!targetCard) {
+      refreshMenuGroupOptions();
+      return;
+    }
+
+    items = menuGroupItemsFromCard(targetCard);
+    if (Number.isNaN(nextIndex) || nextIndex < 0 || nextIndex > items.length) {
+      nextIndex = items.length;
+    } else if (sourceCard === targetCard && sourceIndex !== -1 && sourceIndex < nextIndex) {
+      nextIndex -= 1;
+    }
+    items.splice(nextIndex, 0, key);
+    setMenuGroupItems(targetCard, items);
+    refreshMenuGroupOptions();
+  }
+
+  function appendMenuGroupCard(group) {
+    var card = document.createElement("section");
+    var header = document.createElement("div");
+    var labelInput = document.createElement("input");
+    var deleteButton = document.createElement("button");
+    var assignedList = document.createElement("div");
+
+    card.className = "menu-group-card";
+    card.dataset.menuGroupCard = "true";
+    card.dataset.menuGroupId = group.id || namespace.createId("group");
+    card.dataset.menuGroupDropTarget = card.dataset.menuGroupId;
+    setMenuGroupItems(card, group.items || []);
+
+    header.className = "menu-group-card-header";
+    labelInput.type = "text";
+    labelInput.placeholder = "Group name, like Client Work";
+    labelInput.value = group.label || "";
+    labelInput.maxLength = 40;
+    labelInput.dataset.menuGroupLabel = "true";
+    deleteButton.type = "button";
+    deleteButton.className = "danger";
+    deleteButton.textContent = "Delete Group";
+    deleteButton.dataset.deleteMenuGroup = "true";
+    header.appendChild(createFieldLabel("Group Name", labelInput));
+    header.appendChild(deleteButton);
+
+    assignedList.className = "menu-group-assigned-list";
+    assignedList.dataset.menuGroupAssigned = "true";
+    assignedList.dataset.menuGroupDropTarget = card.dataset.menuGroupId;
+
+    card.appendChild(header);
+    card.appendChild(assignedList);
+    menuGroupEditor.appendChild(card);
+  }
+
+  function renderMenuGroupEditor() {
+    var preset = selectedPreset();
+    var groups = storage.normalizeMenuGroups(preset.menuGroups || []);
+    var ungrouped = document.createElement("section");
+    var ungroupedTitle = document.createElement("h3");
+    var ungroupedItems = document.createElement("div");
+
+    if (!menuGroupEditor) {
+      return;
+    }
+
+    menuGroupEditor.innerHTML = "";
+    setVisibleMenuKeysInEditor((preset && preset.visibleItems) || []);
+
+    ungrouped.className = "menu-group-ungrouped";
+    ungrouped.dataset.menuGroupUngrouped = "true";
+    ungroupedTitle.textContent = "Ungrouped Items";
+    ungroupedItems.className = "menu-group-chip-list";
+    ungroupedItems.dataset.ungroupedMenuItems = "true";
+    ungroupedItems.dataset.menuGroupDropTarget = "ungrouped";
+    ungrouped.appendChild(ungroupedTitle);
+    ungrouped.appendChild(ungroupedItems);
+    menuGroupEditor.appendChild(ungrouped);
+
+    groups.forEach(appendMenuGroupCard);
+    refreshMenuGroupOptions();
   }
 
   function renderRenameEditor() {
@@ -1148,6 +1510,76 @@
     return allMenuKeys.slice();
   }
 
+  function resolveMenuGroupsFromProfileJson(menuGroups, errors) {
+    var assignedItems = {};
+
+    if (menuGroups === undefined || menuGroups === null) {
+      return [];
+    }
+
+    if (!Array.isArray(menuGroups)) {
+      errors.push("menuGroups must be an array.");
+      return [];
+    }
+
+    if (menuGroups.length > 8) {
+      errors.push("menuGroups can include at most 8 groups.");
+      return [];
+    }
+
+    return menuGroups.reduce(function collectGroups(groups, group, groupIndex) {
+      var label = "";
+      var items = [];
+      var blockedFields = ["url", "href", "quickLinks", "customLinks", "links", "menuGroups"];
+
+      if (!group || typeof group !== "object" || Array.isArray(group)) {
+        errors.push("menuGroups[" + groupIndex + "] must be an object.");
+        return groups;
+      }
+
+      blockedFields.forEach(function rejectBlockedField(fieldName) {
+        if (group[fieldName] !== undefined) {
+          errors.push("menuGroups[" + groupIndex + "]." + fieldName + " is not supported.");
+        }
+      });
+
+      label = sanitizeProfileText(group.label, 40, "menuGroups[" + groupIndex + "].label", errors, true);
+      if (!Array.isArray(group.items)) {
+        errors.push("menuGroups[" + groupIndex + "].items must be an array.");
+        return groups;
+      }
+      if (group.items.length > 12) {
+        errors.push("menuGroups[" + groupIndex + "].items can include at most 12 items.");
+        return groups;
+      }
+
+      group.items.forEach(function collectItem(item) {
+        var key = menuKeyFromProfileJson(item);
+
+        if (!key) {
+          errors.push("menuGroups[" + groupIndex + "].items contains an unsupported menu ID: " + item);
+          return;
+        }
+        if (assignedItems[key]) {
+          errors.push("menuGroups cannot assign the same menu item to more than one group: " + item);
+          return;
+        }
+        assignedItems[key] = true;
+        items.push(key);
+      });
+
+      if (label) {
+        groups.push({
+          id: namespace.createId("group"),
+          label: label,
+          items: items,
+          collapsed: group.collapsed === true
+        });
+      }
+      return groups;
+    }, []);
+  }
+
   function resolveRenameLabelsFromProfileJson(renameLabels, errors) {
     var labelOverrides = {};
     var entries = [];
@@ -1569,6 +2001,7 @@
     });
     var renameLabels = {};
     var profileMetadata = preset.profileMetadata && typeof preset.profileMetadata === "object" && !Array.isArray(preset.profileMetadata) ? preset.profileMetadata : null;
+    var menuGroups = Array.isArray(preset.menuGroups) ? storage.normalizeMenuGroups(preset.menuGroups) : [];
     var exportedJson = null;
 
     Object.keys(preset.labelOverrides || {}).forEach(function exportRename(key) {
@@ -1604,6 +2037,16 @@
         })
       }
     };
+
+    if (menuGroups.length) {
+      exportedJson.profile.menuGroups = menuGroups.map(function exportGroup(group) {
+        return {
+          label: group.label,
+          items: (group.items || []).slice(),
+          collapsed: group.collapsed === true
+        };
+      });
+    }
 
     if (profileMetadata) {
       if (profileMetadata.businessContext) {
@@ -1660,6 +2103,7 @@
       visibleItems: resolveMenuItemsFromProfileJson(profile.menuItems, errors),
       labelOverrides: resolveRenameLabelsFromProfileJson(profile.renameLabels, errors),
       customLinks: resolveQuickLinksFromProfileJson(profile.quickLinks, errors),
+      menuGroups: resolveMenuGroupsFromProfileJson(profile.menuGroups, errors),
       sidebarStyle: importSidebarStyleFromProfileJson(profile.sidebarStyle, errors, warnings),
       profileMetadata: profileMetadata,
       showInPopup: true
@@ -1743,6 +2187,7 @@
     var hiddenMenus = [];
     var visibleMenus = [];
     var renamedLabels = [];
+    var menuGroups = [];
     var quickLinks = [];
     var style = null;
     var styleSummary = "";
@@ -1779,6 +2224,9 @@
     renamedLabels = Object.keys(result.preset.labelOverrides || {}).map(function labelRename(key) {
       return (registry[key] ? registry[key].label : key) + " -> " + result.preset.labelOverrides[key];
     });
+    menuGroups = (result.preset.menuGroups || []).map(function labelGroup(group) {
+      return group.label + " (" + (group.items || []).length + ")";
+    });
     quickLinks = (result.preset.customLinks || []).map(function labelLink(link) {
       return link.label;
     });
@@ -1810,6 +2258,7 @@
       "Hidden Menus: " + hiddenMenus.length + (hiddenMenus.length ? " (" + hiddenMenus.join(", ") + ")" : ""),
       "Visible Menus: " + visibleMenus.length + (visibleMenus.length ? " (" + visibleMenus.join(", ") + ")" : ""),
       "Renamed Labels: " + renamedLabels.length + (renamedLabels.length ? " (" + renamedLabels.join(", ") + ")" : ""),
+      "Menu Groups: " + menuGroups.length + (menuGroups.length ? " (" + menuGroups.join(", ") + ")" : ""),
       "Quick Links: " + quickLinks.length + (quickLinks.length ? " (" + quickLinks.join(", ") + ")" : "")
     ]);
     if (result.warnings.length) {
@@ -2965,6 +3414,9 @@
     var isEditable = isCustomPreset(selectedPreset());
 
     setContainerControlsDisabled(menuEditor, !isEditable);
+    if (menuGroupEditor) {
+      setContainerControlsDisabled(menuGroupEditor, !isEditable);
+    }
     setContainerControlsDisabled(renameEditor, !isEditable);
     setContainerControlsDisabled(linkEditor, !isEditable);
     setContainerControlsDisabled(globalSidebarStyleEditor, !isEditable);
@@ -2992,6 +3444,9 @@
     document.getElementById("selectAllMenusButton").disabled = !isEditable;
     document.getElementById("deselectAllMenusButton").disabled = !isEditable;
     document.getElementById("resetMenuDefaultsButton").disabled = !isEditable;
+    if (addMenuGroupButton) {
+      addMenuGroupButton.disabled = !isEditable;
+    }
     document.getElementById("addRenameButton").disabled = !isEditable;
     document.getElementById("addLinkButton").disabled = !isEditable;
     curatedShuffleButton.disabled = !isEditable;
@@ -3006,6 +3461,7 @@
     renderPresetSelects();
     renderTabState();
     renderHeader();
+    renderMenuGroupEditor();
     renderMenuEditor();
     renderRenameEditor();
     renderLinks();
@@ -3221,15 +3677,12 @@
     var visibleItems = [];
     var labelOverrides = {};
     var customLinks = [];
+    var menuGroups = [];
 
     preset.name = presetName.value.trim() || "Untitled Profile";
     preset.description = presetDescription.value.trim();
 
-    menuEditor.querySelectorAll("[data-menu-key]").forEach(function collectVisible(checkbox) {
-      if (checkbox.checked) {
-        visibleItems.push(checkbox.dataset.menuKey);
-      }
-    });
+    visibleItems = visibleMenuKeysFromEditor();
 
     renameEditor.querySelectorAll("[data-rename-row='true']").forEach(function collectRename(row) {
       var key = row.querySelector("[data-rename-field='key']").value;
@@ -3258,9 +3711,27 @@
       }
     });
 
+    if (menuGroupEditor) {
+      menuGroupEditor.querySelectorAll("[data-menu-group-card='true']").forEach(function collectGroup(card) {
+        var labelInput = card.querySelector("[data-menu-group-label]");
+        var label = labelInput ? labelInput.value.trim() : "";
+        var items = menuGroupItemsFromCard(card);
+
+        if (label) {
+          menuGroups.push({
+            id: card.dataset.menuGroupId || namespace.createId("group"),
+            label: label,
+            items: items,
+            collapsed: false
+          });
+        }
+      });
+    }
+
     preset.visibleItems = visibleItems;
     preset.labelOverrides = labelOverrides;
     preset.customLinks = customLinks;
+    preset.menuGroups = menuGroups;
     preset.sidebarStyle = collectSidebarStyleFromForm();
     preset.showInPopup = showInPopupToggle.checked;
     preset.updatedAt = namespace.nowIso();
@@ -3315,18 +3786,16 @@
   }
 
   function setMenuCheckboxes(checked) {
-    menuEditor.querySelectorAll("[data-menu-key]").forEach(function updateCheckbox(checkbox) {
-      checkbox.checked = checked;
-    });
+    setVisibleMenuKeysInEditor(checked ? allMenuKeys.slice() : []);
+    if (!checked && menuGroupEditor) {
+      menuGroupEditor.querySelectorAll("[data-menu-group-card='true']").forEach(function clearGroup(card) {
+        setMenuGroupItems(card, []);
+      });
+    }
   }
 
   function resetMenuCheckboxesToPresetDefault() {
-    var preset = selectedPreset();
-    var visibleSet = new Set((preset && preset.visibleItems) || []);
-
-    menuEditor.querySelectorAll("[data-menu-key]").forEach(function resetCheckbox(checkbox) {
-      checkbox.checked = visibleSet.has(checkbox.dataset.menuKey);
-    });
+    renderMenuGroupEditor();
   }
 
   function applySidebarPresetToForm(presetKey) {
@@ -3383,6 +3852,7 @@
       visibleItems: allMenuKeys.slice(),
       labelOverrides: {},
       customLinks: [],
+      menuGroups: [],
       sidebarStyle: namespace.defaultSidebarStyle
     }), "Profile created.", false);
   }
@@ -3558,17 +4028,20 @@
 
   document.getElementById("selectAllMenusButton").addEventListener("click", function selectAllMenus() {
     setMenuCheckboxes(true);
-    setStatus("All GHL menu items selected.");
+    refreshMenuGroupOptions();
+    setStatus("All native menu items moved into Your Sidebar.");
   });
 
   document.getElementById("deselectAllMenusButton").addEventListener("click", function deselectAllMenus() {
     setMenuCheckboxes(false);
-    setStatus("All menu items deselected. Add back the items you want visible.");
+    refreshMenuGroupOptions();
+    setStatus("All native menu items moved back to Available Items.");
   });
 
   document.getElementById("resetMenuDefaultsButton").addEventListener("click", function resetMenuDefaults() {
     resetMenuCheckboxesToPresetDefault();
-    setStatus("Menu items reset to the selected Profile default.");
+    refreshMenuGroupOptions();
+    setStatus("Menu Builder reset to the selected Profile default.");
   });
 
   document.getElementById("deletePresetButton").addEventListener("click", function deletePreset() {
@@ -3610,6 +4083,23 @@
   document.getElementById("addRenameButton").addEventListener("click", function addRename() {
     appendRenameRow(allMenuKeys[0], "");
   });
+
+  if (addMenuGroupButton) {
+    addMenuGroupButton.addEventListener("click", function addMenuGroup() {
+      if (menuGroupEditor.querySelector(".help-text")) {
+        menuGroupEditor.querySelectorAll(":scope > .help-text").forEach(function removeEmptyState(emptyState) {
+          emptyState.remove();
+        });
+      }
+      appendMenuGroupCard({
+        id: namespace.createId("group"),
+        label: "New Group",
+        items: [],
+        collapsed: false
+      });
+      refreshMenuGroupOptions();
+    });
+  }
 
   document.getElementById("addLinkButton").addEventListener("click", function addLink() {
     if (linkEditor.querySelector(".help-text")) {
@@ -3716,6 +4206,117 @@
       event.target.closest("[data-rename-row='true']").remove();
     }
   });
+
+  function handleMenuBuilderClick(event) {
+    var card = event.target.closest("[data-menu-group-card='true']");
+
+    if (!isCustomPreset(selectedPreset())) {
+      return;
+    }
+
+    if (event.target.dataset.deleteMenuGroup && card) {
+      card.remove();
+      refreshMenuGroupOptions();
+      return;
+    }
+
+    if (event.target.dataset.addMenuItem) {
+      removeMenuKeyFromAllGroups(event.target.dataset.addMenuItem);
+      setMenuKeyVisibleInEditor(event.target.dataset.addMenuItem, true);
+      refreshMenuGroupOptions();
+      return;
+    }
+
+    if (event.target.dataset.hideMenuItem) {
+      moveMenuKeyToGroup(event.target.dataset.hideMenuItem, "available");
+      return;
+    }
+
+    if (event.target.dataset.removeGroupItem && card) {
+      setMenuGroupItems(card, menuGroupItemsFromCard(card).filter(function keepItem(key) {
+        return key !== event.target.dataset.removeGroupItem;
+      }));
+      refreshMenuGroupOptions();
+    }
+  }
+
+  function attachMenuBuilderDragEvents(container) {
+    if (!container) {
+      return;
+    }
+
+    container.addEventListener("click", handleMenuBuilderClick);
+
+    container.addEventListener("dragstart", function handleMenuGroupDragStart(event) {
+      var chip = event.target.closest("[data-menu-group-drag-key]");
+
+      if (!isCustomPreset(selectedPreset()) || !chip || !chip.draggable) {
+        return;
+      }
+
+      draggedMenuGroupKey = chip.dataset.menuGroupDragKey;
+      chip.classList.add("is-dragging");
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", draggedMenuGroupKey);
+      }
+    });
+
+    container.addEventListener("dragover", function handleMenuGroupDragOver(event) {
+      var dropTarget = getMenuGroupDropTarget(event.target);
+
+      if (!isCustomPreset(selectedPreset()) || !draggedMenuGroupKey || !dropTarget) {
+        return;
+      }
+
+      event.preventDefault();
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = "move";
+      }
+      clearMenuGroupDropState();
+      dropTarget.classList.add("is-drop-target");
+    });
+
+    container.addEventListener("dragleave", function handleMenuGroupDragLeave(event) {
+      var dropTarget = event.target.closest ? event.target.closest("[data-menu-group-drop-target]") : null;
+
+      if (dropTarget && event.relatedTarget && dropTarget.contains(event.relatedTarget)) {
+        return;
+      }
+      if (dropTarget) {
+        dropTarget.classList.remove("is-drop-target");
+      }
+    });
+
+    container.addEventListener("drop", function handleMenuGroupDrop(event) {
+      var dropTarget = getMenuGroupDropTarget(event.target);
+      var draggedKey = draggedMenuGroupKey;
+      var groupId = dropTarget ? dropTarget.dataset.menuGroupDropTarget : "";
+      var insertIndex = dropTarget ? getMenuGroupInsertIndex(event, dropTarget) : undefined;
+
+      if (event.dataTransfer) {
+        draggedKey = event.dataTransfer.getData("text/plain") || draggedKey;
+      }
+      if (!isCustomPreset(selectedPreset()) || !dropTarget || !draggedKey) {
+        clearMenuGroupDropState();
+        draggedMenuGroupKey = "";
+        return;
+      }
+
+      event.preventDefault();
+      moveMenuKeyToGroup(draggedKey, groupId, insertIndex);
+      clearMenuGroupDropState();
+      draggedMenuGroupKey = "";
+    });
+
+    container.addEventListener("dragend", function handleMenuGroupDragEnd() {
+      clearMenuGroupDropState();
+      draggedMenuGroupKey = "";
+    });
+  }
+
+  attachMenuBuilderDragEvents(menuEditor);
+  attachMenuBuilderDragEvents(menuGroupEditor);
 
   linkEditor.addEventListener("click", function handleLinkClick(event) {
     if (event.target.dataset.removeLinkId) {

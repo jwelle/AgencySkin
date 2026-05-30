@@ -222,6 +222,54 @@
     };
   }
 
+  function normalizeMenuGroupLabel(value) {
+    var text = String(value || "").trim();
+
+    if (!text || /[<>]/.test(text) || /[\u0000-\u001f\u007f]/.test(text)) {
+      return "Menu Group";
+    }
+
+    return text.slice(0, 40);
+  }
+
+  function normalizeMenuGroups(menuGroups) {
+    var supportedMenuKeys = Array.isArray(namespace.allMenuKeys) ? namespace.allMenuKeys : [];
+    var assignedItems = {};
+
+    if (!Array.isArray(menuGroups)) {
+      return [];
+    }
+
+    return menuGroups.slice(0, 8).reduce(function collectGroups(groups, group) {
+      var normalizedItems = [];
+
+      if (!group || typeof group !== "object" || Array.isArray(group)) {
+        return groups;
+      }
+
+      if (Array.isArray(group.items)) {
+        group.items.slice(0, 12).forEach(function collectItem(item) {
+          var key = String(item || "").trim();
+
+          if (supportedMenuKeys.indexOf(key) === -1 || assignedItems[key]) {
+            return;
+          }
+
+          assignedItems[key] = true;
+          normalizedItems.push(key);
+        });
+      }
+
+      groups.push({
+        id: group.id || namespace.createId("group"),
+        label: normalizeMenuGroupLabel(group.label),
+        items: normalizedItems,
+        collapsed: group.collapsed === true
+      });
+      return groups;
+    }, []);
+  }
+
   function normalizePreset(preset, fallbackId) {
     preset = preset || {};
 
@@ -241,6 +289,7 @@
       visibleItems: Array.isArray(preset.visibleItems) ? preset.visibleItems.slice() : [],
       labelOverrides: Object.assign({}, preset.labelOverrides || {}),
       customLinks: Array.isArray(preset.customLinks) ? preset.customLinks.map(normalizeCustomLink) : [],
+      menuGroups: normalizeMenuGroups(preset.menuGroups),
       sidebarStyle: normalizeSidebarStyle(preset.sidebarStyle),
       profileMetadata: preset.profileMetadata && typeof preset.profileMetadata === "object" && !Array.isArray(preset.profileMetadata) ? clone(preset.profileMetadata) : null,
       showInPopup: preset.showInPopup !== false,
@@ -426,6 +475,7 @@
         return nextLink;
       }),
       sidebarStyle: normalizeSidebarStyle(sourcePreset.sidebarStyle),
+      menuGroups: sourcePreset.menuGroups || [],
       profileMetadata: sourcePreset.profileMetadata || null
     });
   }
@@ -433,6 +483,7 @@
   namespace.storage = {
     defaultState: defaultState,
     normalizeCustomLink: normalizeCustomLink,
+    normalizeMenuGroups: normalizeMenuGroups,
     normalizeSidebarStyle: normalizeSidebarStyle,
     normalizePreset: normalizePreset,
     normalizePresetPreference: normalizePresetPreference,

@@ -109,7 +109,7 @@
       <section id="builderPanel" class="panel builder-panel">
         <nav class="tabs" aria-label="Profile Builder sections">
           <button class="tab-button active" type="button" data-tab-button="style" data-tab-icon="palette">Sidebar Style</button>
-          <button class="tab-button" type="button" data-tab-button="menu" data-tab-icon="menu">Menu Items</button>
+          <button class="tab-button" type="button" data-tab-button="menu" data-tab-icon="menu">Menu Builder</button>
           <button class="tab-button" type="button" data-tab-button="rename" data-tab-icon="tag">Rename Labels</button>
           <button class="tab-button" type="button" data-tab-button="links" data-tab-icon="link">Quick Links</button>
           <button class="tab-button" type="button" data-tab-button="locations" data-location-defaults-ui hidden>Location Rules</button>
@@ -252,15 +252,33 @@
 
         <section class="tab-panel" data-tab-panel="menu">
           <div class="panel-header">
-            <h2>Menu Items</h2>
-            <p>Choose which GHL menu items should remain visible in this Profile.</p>
+            <h2>Menu Builder</h2>
+            <p>Choose which GoHighLevel menu items appear in your sidebar, then organize them into simple groups. Quick Links stay separate.</p>
           </div>
-          <div class="button-row menu-actions" aria-label="GHL menu item selection shortcuts">
+          <div class="menu-builder-layout">
+            <section class="menu-builder-column">
+              <div class="menu-builder-column-header">
+                <h3>Available Items</h3>
+                <p>Hidden native menu items.</p>
+              </div>
+              <div id="menuEditor" class="menu-editor menu-builder-drop-zone" data-menu-builder-available="true" data-menu-group-drop-target="available"></div>
+            </section>
+            <section class="menu-builder-column menu-builder-sidebar">
+              <div class="panel-header compact-header">
+                <div>
+                  <h3>Your Sidebar</h3>
+                  <p>Visible native menu items.</p>
+                </div>
+                <button id="addMenuGroupButton" class="secondary" type="button">Add Group</button>
+              </div>
+              <div id="menuGroupEditor" class="menu-group-editor" data-menu-group-drop-target="ungrouped"></div>
+            </section>
+          </div>
+          <div class="button-row menu-actions secondary-actions" aria-label="GHL menu item selection shortcuts">
             <button id="selectAllMenusButton" class="secondary" type="button">Select All</button>
             <button id="deselectAllMenusButton" class="secondary" type="button">Deselect All</button>
             <button id="resetMenuDefaultsButton" class="secondary" type="button">Reset to Default</button>
           </div>
-          <div id="menuEditor" class="menu-editor"></div>
         </section>
 
         <section class="tab-panel" data-tab-panel="rename">
