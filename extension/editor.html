@@ -71,36 +71,55 @@
           <div class="sidebar-style-layout">
             <div class="sidebar-style-controls">
               <section class="style-card">
+                <div class="style-panel-header simple-header">
+                  <h3>Global Sidebar Styling</h3>
+                  <div class="global-toggle-stack">
+                    <label class="toggle-row compact-toggle">
+                      <span>Apply styling</span>
+                      <input id="sidebarStyleEnabled" type="checkbox">
+                    </label>
+                    <label class="toggle-row compact-toggle">
+                      <span>Auto Readability</span>
+                      <input id="autoReadabilityToggle" type="checkbox">
+                    </label>
+                  </div>
+                </div>
+                <div id="globalSidebarStyleEditor" class="form-grid two-columns compact-style-editor"></div>
+              </section>
+
+              <section class="style-card">
                 <div class="style-panel-header">
+                  <div>
+                    <h3>Style Path</h3>
+                    <p class="help-text">Choose a fast preset path or build a custom configuration.</p>
+                  </div>
+                  <label class="field" for="sidebarStylePath">
+                    Editor Mode
+                    <select id="sidebarStylePath">
+                      <option value="preset">Use Preset</option>
+                      <option value="custom">Custom Configuration</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <section id="presetStylePanel" class="style-card">
+                <div class="style-panel-header">
+                  <div>
+                    <h3>Use Preset</h3>
+                    <p class="help-text">Start from curated presets, curated visuals, or a controlled rotation.</p>
+                  </div>
                   <label class="field compact-fallback" for="sidebarStylePreset">
                     Style Preset
                     <select id="sidebarStylePreset"></select>
                   </label>
-                  <label class="toggle-row compact-toggle">
-                    <span>Apply styling</span>
-                    <input id="sidebarStyleEnabled" type="checkbox">
-                  </label>
                 </div>
+                <h4 class="style-section-label">Curated Presets and Visuals</h4>
                 <div id="curatedPresetGrid" class="curated-preset-grid" aria-label="Curated sidebar style presets"></div>
-                <div class="compact-field-grid">
-                  <label class="field" for="sidebarBackgroundType">
-                    Background Type
-                    <select id="sidebarBackgroundType"></select>
-                  </label>
-                  <label class="toggle-row compact-toggle">
-                    <span>Auto Readability</span>
-                    <input id="autoReadabilityToggle" type="checkbox">
-                  </label>
-                </div>
-                <div class="sidebar-style-actions">
-                  <button id="curatedShuffleButton" class="secondary" type="button">Curated Shuffle</button>
-                  <button id="resetStyleButton" class="secondary" type="button">Reset Style</button>
-                </div>
-              </section>
-
-              <section class="style-card">
+                <h4 class="style-section-label">Basic Adjustments</h4>
+                <div id="presetAdjustmentEditor" class="form-grid two-columns compact-style-editor"></div>
                 <div class="style-panel-header simple-header">
-                  <h3>Curated Shuffle</h3>
+                  <h4 class="style-section-label">Curated Rotation</h4>
                   <label class="toggle-row compact-toggle">
                     <span>Enabled</span>
                     <input id="curatedShuffleEnabled" type="checkbox">
@@ -108,7 +127,7 @@
                 </div>
                 <div class="form-grid two-columns compact-style-editor">
                   <label class="inline-field" for="curatedShufflePool">
-                    Shuffle Pool
+                    Rotation Pool
                     <select id="curatedShufflePool"></select>
                   </label>
                   <label class="inline-field" for="curatedShuffleFrequency">
@@ -120,34 +139,60 @@
                     <input id="curatedShuffleAvoidRepeats" type="checkbox">
                   </label>
                 </div>
-                <div id="curatedShuffleCustomPool" class="custom-pool-grid"></div>
+                <div id="curatedShuffleCustomPool" class="custom-pool-grid" hidden></div>
+                <button id="curatedShuffleButton" class="secondary" type="button">Manual Shuffle</button>
               </section>
 
-              <section class="style-card">
+              <section id="customStylePanel" class="style-card custom-sidebar-controls">
+                <div class="style-panel-header">
+                  <div>
+                    <h3>Custom Configuration</h3>
+                    <p class="help-text">Build a manual Solid, Gradient, or Visual Image sidebar.</p>
+                  </div>
+                  <label class="field" for="sidebarBackgroundType">
+                    Background Type
+                    <select id="sidebarBackgroundType"></select>
+                  </label>
+                </div>
                 <div id="sidebarStyleEditor" class="form-grid two-columns compact-style-editor"></div>
               </section>
             </div>
 
-            <aside class="sidebar-style-preview-panel">
-              <div class="panel-header compact-header">
-                <h3>Preview</h3>
-                <p>Your actual GHL sidebar may vary slightly.</p>
-              </div>
-              <div id="sidebarStylePreview" class="sidebar-style-preview">
-                <div id="sidebarStylePreviewBackground" class="sidebar-preview-background"></div>
-                <div id="sidebarStylePreviewOverlay" class="sidebar-preview-overlay"></div>
-                <div id="sidebarStylePreviewHeader" class="sidebar-preview-header">
-                  <img id="sidebarStylePreviewLogo" alt="">
-                  <span id="sidebarStylePreviewHeaderText">AgencySkin</span>
+            <aside class="sidebar-style-right-panel">
+              <section class="sidebar-style-preview-panel">
+                <div class="panel-header compact-header">
+                  <h3>Live Sidebar Preview</h3>
+                  <p>Your actual GHL sidebar may vary slightly.</p>
                 </div>
-                <div class="sidebar-preview-item">Dashboard</div>
-                <div class="sidebar-preview-item">Conversations</div>
-                <div class="sidebar-preview-item active">Pipeline</div>
-                <div class="sidebar-preview-item">Contacts</div>
-                <div class="sidebar-preview-divider"></div>
-                <div class="sidebar-preview-item quick-link">Pricing Sheet</div>
-                <div class="sidebar-preview-spacer"></div>
-                <div class="sidebar-preview-item settings">Settings</div>
+                <div id="sidebarStylePreview" class="sidebar-style-preview">
+                  <div id="sidebarStylePreviewBackground" class="sidebar-preview-background"></div>
+                  <div id="sidebarStylePreviewOverlay" class="sidebar-preview-overlay"></div>
+                  <div id="sidebarStylePreviewHeader" class="sidebar-preview-header">
+                    <img id="sidebarStylePreviewLogo" alt="">
+                    <span id="sidebarStylePreviewHeaderText">AgencySkin</span>
+                  </div>
+                  <div class="sidebar-preview-item"><span class="sidebar-preview-icon"></span><span>Dashboard</span></div>
+                  <div class="sidebar-preview-item"><span class="sidebar-preview-icon"></span><span>Launchpad</span></div>
+                  <div class="sidebar-preview-item"><span class="sidebar-preview-icon"></span><span>Conversations</span></div>
+                  <div class="sidebar-preview-item active"><span class="sidebar-preview-icon"></span><span>Pipeline</span></div>
+                  <div class="sidebar-preview-item"><span class="sidebar-preview-icon"></span><span>Calendars</span></div>
+                  <div class="sidebar-preview-item"><span class="sidebar-preview-icon"></span><span>Contacts</span></div>
+                  <div class="sidebar-preview-item"><span class="sidebar-preview-icon"></span><span>Payments</span><span class="sidebar-preview-badge">3</span></div>
+                  <div class="sidebar-preview-divider"></div>
+                  <div class="sidebar-preview-item secondary"><span class="sidebar-preview-icon"></span><span>Reporting</span></div>
+                  <div class="sidebar-preview-item quick-link"><span class="sidebar-preview-icon"></span><span>Pricing Sheet</span></div>
+                  <div class="sidebar-preview-spacer"></div>
+                  <div class="sidebar-preview-divider"></div>
+                  <div class="sidebar-preview-item settings"><span class="sidebar-preview-icon"></span><span>Settings</span></div>
+                </div>
+              </section>
+              <section class="style-card menu-color-card">
+                <h3>Menu Colors</h3>
+                <div id="menuColorEditor" class="form-grid compact-style-editor"></div>
+              </section>
+              <div class="sidebar-style-actions">
+                <button id="savePresetButton" type="button">Save View</button>
+                <button id="resetStyleButton" class="secondary" type="button">Reset Style</button>
               </div>
             </aside>
           </div>
@@ -198,9 +243,6 @@
           <div id="locationRules" class="location-rules"></div>
         </section>
 
-        <div class="sticky-actions">
-          <button id="savePresetButton" type="button">Save View</button>
-        </div>
       </section>
     </main>
 

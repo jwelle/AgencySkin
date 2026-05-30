@@ -25,8 +25,14 @@
   var currentLocationLabel = document.getElementById("currentLocationLabel");
   var sidebarStyleEnabled = document.getElementById("sidebarStyleEnabled");
   var sidebarStylePreset = document.getElementById("sidebarStylePreset");
+  var sidebarStylePath = document.getElementById("sidebarStylePath");
   var sidebarBackgroundType = document.getElementById("sidebarBackgroundType");
   var sidebarStyleEditor = document.getElementById("sidebarStyleEditor");
+  var globalSidebarStyleEditor = document.getElementById("globalSidebarStyleEditor");
+  var presetAdjustmentEditor = document.getElementById("presetAdjustmentEditor");
+  var menuColorEditor = document.getElementById("menuColorEditor");
+  var presetStylePanel = document.getElementById("presetStylePanel");
+  var customStylePanel = document.getElementById("customStylePanel");
   var sidebarStylePreview = document.getElementById("sidebarStylePreview");
   var sidebarStylePreviewBackground = document.getElementById("sidebarStylePreviewBackground");
   var sidebarStylePreviewOverlay = document.getElementById("sidebarStylePreviewOverlay");
@@ -45,10 +51,9 @@
   var sidebarImageAssets = namespace.sidebarImageAssets || [];
   var curatedSidebarStylePresets = namespace.curatedSidebarStylePresets || [];
   var sidebarBackgroundTypes = [
-    { value: "solid", label: "Solid Color" },
+    { value: "solid", label: "Solid" },
     { value: "gradient", label: "Gradient" },
-    { value: "pattern", label: "Pattern" },
-    { value: "image", label: "Image" }
+    { value: "image", label: "Visual Image" }
   ];
 
   function configureLocationDefaultsUi() {
@@ -82,22 +87,22 @@
     { value: "center bottom", label: "Center Bottom" }
   ];
   var curatedShufflePoolOptions = [
-    { value: "selected-type-only", label: "Selected Type Only" },
-    { value: "images-patterns", label: "Images + Patterns" },
-    { value: "professional", label: "Professional Presets" },
-    { value: "favorites", label: "Favorites Only" },
-    { value: "custom", label: "Custom Pool" }
+    { value: "professional-patterns", label: "Professional + Curated Visuals" },
+    { value: "professional", label: "Professional" },
+    { value: "personal", label: "Personal" },
+    { value: "patterns", label: "Curated Visuals" },
+    { value: "uploads", label: "My Uploads" },
+    { value: "favorites", label: "Favorites Only" }
   ];
   var curatedShuffleFrequencyOptions = [
-    { value: "manual", label: "Manual only" },
-    { value: "session", label: "Every session" },
+    { value: "manual", label: "Manual Shuffle" },
     { value: "daily", label: "Daily" },
-    { value: "page-load", label: "Every page load" }
+    { value: "session", label: "Every Session" }
   ];
   var curatedShuffleCustomPoolOptions = [
     { value: "solids", label: "Solids" },
     { value: "gradients", label: "Gradients" },
-    { value: "patterns", label: "Patterns" },
+    { value: "patterns", label: "Curated Visuals" },
     { value: "images", label: "Images" }
   ];
   var sidebarBrandingModes = [
@@ -121,49 +126,50 @@
     { value: "after_settings", label: "After Settings" }
   ];
   var sidebarStyleFields = [
-    { section: "Solid Background", key: "backgroundColor", label: "Sidebar Background", type: "color", mode: "solid" },
-    { key: "backgroundOverlayOpacity", label: "Darken Overlay", type: "range", mode: "solid" },
-    { section: "Gradient Background", key: "gradientStartColor", label: "Start Color", type: "color", mode: "gradient" },
-    { key: "gradientEndColor", label: "End Color", type: "color", mode: "gradient" },
+    { key: "backgroundColor", label: "Background Color", type: "color", mode: "solid" },
+    { key: "backgroundOverlayOpacity", label: "Darken", type: "range", mode: "solid" },
+    { key: "backgroundOpacity", label: "Fade", type: "range", mode: "solid" },
+    { key: "gradientStartColor", label: "Gradient Color 1", type: "color", mode: "gradient" },
+    { key: "gradientEndColor", label: "Gradient Color 2", type: "color", mode: "gradient" },
     { key: "gradientDirection", label: "Direction", type: "select", options: gradientDirections, mode: "gradient" },
-    { key: "backgroundOverlayOpacity", label: "Darken Overlay", type: "range", mode: "gradient" },
-    { section: "Pattern Background", key: "backgroundAssetId", label: "Pattern", type: "select", options: function patternOptions() {
-      return sidebarPatternAssets.map(function mapPattern(asset) {
-        return { value: asset.id, label: asset.label };
-      });
-    }, mode: "pattern" },
-    { key: "patternSettings.scale", label: "Pattern Scale", type: "range", min: "0.5", max: "2.5", step: "0.05", mode: "pattern" },
-    { key: "patternSettings.opacity", label: "Pattern Opacity", type: "range", mode: "pattern" },
-    { key: "patternSettings.overlayOpacity", label: "Darken Overlay", type: "range", mode: "pattern" },
-    { key: "patternSettings.accentColor", label: "Accent Color", type: "color", mode: "pattern" },
-    { section: "Image Background", key: "backgroundImageUrl", label: "Image URL", type: "url", mode: "image" },
-    { key: "backgroundAssetId", label: "Curated Image", type: "select", options: function imageOptions() {
-      return [{ value: "", label: "Custom / URL" }].concat(sidebarImageAssets.map(function mapImage(asset) {
+    { key: "backgroundOverlayOpacity", label: "Darken", type: "range", mode: "gradient" },
+    { key: "backgroundOpacity", label: "Fade", type: "range", mode: "gradient" },
+    { key: "backgroundAssetId", label: "Curated Visual", type: "select", options: function imageOptions() {
+      return [{ value: "", label: "Custom Upload" }].concat(sidebarImageAssets.map(function mapImage(asset) {
         return { value: asset.id, label: asset.label };
       }));
     }, mode: "image" },
     { key: "customImageDataUrl", label: "Upload Custom Image", type: "file", mode: "image" },
-    { key: "imageSettings.scale", label: "Zoom", type: "range", min: "0.5", max: "2.5", step: "0.05", mode: "image" },
-    { key: "imageSettings.opacity", label: "Fade", type: "range", mode: "image" },
-    { key: "imageSettings.overlayOpacity", label: "Darken Overlay", type: "range", mode: "image" },
-    { key: "imageSettings.blur", label: "Blur", type: "range", min: "0", max: "12", step: "1", mode: "image" },
-    { key: "backgroundImageFit", label: "Image Fit", type: "select", options: backgroundImageFitOptions, mode: "image" },
-    { key: "backgroundImagePosition", label: "Image Position", type: "select", options: backgroundImagePositionOptions, mode: "image" },
-    { key: "backgroundOverlayColor", label: "Overlay Color", type: "color", mode: "image" },
     { key: "imageSettings.positionX", label: "Position X", type: "range", min: "0", max: "100", step: "1", mode: "image" },
     { key: "imageSettings.positionY", label: "Position Y", type: "range", min: "0", max: "100", step: "1", mode: "image" },
-    { section: "Menu Colors", key: "textColor", label: "Menu Text", type: "color" },
-    { key: "activeBackgroundColor", label: "Active Item Background", type: "color" },
-    { key: "activeTextColor", label: "Active Item Text", type: "color" },
-    { key: "hoverBackgroundColor", label: "Hover Background", type: "color" },
-    { section: "Shape", key: "borderRadius", label: "Menu Item Radius", type: "text" },
-    { key: "itemSpacing", label: "Menu Item Spacing", type: "text" },
-    { key: "sidebarPadding", label: "Sidebar Padding", type: "text" },
-    { section: "Branding", key: "sidebarBrandingMode", label: "Sidebar Branding", type: "select", options: sidebarBrandingModes },
-    { key: "logoUrl", label: "Logo URL", type: "url" },
-    { key: "headerLabel", label: "Header Text", type: "text" },
-    { key: "logoSize", label: "Logo Size", type: "text" },
-    { key: "headerAlignment", label: "Alignment", type: "select", options: sidebarBrandingAlignmentOptions }
+    { key: "imageSettings.scale", label: "Zoom", type: "range", min: "0.5", max: "2.5", step: "0.05", mode: "image" },
+    { key: "imageSettings.opacity", label: "Fade", type: "range", mode: "image" },
+    { key: "imageSettings.overlayOpacity", label: "Darken", type: "range", mode: "image" },
+    { key: "imageSettings.blur", label: "Blur", type: "range", min: "0", max: "12", step: "1", unit: "px", mode: "image" },
+    { key: "presetAdjustmentDarken", label: "Darken", type: "range", group: "preset-adjustment" },
+    { key: "presetAdjustmentFade", label: "Fade", type: "range", group: "preset-adjustment" },
+    { key: "presetAdjustmentBlur", label: "Blur", type: "range", min: "0", max: "12", step: "1", unit: "px", group: "preset-adjustment" },
+    { section: "Branding", key: "sidebarBrandingMode", label: "Logo Display", type: "select", options: sidebarBrandingModes, group: "global" },
+    { key: "customLogoDataUrl", label: "Logo Upload", type: "logo-file", group: "global" },
+    { key: "logoUrl", label: "Logo URL", type: "url", group: "global" },
+    { key: "headerLabel", label: "Brand Name", type: "text", group: "global" },
+    { key: "logoSize", label: "Logo Size", type: "text", group: "global" },
+    { key: "brandAccentColor", label: "Brand Accent", type: "color", group: "global" },
+    { key: "headerAlignment", label: "Brand Alignment", type: "select", options: sidebarBrandingAlignmentOptions, group: "global" },
+    { section: "Shape", key: "borderRadius", label: "Menu Item Radius", type: "text", group: "global" },
+    { key: "sidebarRadius", label: "Sidebar Radius", type: "text", group: "global" },
+    { key: "buttonRadius", label: "Button Radius", type: "text", group: "global" },
+    { key: "itemSpacing", label: "Spacing Density", type: "text", group: "global" },
+    { key: "sidebarPadding", label: "Sidebar Padding", type: "text", group: "global" },
+    { key: "shadowStrength", label: "Shadow Strength", type: "range", group: "global" },
+    { key: "borderVisible", label: "Border Visible", type: "checkbox", group: "global" },
+    { key: "textColor", label: "Menu Text", type: "color", group: "menu" },
+    { key: "iconColor", label: "Icon Color", type: "color", group: "menu" },
+    { key: "activeBackgroundColor", label: "Active Item Background", type: "color", group: "menu" },
+    { key: "activeTextColor", label: "Active Item Text", type: "color", group: "menu" },
+    { key: "hoverBackgroundColor", label: "Hover Background", type: "color", group: "menu" },
+    { key: "dividerColor", label: "Divider Color", type: "color", group: "menu" },
+    { key: "badgeColor", label: "Badge Color", type: "color", group: "menu" }
   ];
 
   function setStatus(message, isError) {
@@ -379,6 +385,10 @@
   function getOverlayRgba(color, opacity) {
     var rgb = hexToRgb(color || "#000000");
     return "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + clampOpacity(opacity) + ")";
+  }
+
+  function getBackgroundColorValue(color, opacity) {
+    return getOverlayRgba(color || "#000000", opacity === undefined ? 1 : opacity);
   }
 
   function clampNumber(value, min, max, fallback) {
@@ -613,18 +623,19 @@
     }
 
     if (style.backgroundType === "gradient") {
-      var start = style.gradientStartColor || style.backgroundColor || "#0f172a";
-      var end = style.gradientEndColor || style.backgroundColor || "#1d4ed8";
+      var opacity = clampOpacity(style.backgroundOpacity === undefined ? 1 : style.backgroundOpacity);
+      var start = getBackgroundColorValue(style.gradientStartColor || style.backgroundColor || "#0f172a", opacity);
+      var end = getBackgroundColorValue(style.gradientEndColor || style.backgroundColor || "#1d4ed8", opacity);
       var direction = style.gradientDirection || "135deg";
       return "linear-gradient(" + direction + ", " + start + ", " + end + ")";
     }
 
-    return style.backgroundColor || "#ffffff";
+    return getBackgroundColorValue(style.backgroundColor || "#ffffff", style.backgroundOpacity);
   }
 
   function resolveBrandLogoUrl(style) {
     var brandSettings = namespace.brandSettings || {};
-    return normalizeUrl(style.logoUrl || brandSettings.logoUrl || namespace.defaultBrandLogoUrl || "");
+    return style.customLogoDataUrl || normalizeUrl(style.logoUrl || brandSettings.logoUrl || namespace.defaultBrandLogoUrl || "");
   }
 
   function resolveBrandHeaderLabel(style) {
@@ -729,6 +740,72 @@
     option.textContent = labelText || "Custom Draft";
   }
 
+  function getEditorBackgroundType(style) {
+    return style && style.backgroundType === "pattern" ? "image" : (style && style.backgroundType) || "solid";
+  }
+
+  function getPresetAdjustmentValue(style, key) {
+    if (key === "presetAdjustmentDarken") {
+      if (style.backgroundType === "image") {
+        return getByPath(style, "imageSettings.overlayOpacity", 0.55);
+      }
+      if (style.backgroundType === "pattern") {
+        return getByPath(style, "patternSettings.overlayOpacity", 0.35);
+      }
+      return style.backgroundOverlayOpacity;
+    }
+
+    if (key === "presetAdjustmentFade") {
+      if (style.backgroundType === "image") {
+        return getByPath(style, "imageSettings.opacity", 0.85);
+      }
+      if (style.backgroundType === "pattern") {
+        return getByPath(style, "patternSettings.opacity", 0.5);
+      }
+      return style.backgroundOpacity;
+    }
+
+    if (key === "presetAdjustmentBlur") {
+      return style.backgroundType === "image" ? getByPath(style, "imageSettings.blur", 0) : 0;
+    }
+
+    return undefined;
+  }
+
+  function setPresetAdjustmentValue(style, key, value) {
+    if (key === "presetAdjustmentDarken") {
+      if (style.backgroundType === "image") {
+        setByPath(style, "imageSettings.overlayOpacity", clampOpacity(value));
+      } else if (style.backgroundType === "pattern") {
+        setByPath(style, "patternSettings.overlayOpacity", clampOpacity(value));
+      } else {
+        style.backgroundOverlayOpacity = clampOpacity(value);
+      }
+    }
+
+    if (key === "presetAdjustmentFade") {
+      if (style.backgroundType === "image") {
+        setByPath(style, "imageSettings.opacity", clampOpacity(value));
+      } else if (style.backgroundType === "pattern") {
+        setByPath(style, "patternSettings.opacity", clampOpacity(value));
+      } else {
+        style.backgroundOpacity = clampOpacity(value);
+      }
+    }
+
+    if (key === "presetAdjustmentBlur" && style.backgroundType === "image") {
+      setByPath(style, "imageSettings.blur", clampNumber(value, 0, 12, 0));
+    }
+  }
+
+  function getFieldValue(style, field) {
+    if (field.group === "preset-adjustment") {
+      return getPresetAdjustmentValue(style, field.key);
+    }
+
+    return getByPath(style, field.key, field.defaultValue || "");
+  }
+
   function renderSidebarBackgroundTypeOptions(selectedValue) {
     sidebarBackgroundType.innerHTML = "";
     sidebarBackgroundTypes.forEach(function addOption(backgroundType) {
@@ -743,13 +820,21 @@
   function createSelectField(field, style) {
     var select = document.createElement("select");
     var options = typeof field.options === "function" ? field.options() : field.options || [];
+    var selectedValue = getFieldValue(style, field);
     options.forEach(function addOption(optionDefinition) {
       var option = document.createElement("option");
       option.value = optionDefinition.value;
       option.textContent = optionDefinition.label;
       select.appendChild(option);
     });
-    select.value = getByPath(style, field.key, field.defaultValue || "");
+    if (field.key === "backgroundAssetId" && selectedValue && !select.querySelector("option[value='" + String(selectedValue).replace(/'/g, "\\'") + "']")) {
+      var asset = getAssetById(selectedValue);
+      var legacyOption = document.createElement("option");
+      legacyOption.value = selectedValue;
+      legacyOption.textContent = asset ? asset.label : "Saved Visual";
+      select.appendChild(legacyOption);
+    }
+    select.value = selectedValue;
     select.dataset.sidebarStyleField = field.key;
     select.addEventListener("change", function handleSelectChange() {
       if (field.key === "backgroundAssetId" && select.value) {
@@ -770,7 +855,7 @@
     var controls = document.createElement("span");
     var picker = document.createElement("input");
     var textInput = document.createElement("input");
-    var value = getByPath(style, field.key, "");
+    var value = getFieldValue(style, field) || "";
 
     wrapper.className = "inline-field color-field";
     controls.className = "color-control";
@@ -795,9 +880,18 @@
   function createTextField(field, style) {
     var input = document.createElement("input");
     input.type = field.type;
-    input.value = getByPath(style, field.key, "");
+    input.value = getFieldValue(style, field) || "";
     input.dataset.sidebarStyleField = field.key;
     input.addEventListener("input", updateSidebarStylePreview);
+    return createFieldLabel(field.label, input);
+  }
+
+  function createCheckboxField(field, style) {
+    var input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = getByPath(style, field.key, true) !== false;
+    input.dataset.sidebarStyleField = field.key;
+    input.addEventListener("change", updateSidebarStylePreview);
     return createFieldLabel(field.label, input);
   }
 
@@ -813,7 +907,7 @@
     input.min = field.min || "0";
     input.max = field.max || "1";
     input.step = field.step || "0.05";
-    input.value = clampNumber(getByPath(style, field.key, 0), Number(input.min), Number(input.max), Number(input.min));
+    input.value = clampNumber(getFieldValue(style, field), Number(input.min), Number(input.max), Number(input.min));
     input.dataset.sidebarStyleField = field.key;
     valueLabel.className = "range-value";
     valueLabel.textContent = formatRangeValue(input.value, field);
@@ -832,6 +926,10 @@
 
   function formatRangeValue(value, field) {
     var numeric = Number(value);
+
+    if (field.unit) {
+      return Math.round(numeric) + field.unit;
+    }
 
     if (field.max && Number(field.max) > 1) {
       return field.max === "100" ? Math.round(numeric) + "%" : numeric.toFixed(2).replace(/\.?0+$/, "") + "x";
@@ -856,6 +954,30 @@
     removeButton.className = "secondary";
     removeButton.textContent = "Remove";
     removeButton.dataset.removeCustomImage = "true";
+
+    wrapper.appendChild(document.createTextNode(field.label));
+    controls.appendChild(input);
+    controls.appendChild(removeButton);
+    wrapper.appendChild(controls);
+    return wrapper;
+  }
+
+  function createLogoFileField(field) {
+    var wrapper = document.createElement("label");
+    var controls = document.createElement("span");
+    var input = document.createElement("input");
+    var removeButton = document.createElement("button");
+
+    wrapper.className = "inline-field file-field";
+    controls.className = "file-control";
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp";
+    input.dataset.sidebarStyleField = field.key;
+    input.addEventListener("change", handleCustomLogoUpload);
+    removeButton.type = "button";
+    removeButton.className = "secondary";
+    removeButton.textContent = "Remove";
+    removeButton.dataset.removeCustomLogo = "true";
 
     wrapper.appendChild(document.createTextNode(field.label));
     controls.appendChild(input);
@@ -924,6 +1046,56 @@
     reader.readAsDataURL(file);
   }
 
+  function handleCustomLogoUpload(event) {
+    var file = event.target.files && event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) {
+      setStatus("Use a JPG, PNG, or WebP logo.", true);
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 512 * 1024) {
+      setStatus("Logo images must be 512KB or smaller.", true);
+      event.target.value = "";
+      return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function handleLogoReaderLoad() {
+      var image = new Image();
+      image.onload = function handleLogoImageLoad() {
+        var canvas = document.createElement("canvas");
+        var size = 160;
+        var context = canvas.getContext("2d");
+        var scale = Math.min(size / image.width, size / image.height, 1);
+        var drawWidth = image.width * scale;
+        var drawHeight = image.height * scale;
+        var drawX = (size - drawWidth) / 2;
+        var drawY = (size - drawHeight) / 2;
+        var nextStyle = collectSidebarStyleFromForm();
+
+        canvas.width = size;
+        canvas.height = size;
+        context.clearRect(0, 0, size, size);
+        context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+        nextStyle.customLogoDataUrl = canvas.toDataURL("image/webp", 0.82);
+        nextStyle.sidebarBrandingMode = "replace";
+        populateSidebarStyleForm(nextStyle, { presetValue: "custom", optionLabel: "Custom Logo Draft" });
+        setStatus("Logo loaded. Save this view to keep it.");
+      };
+      image.onerror = function handleLogoImageError() {
+        setStatus("Unable to read that logo.", true);
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   function syncSidebarModeState() {
     var backgroundType = sidebarBackgroundType.value || "solid";
     sidebarStyleEditor.querySelectorAll("[data-sidebar-style-mode]").forEach(function updateMode(element) {
@@ -931,12 +1103,41 @@
       element.hidden = !isActiveMode;
       element.classList.toggle("is-muted", !isActiveMode);
     });
+    if (presetAdjustmentEditor) {
+      presetAdjustmentEditor.querySelectorAll("[data-sidebar-style-field='presetAdjustmentBlur']").forEach(function updateBlur(input) {
+        var wrapper = input.closest("[data-sidebar-style-group='preset-adjustment']");
+        var style = storage.normalizeSidebarStyle(draftSidebarStyle || {});
+        if (wrapper) {
+          wrapper.hidden = style.backgroundType !== "image";
+        }
+      });
+    }
+  }
+
+  function getSidebarStyleFieldContainers() {
+    return [globalSidebarStyleEditor, presetAdjustmentEditor, sidebarStyleEditor, menuColorEditor].filter(Boolean);
+  }
+
+  function syncStylePathState(style) {
+    var normalizedStyle = storage.normalizeSidebarStyle(style || draftSidebarStyle || {});
+    var path = sidebarStylePath ? sidebarStylePath.value || normalizedStyle.stylePath || "preset" : normalizedStyle.stylePath || "preset";
+
+    if (sidebarStylePath) {
+      sidebarStylePath.value = path;
+    }
+    if (presetStylePanel) {
+      presetStylePanel.hidden = path !== "preset";
+    }
+    if (customStylePanel) {
+      customStylePanel.hidden = path !== "custom";
+    }
   }
 
   function populateSidebarStyleForm(style, options) {
     var normalizedStyle = storage.normalizeSidebarStyle(style);
     var presetValue = options && options.presetValue ? options.presetValue : normalizedStyle.preset || "default";
     draftSidebarStyle = normalizedStyle;
+    renderSidebarBackgroundTypeOptions(getEditorBackgroundType(normalizedStyle));
     renderCuratedPresetCards(normalizedStyle);
 
     if (!sidebarStylePresets[presetValue]) {
@@ -945,23 +1146,31 @@
 
     sidebarStyleEnabled.checked = normalizedStyle.enabled === true;
     sidebarStylePreset.value = presetValue;
-    sidebarBackgroundType.value = normalizedStyle.backgroundType || "solid";
+    if (sidebarStylePath) {
+      sidebarStylePath.value = normalizedStyle.stylePath || "preset";
+    }
+    sidebarBackgroundType.value = getEditorBackgroundType(normalizedStyle);
     if (autoReadabilityToggle) {
       autoReadabilityToggle.checked = normalizedStyle.autoReadability !== false;
     }
     populateCuratedShuffleForm(normalizedStyle);
-    sidebarStyleEditor.querySelectorAll("[data-sidebar-style-field]").forEach(function updateField(input) {
-      var value = getByPath(normalizedStyle, input.dataset.sidebarStyleField, "");
+    getSidebarStyleFieldContainers().forEach(function updateContainer(container) {
+      container.querySelectorAll("[data-sidebar-style-field]").forEach(function updateField(input) {
+      var rangeField = sidebarStyleFields.find(function findRange(field) {
+        return field.key === input.dataset.sidebarStyleField;
+      }) || {};
+      var value = getFieldValue(normalizedStyle, rangeField);
       if (input.type === "file") {
+        return;
+      }
+      if (input.type === "checkbox") {
+        input.checked = value !== false;
         return;
       }
       input.value = value === undefined || value === null ? "" : value;
       if (input.type === "range") {
         input.value = value === undefined || value === null ? input.value : value;
         if (input.closest(".range-control")) {
-          var rangeField = sidebarStyleFields.find(function findRange(field) {
-            return field.key === input.dataset.sidebarStyleField;
-          }) || {};
           input.closest(".range-control").querySelector(".range-value").textContent = formatRangeValue(input.value, rangeField);
         }
       }
@@ -971,7 +1180,9 @@
           picker.value = normalizeHexColor(input.value);
         }
       }
+      });
     });
+    syncStylePathState(normalizedStyle);
     syncSidebarModeState();
     updateSidebarStylePreview();
   }
@@ -1054,37 +1265,71 @@
     };
   }
 
+  function createSidebarStyleField(field, style) {
+    var label = null;
+
+    if (field.type === "color") {
+      label = createColorField(field, style);
+    } else if (field.type === "select") {
+      label = createSelectField(field, style);
+    } else if (field.type === "range") {
+      label = createRangeField(field, style);
+    } else if (field.type === "file") {
+      label = createFileField(field);
+    } else if (field.type === "logo-file") {
+      label = createLogoFileField(field);
+    } else if (field.type === "checkbox") {
+      label = createCheckboxField(field, style);
+    } else {
+      label = createTextField(field, style);
+    }
+
+    if (field.mode) {
+      label.dataset.sidebarStyleMode = field.mode;
+    }
+    if (field.group) {
+      label.dataset.sidebarStyleGroup = field.group;
+    }
+
+    return label;
+  }
+
+  function renderSidebarStyleFields(container, style, fields) {
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = "";
+    fields.forEach(function renderStyleField(field) {
+      if (field.section) {
+        container.appendChild(createSectionHeading(field.section));
+      }
+      container.appendChild(createSidebarStyleField(field, style));
+    });
+  }
+
   function renderSidebarStyle() {
     var preset = selectedPreset();
     var style = storage.normalizeSidebarStyle(preset.sidebarStyle);
-    renderSidebarBackgroundTypeOptions(style.backgroundType);
-    renderCuratedPresetCards(style);
-    sidebarStyleEditor.innerHTML = "";
-
-    sidebarStyleFields.forEach(function renderStyleField(field) {
-      var label = null;
-
-      if (field.section) {
-        sidebarStyleEditor.appendChild(createSectionHeading(field.section));
-      }
-
-      if (field.type === "color") {
-        label = createColorField(field, style);
-      } else if (field.type === "select") {
-        label = createSelectField(field, style);
-      } else if (field.type === "range") {
-        label = createRangeField(field, style);
-      } else if (field.type === "file") {
-        label = createFileField(field);
-      } else {
-        label = createTextField(field, style);
-      }
-
-      if (field.mode) {
-        label.dataset.sidebarStyleMode = field.mode;
-      }
-      sidebarStyleEditor.appendChild(label);
+    var globalFields = sidebarStyleFields.filter(function keepGlobalField(field) {
+      return field.group === "global";
     });
+    var presetAdjustmentFields = sidebarStyleFields.filter(function keepPresetAdjustmentField(field) {
+      return field.group === "preset-adjustment";
+    });
+    var menuFields = sidebarStyleFields.filter(function keepMenuField(field) {
+      return field.group === "menu";
+    });
+    var customFields = sidebarStyleFields.filter(function keepCustomField(field) {
+      return field.group !== "global" && field.mode;
+    });
+
+    renderSidebarBackgroundTypeOptions(getEditorBackgroundType(style));
+    renderCuratedPresetCards(style);
+    renderSidebarStyleFields(globalSidebarStyleEditor, style, globalFields);
+    renderSidebarStyleFields(presetAdjustmentEditor, style, presetAdjustmentFields);
+    renderSidebarStyleFields(sidebarStyleEditor, style, customFields);
+    renderSidebarStyleFields(menuColorEditor, style, menuFields);
     populateSidebarStyleForm(style, { presetValue: style.preset || "default" });
   }
 
@@ -1149,12 +1394,15 @@
 
   function applyCuratedPresetFromCard(presetId) {
     var preset = getCuratedPresetById(presetId);
+    var nextStyle = null;
 
     if (!preset) {
       return;
     }
 
-    populateSidebarStyleForm(applyCuratedStyleToStyle(getCurrentWorkingSidebarStyle(), preset), {
+    nextStyle = applyCuratedStyleToStyle(getCurrentWorkingSidebarStyle(), preset);
+    nextStyle.stylePath = "preset";
+    populateSidebarStyleForm(nextStyle, {
       presetValue: "custom",
       optionLabel: "Custom Draft - " + preset.label
     });
@@ -1192,7 +1440,15 @@
       });
     }
 
-    if (shuffle.poolMode === "professional" || shuffle.poolMode === "favorites") {
+    if (shuffle.poolMode === "patterns") {
+      return ["pattern"];
+    }
+
+    if (shuffle.poolMode === "uploads") {
+      return ["image"];
+    }
+
+    if (shuffle.poolMode === "professional-patterns" || shuffle.poolMode === "professional" || shuffle.poolMode === "personal" || shuffle.poolMode === "favorites") {
       return ["solid", "gradient", "pattern", "image"];
     }
 
@@ -1209,6 +1465,22 @@
       }
 
       if (shuffle.poolMode === "professional" && preset.category !== "professional") {
+        return false;
+      }
+
+      if (shuffle.poolMode === "professional-patterns" && preset.category !== "professional" && preset.type !== "pattern") {
+        return false;
+      }
+
+      if (shuffle.poolMode === "personal" && preset.category !== "personal") {
+        return false;
+      }
+
+      if (shuffle.poolMode === "patterns" && preset.type !== "pattern") {
+        return false;
+      }
+
+      if (shuffle.poolMode === "uploads") {
         return false;
       }
 
@@ -1234,12 +1506,13 @@
     var recent = (shuffle.lastAppliedAssetIds || []).slice();
 
     if (!candidates.length) {
-      setStatus("No curated styles match this shuffle pool.", true);
+      setStatus("No curated styles match this rotation pool.", true);
       return;
     }
 
     selected = pickRandom(candidates);
     style = applyCuratedStyleToStyle(style, selected);
+    style.stylePath = "preset";
     recent.unshift(selected.assetId || selected.id);
     style.curatedShuffle = Object.assign({}, shuffle, {
       lastAppliedAssetIds: recent.slice(0, shuffle.avoidRecentCount || 3),
@@ -1250,7 +1523,7 @@
       presetValue: "custom",
       optionLabel: "Custom Draft - " + selected.label
     });
-    setStatus("Curated Shuffle picked " + selected.label + ". Save this view to keep it.");
+    setStatus("Curated Rotation picked " + selected.label + ". Save this view to keep it.");
   }
 
   function updateImagePositionFromPointer(event) {
@@ -1321,6 +1594,7 @@
     setContainerControlsDisabled(menuEditor, !isEditable);
     setContainerControlsDisabled(renameEditor, !isEditable);
     setContainerControlsDisabled(linkEditor, !isEditable);
+    setContainerControlsDisabled(globalSidebarStyleEditor, !isEditable);
     setContainerControlsDisabled(sidebarStyleEditor, !isEditable);
     setContainerControlsDisabled(curatedPresetGrid, !isEditable);
     setContainerControlsDisabled(curatedShuffleCustomPool, !isEditable);
@@ -1366,24 +1640,45 @@
 
   function collectSidebarStyleFromForm() {
     var style = storage.normalizeSidebarStyle(draftSidebarStyle || sidebarStylePresets[sidebarStylePreset.value] || {});
+    var previousBackgroundType = style.backgroundType || "solid";
     style.enabled = sidebarStyleEnabled.checked;
     style.preset = sidebarStylePreset.value || "default";
-    style.backgroundType = sidebarBackgroundType.value || "solid";
+    style.stylePath = sidebarStylePath ? sidebarStylePath.value || "preset" : style.stylePath || "preset";
+    if (style.stylePath === "custom") {
+      style.backgroundType = previousBackgroundType === "pattern" && sidebarBackgroundType.value === "image" ? "pattern" : sidebarBackgroundType.value || "solid";
+    }
     style.autoReadability = autoReadabilityToggle ? autoReadabilityToggle.checked : true;
     style.curatedShuffle = collectCuratedShuffleFromForm(style);
 
-    sidebarStyleEditor.querySelectorAll("[data-sidebar-style-field]").forEach(function collectField(input) {
+    getSidebarStyleFieldContainers().forEach(function collectContainer(container) {
+      container.querySelectorAll("[data-sidebar-style-field]").forEach(function collectField(input) {
       var key = input.dataset.sidebarStyleField;
       var rangeField = sidebarStyleFields.find(function findField(field) {
         return field.key === key;
       }) || {};
       var modeElement = input.closest("[data-sidebar-style-mode]");
 
+      if (input.closest("[hidden]")) {
+        return;
+      }
+
       if (modeElement && modeElement.hidden) {
         return;
       }
 
       if (input.type === "file") {
+        return;
+      }
+
+      if (input.type === "checkbox") {
+        setByPath(style, key, input.checked);
+        return;
+      }
+
+      if (rangeField.group === "preset-adjustment") {
+        if (input.type === "range") {
+          setPresetAdjustmentValue(style, key, input.value);
+        }
         return;
       }
 
@@ -1398,12 +1693,13 @@
       }
 
       setByPath(style, key, input.value.trim());
+      });
     });
 
-    if (style.backgroundType === "pattern" && !getAssetById(style.backgroundAssetId)) {
+    if (style.backgroundType === "pattern" && (!getAssetById(style.backgroundAssetId) || getAssetById(style.backgroundAssetId).type !== "pattern")) {
       style.backgroundAssetId = sidebarPatternAssets[0] ? sidebarPatternAssets[0].id : "";
     }
-    if (style.backgroundType === "image" && style.backgroundAssetId && !getAssetById(style.backgroundAssetId)) {
+    if (style.backgroundType === "image" && style.backgroundAssetId && (!getAssetById(style.backgroundAssetId) || getAssetById(style.backgroundAssetId).type !== "image")) {
       style.backgroundAssetId = "";
     }
 
@@ -1423,11 +1719,17 @@
     var style = getCurrentWorkingSidebarStyle();
     var background = getSidebarBackgroundValue(style);
     var textColor = style.textColor || "#111827";
+    var iconColor = style.iconColor || textColor;
     var activeBackgroundColor = style.activeBackgroundColor || "#e5e7eb";
     var activeTextColor = style.activeTextColor || textColor;
+    var dividerColor = style.dividerColor || "rgba(255, 255, 255, 0.22)";
+    var badgeColor = style.badgeColor || style.brandAccentColor || activeBackgroundColor;
     var borderRadius = style.borderRadius || "8px";
+    var buttonRadius = style.buttonRadius || borderRadius;
+    var sidebarRadius = style.sidebarRadius || "16px";
     var itemSpacing = style.itemSpacing || "4px";
     var sidebarPadding = style.sidebarPadding || "12px";
+    var shadowStrength = clampOpacity(style.shadowStrength === undefined ? 0.35 : style.shadowStrength);
     var brandingMode = style.sidebarBrandingMode || "keep";
     var headerLabel = brandingMode === "keep" ? "GHL Default" : resolveBrandHeaderLabel(style);
     var logoUrl = brandingMode === "replace" ? resolveBrandLogoUrl(style) : "";
@@ -1444,6 +1746,9 @@
     sidebarStylePreview.style.backgroundPosition = "";
     sidebarStylePreview.style.backgroundRepeat = "";
     sidebarStylePreview.style.background = style.backgroundColor || "#ffffff";
+    sidebarStylePreview.style.borderRadius = sidebarRadius;
+    sidebarStylePreview.style.borderColor = style.borderVisible === false ? "transparent" : "var(--as-border)";
+    sidebarStylePreview.style.boxShadow = shadowStrength > 0 ? "0 12px 32px rgba(15, 23, 42, " + shadowStrength + ")" : "none";
     if (sidebarStylePreviewBackground) {
       sidebarStylePreviewBackground.style.background = "";
       sidebarStylePreviewBackground.style.backgroundImage = "";
@@ -1507,11 +1812,24 @@
 
     sidebarStylePreview.querySelectorAll(".sidebar-preview-item").forEach(function updateItem(item) {
       item.style.color = textColor;
-      item.style.borderRadius = borderRadius;
+      item.style.borderRadius = buttonRadius;
       item.style.marginTop = itemSpacing;
       item.style.marginBottom = itemSpacing;
       item.style.padding = "8px 12px";
       item.style.background = "transparent";
+    });
+
+    sidebarStylePreview.querySelectorAll(".sidebar-preview-icon").forEach(function updateIcon(icon) {
+      icon.style.background = iconColor;
+    });
+
+    sidebarStylePreview.querySelectorAll(".sidebar-preview-divider").forEach(function updateDivider(divider) {
+      divider.style.background = dividerColor;
+    });
+
+    sidebarStylePreview.querySelectorAll(".sidebar-preview-badge").forEach(function updateBadge(badge) {
+      badge.style.background = badgeColor;
+      badge.style.color = activeTextColor;
     });
 
     var activeItem = sidebarStylePreview.querySelector(".sidebar-preview-item.active");
@@ -1649,6 +1967,7 @@
 
   function applySidebarPresetToForm(presetKey) {
     var style = storage.normalizeSidebarStyle(sidebarStylePresets[presetKey] || {});
+    style.stylePath = "preset";
     populateSidebarStyleForm(style, { presetValue: presetKey || "default" });
   }
 
@@ -1883,11 +2202,30 @@
     }
   });
 
+  if (globalSidebarStyleEditor) {
+    globalSidebarStyleEditor.addEventListener("click", function handleGlobalSidebarStyleClick(event) {
+      if (event.target.dataset.removeCustomLogo) {
+        var style = getCurrentWorkingSidebarStyle();
+        style.customLogoDataUrl = "";
+        populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
+        setStatus("Logo removed. Save this view to keep the change.");
+      }
+    });
+  }
+
   sidebarStylePreset.addEventListener("change", function chooseStylePreset() {
     applySidebarPresetToForm(sidebarStylePreset.value);
   });
 
   sidebarStyleEnabled.addEventListener("change", updateSidebarStylePreview);
+
+  if (sidebarStylePath) {
+    sidebarStylePath.addEventListener("change", function changeStylePath() {
+      var style = getCurrentWorkingSidebarStyle();
+      style.stylePath = sidebarStylePath.value || "preset";
+      populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
+    });
+  }
 
   if (autoReadabilityToggle) {
     autoReadabilityToggle.addEventListener("change", updateSidebarStylePreview);
@@ -1895,6 +2233,7 @@
 
   sidebarBackgroundType.addEventListener("change", function changeBackgroundType() {
     var style = getCurrentWorkingSidebarStyle();
+    style.stylePath = "custom";
     if (sidebarBackgroundType.value === "pattern" && !getAssetById(style.backgroundAssetId)) {
       style.backgroundAssetId = sidebarPatternAssets[0] ? sidebarPatternAssets[0].id : "";
       populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });

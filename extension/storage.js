@@ -31,6 +31,7 @@
       backgroundAssetId: "",
       customImageDataUrl: "",
       backgroundColor: "",
+      backgroundOpacity: 1,
       gradientStartColor: "",
       gradientEndColor: "",
       gradientDirection: "135deg",
@@ -56,7 +57,7 @@
       },
       curatedShuffle: {
         enabled: false,
-        poolMode: "selected-type-only",
+        poolMode: "professional-patterns",
         customPool: ["patterns", "images"],
         frequency: "daily",
         favoritesOnly: false,
@@ -67,17 +68,27 @@
         sessionKey: ""
       },
       favoriteAssetIds: [],
+      stylePath: "preset",
       autoReadability: true,
       textColor: "",
+      iconColor: "",
       activeBackgroundColor: "",
       activeTextColor: "",
       hoverBackgroundColor: "",
+      dividerColor: "",
+      badgeColor: "",
       borderRadius: "",
+      sidebarRadius: "16px",
+      buttonRadius: "",
       itemSpacing: "",
       sidebarPadding: "",
+      shadowStrength: 0.35,
+      borderVisible: true,
       sidebarBrandingMode: "keep",
       logoUrl: "",
+      customLogoDataUrl: "",
       headerLabel: "",
+      brandAccentColor: "",
       logoSize: "32px",
       headerAlignment: "center"
     }, namespace.defaultSidebarStyle || {});
@@ -88,11 +99,17 @@
     var allowedBackgroundTypes = ["solid", "gradient", "pattern", "image"];
     var allowedBrandingModes = ["keep", "hide", "replace"];
     var allowedHeaderAlignments = ["left", "center", "right"];
+    var allowedStylePaths = ["preset", "custom"];
     var defaultImageSettings = defaultSidebarStyle().imageSettings;
     var defaultPatternSettings = defaultSidebarStyle().patternSettings;
     var defaultShuffle = defaultSidebarStyle().curatedShuffle;
-    var allowedShufflePools = ["selected-type-only", "images-patterns", "professional", "favorites", "custom"];
-    var allowedShuffleFrequencies = ["manual", "session", "daily", "page-load"];
+    var allowedShufflePools = ["professional-patterns", "professional", "personal", "patterns", "uploads", "favorites"];
+    var allowedShuffleFrequencies = ["manual", "session", "daily"];
+    var legacyShufflePools = {
+      "selected-type-only": "professional-patterns",
+      "images-patterns": "professional-patterns",
+      custom: "professional-patterns"
+    };
     var allowedCustomPool = ["solids", "gradients", "patterns", "images"];
     normalized.enabled = normalized.enabled === true;
     normalized.preset = normalized.preset || "default";
@@ -105,6 +122,7 @@
     normalized.backgroundImageFit = ["cover", "contain", "auto"].indexOf(normalized.backgroundImageFit) === -1 ? "cover" : normalized.backgroundImageFit;
     normalized.backgroundImagePosition = normalized.backgroundImagePosition || "center";
     normalized.backgroundOverlayColor = normalized.backgroundOverlayColor || "#000000";
+    normalized.backgroundOpacity = clampOpacity(normalized.backgroundOpacity === undefined ? 1 : normalized.backgroundOpacity);
     normalized.backgroundOverlayOpacity = clampOpacity(normalized.backgroundOverlayOpacity);
     normalized.imageSettings = Object.assign({}, defaultImageSettings, normalized.imageSettings || {});
     normalized.imageSettings.positionX = clampPercent(normalized.imageSettings.positionX, defaultImageSettings.positionX);
@@ -121,7 +139,8 @@
     normalized.patternSettings.accentColor = normalized.patternSettings.accentColor || "#60a5fa";
     normalized.curatedShuffle = Object.assign({}, defaultShuffle, normalized.curatedShuffle || {});
     normalized.curatedShuffle.enabled = normalized.curatedShuffle.enabled === true;
-    normalized.curatedShuffle.poolMode = allowedShufflePools.indexOf(normalized.curatedShuffle.poolMode) === -1 ? "selected-type-only" : normalized.curatedShuffle.poolMode;
+    normalized.curatedShuffle.poolMode = legacyShufflePools[normalized.curatedShuffle.poolMode] || normalized.curatedShuffle.poolMode;
+    normalized.curatedShuffle.poolMode = allowedShufflePools.indexOf(normalized.curatedShuffle.poolMode) === -1 ? "professional-patterns" : normalized.curatedShuffle.poolMode;
     normalized.curatedShuffle.customPool = Array.isArray(normalized.curatedShuffle.customPool) ?
       normalized.curatedShuffle.customPool.filter(function keepPoolType(type) {
         return allowedCustomPool.indexOf(type) !== -1;
@@ -130,6 +149,7 @@
     if (normalized.curatedShuffle.customPool.length === 0) {
       normalized.curatedShuffle.customPool = defaultShuffle.customPool.slice();
     }
+    normalized.curatedShuffle.frequency = normalized.curatedShuffle.frequency === "page-load" ? "daily" : normalized.curatedShuffle.frequency;
     normalized.curatedShuffle.frequency = allowedShuffleFrequencies.indexOf(normalized.curatedShuffle.frequency) === -1 ? "daily" : normalized.curatedShuffle.frequency;
     normalized.curatedShuffle.favoritesOnly = normalized.curatedShuffle.favoritesOnly === true;
     normalized.curatedShuffle.avoidRecentRepeats = normalized.curatedShuffle.avoidRecentRepeats !== false;
@@ -138,10 +158,15 @@
     normalized.curatedShuffle.lastAppliedAt = normalized.curatedShuffle.lastAppliedAt || "";
     normalized.curatedShuffle.sessionKey = normalized.curatedShuffle.sessionKey || "";
     normalized.favoriteAssetIds = Array.isArray(normalized.favoriteAssetIds) ? normalized.favoriteAssetIds.filter(Boolean) : [];
+    normalized.stylePath = allowedStylePaths.indexOf(normalized.stylePath) === -1 ? "preset" : normalized.stylePath;
     normalized.autoReadability = normalized.autoReadability !== false;
+    normalized.shadowStrength = clampOpacity(normalized.shadowStrength === undefined ? 0.35 : normalized.shadowStrength);
+    normalized.borderVisible = normalized.borderVisible !== false;
     normalized.sidebarBrandingMode = allowedBrandingModes.indexOf(normalized.sidebarBrandingMode) === -1 ? "keep" : normalized.sidebarBrandingMode;
     normalized.logoUrl = normalizeUrl(normalized.logoUrl);
+    normalized.customLogoDataUrl = isSafeImageDataUrl(normalized.customLogoDataUrl) ? normalized.customLogoDataUrl : "";
     normalized.headerLabel = normalized.headerLabel || "";
+    normalized.brandAccentColor = normalized.brandAccentColor || "";
     normalized.logoSize = normalized.logoSize || "32px";
     normalized.headerAlignment = allowedHeaderAlignments.indexOf(normalized.headerAlignment) === -1 ? "center" : normalized.headerAlignment;
     return normalized;

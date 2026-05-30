@@ -3,8 +3,8 @@
 ## Added
 
 - CleanView Sidebar Style is now the first View Builder tab.
-- Curated sidebar style cards, Pattern backgrounds, bundled WebP image backgrounds, and controlled Curated Shuffle were added to the Chrome extension.
-- Sidebar background settings now store structured image, pattern, readability, favorite, and shuffle configuration.
+- Curated sidebar style cards, bundled visual backgrounds, pattern-backed presets, and controlled Curated Rotation were added to the Chrome extension.
+- Sidebar background settings now store structured image, pattern, readability, favorite, and rotation configuration.
 - GoHighLevel sidebar backgrounds now apply through internal non-click-blocking background layers.
 - Install Code Generator added to the AgencySkin dashboard.
 - Generated CSS uses current theme settings and hides only menu items disabled in the dashboard.
@@ -42,8 +42,8 @@
 11. Load the unpacked Chrome extension from `extension/`.
 12. Open the View Builder and confirm Sidebar Style is the first tab.
 13. Apply curated sidebar preset cards and confirm the preview updates.
-14. Switch Background Type between Solid, Gradient, Pattern, and Image and confirm only relevant controls are shown.
-15. Use Curated Shuffle with Selected Type Only and confirm it does not switch to other background types.
+14. Confirm the Sidebar Style tab uses a guided `Use Preset` / `Custom Configuration` editor.
+15. Confirm the right panel keeps a tall sticky sidebar preview, Menu Colors, and Save / Reset controls visible while scrolling.
 16. Save a custom view and apply it on a supported GoHighLevel page.
 
 ## Known Limitations
@@ -53,7 +53,7 @@
 - Selector coverage is limited to the current MVP menu registry.
 - Settings are still stored in local JSON files under `server/data`.
 - Curated image assets are bundled local placeholder/cropped WebP assets and should be replaced with approved production art if desired.
-- Motion backgrounds are intentionally deferred.
+- Animated sidebar backgrounds are intentionally deferred.
 
 ## Recommended Next Step
 

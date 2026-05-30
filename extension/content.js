@@ -244,6 +244,10 @@
     return "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + clampOpacity(opacity) + ")";
   }
 
+  function getBackgroundColorValue(color, opacity) {
+    return getOverlayRgba(color || "#000000", opacity === undefined ? 1 : opacity);
+  }
+
   function clampNumber(value, min, max, fallback) {
     var numeric = Number(value);
 
@@ -330,13 +334,14 @@
     }
 
     if (style.backgroundType === "gradient") {
-      var start = styleValue(style.gradientStartColor) || styleValue(style.backgroundColor) || "#0f172a";
-      var end = styleValue(style.gradientEndColor) || styleValue(style.backgroundColor) || "#1d4ed8";
+      var opacity = clampOpacity(style.backgroundOpacity === undefined ? 1 : style.backgroundOpacity);
+      var start = getBackgroundColorValue(styleValue(style.gradientStartColor) || styleValue(style.backgroundColor) || "#0f172a", opacity);
+      var end = getBackgroundColorValue(styleValue(style.gradientEndColor) || styleValue(style.backgroundColor) || "#1d4ed8", opacity);
       var direction = styleValue(style.gradientDirection) || "135deg";
       return "linear-gradient(" + direction + ", " + start + ", " + end + ")";
     }
 
-    return styleValue(style.backgroundColor);
+    return styleValue(style.backgroundColor) ? getBackgroundColorValue(style.backgroundColor, style.backgroundOpacity) : "";
   }
 
   function applySidebarBackground(sidebar, style) {
@@ -412,6 +417,14 @@
       "[data-agencyskin-cleanview-style-role='menu-item'] *,",
       "[data-agencyskin-cleanview-style-role='header'] * {",
       styleValue(style.textColor) ? "color: inherit !important;" : "",
+      "}",
+      "[data-agencyskin-cleanview-style-role='menu-item'] svg,",
+      "[data-agencyskin-cleanview-style-role='menu-item'] i {",
+      styleValue(style.iconColor) ? "color: " + style.iconColor + " !important; stroke: " + style.iconColor + " !important;" : "",
+      "}",
+      "[data-agencyskin-cleanview-style-role='sidebar'] hr,",
+      "[data-agencyskin-cleanview-style-role='sidebar'] [role='separator'] {",
+      styleValue(style.dividerColor) ? "border-color: " + style.dividerColor + " !important; background: " + style.dividerColor + " !important;" : "",
       "}",
       "[data-agencyskin-cleanview-style-role='sidebar'] {",
       "isolation: isolate !important;",
@@ -538,7 +551,7 @@
 
   function resolveBrandLogoUrl(style) {
     var brandSettings = namespace.brandSettings || {};
-    return styleValue(style.logoUrl) || styleValue(brandSettings.logoUrl) || styleValue(namespace.defaultBrandLogoUrl);
+    return styleValue(style.customLogoDataUrl) || styleValue(style.logoUrl) || styleValue(brandSettings.logoUrl) || styleValue(namespace.defaultBrandLogoUrl);
   }
 
   function resolveBrandHeaderLabel(style) {
@@ -675,7 +688,15 @@
       });
     }
 
-    if (shuffle.poolMode === "professional" || shuffle.poolMode === "favorites") {
+    if (shuffle.poolMode === "patterns") {
+      return ["pattern"];
+    }
+
+    if (shuffle.poolMode === "uploads") {
+      return ["image"];
+    }
+
+    if (shuffle.poolMode === "professional-patterns" || shuffle.poolMode === "professional" || shuffle.poolMode === "personal" || shuffle.poolMode === "favorites") {
       return ["solid", "gradient", "pattern", "image"];
     }
 
@@ -733,6 +754,18 @@
       if (shuffle.poolMode === "professional" && preset.category !== "professional") {
         return false;
       }
+      if (shuffle.poolMode === "professional-patterns" && preset.category !== "professional" && preset.type !== "pattern") {
+        return false;
+      }
+      if (shuffle.poolMode === "personal" && preset.category !== "personal") {
+        return false;
+      }
+      if (shuffle.poolMode === "patterns" && preset.type !== "pattern") {
+        return false;
+      }
+      if (shuffle.poolMode === "uploads") {
+        return false;
+      }
       if (shuffle.poolMode === "favorites" && !favorites.has(preset.id)) {
         return false;
       }
@@ -780,6 +813,15 @@
     if (styleValue(style.sidebarPadding)) {
       sidebar.style.padding = style.sidebarPadding;
     }
+    if (styleValue(style.sidebarRadius)) {
+      sidebar.style.borderRadius = style.sidebarRadius;
+    }
+    if (style.borderVisible === false) {
+      sidebar.style.borderColor = "transparent";
+    }
+    if (style.shadowStrength !== undefined) {
+      sidebar.style.boxShadow = "0 12px 32px rgba(15, 23, 42, " + clampOpacity(style.shadowStrength) + ")";
+    }
     if (styleValue(style.textColor)) {
       sidebar.style.color = style.textColor;
     }
@@ -793,8 +835,8 @@
       if (styleValue(style.textColor)) {
         element.style.color = style.textColor;
       }
-      if (styleValue(style.borderRadius)) {
-        element.style.borderRadius = style.borderRadius;
+      if (styleValue(style.buttonRadius) || styleValue(style.borderRadius)) {
+        element.style.borderRadius = style.buttonRadius || style.borderRadius;
       }
       if (styleValue(style.itemSpacing)) {
         element.style.marginTop = style.itemSpacing;

@@ -39,8 +39,8 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 11. Recheck `Show this view in popup`, save, and confirm the view returns to the popup dropdown.
 12. Add a Quick Link with `LOCATION_ID` in the URL if needed.
 13. Enable a Sidebar Style preset and confirm the GHL sidebar updates.
-14. Change Sidebar Background Type to `Image`, enter an image URL, and confirm the preview updates.
-15. Adjust Image Fit, Image Position, Overlay Color, and Overlay Opacity, then click `Save View`.
+14. Confirm Sidebar Style uses a two-column guided editor with Global Sidebar Styling and a `Use Preset` / `Custom Configuration` selector on the left, plus sticky preview and Menu Colors on the right.
+15. Confirm `Use Preset` hides custom background controls, then switch to `Custom Configuration` and test Solid, Gradient, and Visual Image before clicking `Save View`.
 16. Set Sidebar Branding to `Keep default`, `Hide default`, and `Replace with custom` to confirm the preview updates.
 17. Save/apply `Hide default` and confirm the native GHL logo/header is hidden without removing it.
 18. Save/apply `Replace with custom` and confirm the custom logo/header appears once.
@@ -65,7 +65,7 @@ Built-in views are read-only. Duplicate a built-in view or create a personal vie
 - Visible sidebar items
 - Personal menu label overrides
 - CleanView Quick Links
-- Sidebar Style, including solid, gradient, URL-based image backgrounds, and sidebar branding mode
+- Sidebar Style, including curated presets, visual backgrounds, controlled rotation, and sidebar branding mode
 
 Personal views are stored in `chrome.storage.local` on this browser.
 

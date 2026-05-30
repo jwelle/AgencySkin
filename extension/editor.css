@@ -351,7 +351,7 @@ button.secondary:hover {
   align-items: start;
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
 }
 
 .sidebar-style-controls {
@@ -372,6 +372,13 @@ button.secondary:hover {
 }
 
 .sidebar-style-preview-panel {
+  justify-self: stretch;
+}
+
+.sidebar-style-right-panel {
+  align-self: start;
+  display: grid;
+  gap: 0.85rem;
   position: sticky;
   top: 1rem;
 }
@@ -392,10 +399,28 @@ button.secondary:hover {
   white-space: nowrap;
 }
 
+.global-toggle-stack {
+  display: grid;
+  gap: 0.4rem;
+}
+
 .compact-field-grid {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.style-section-label {
+  color: var(--as-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.custom-sidebar-controls {
+  border-color: #bfdbfe;
 }
 
 .sidebar-style-actions {
@@ -560,7 +585,8 @@ button.secondary:hover {
   display: flex;
   flex-direction: column;
   isolation: isolate;
-  min-height: 420px;
+  height: min(720px, calc(100vh - 120px));
+  min-height: 600px;
   overflow: hidden;
   position: relative;
   transition: background 160ms ease, color 160ms ease, opacity 160ms ease;
@@ -605,7 +631,32 @@ button.secondary:hover {
   display: flex;
   font-size: 0.88rem;
   font-weight: 600;
+  gap: 0.55rem;
   min-height: 36px;
+}
+
+.sidebar-preview-item.secondary {
+  opacity: 0.8;
+}
+
+.sidebar-preview-icon {
+  background: currentColor;
+  border-radius: 4px;
+  display: inline-block;
+  flex: 0 0 0.85rem;
+  height: 0.85rem;
+  opacity: 0.75;
+  width: 0.85rem;
+}
+
+.sidebar-preview-badge {
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  margin-left: auto;
+  min-width: 1.35rem;
+  padding: 0.12rem 0.38rem;
+  text-align: center;
 }
 
 .sidebar-preview-divider {
@@ -641,15 +692,18 @@ button.secondary:hover {
   .button-row.compact {
     justify-content: flex-start;
   }
-}
 
-@media (max-width: 900px) {
   .sidebar-style-layout {
     grid-template-columns: 1fr;
   }
 
-  .sidebar-style-preview-panel {
+  .sidebar-style-right-panel {
     position: static;
+  }
+
+  .sidebar-style-preview {
+    height: auto;
+    min-height: 560px;
   }
 }
 
