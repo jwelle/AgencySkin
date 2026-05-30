@@ -19,6 +19,8 @@
   var onboardingCreateFromTemplateButton = document.getElementById("onboardingCreateFromTemplateButton");
   var blankProfileName = document.getElementById("blankProfileName");
   var onboardingCreateBlankButton = document.getElementById("onboardingCreateBlankButton");
+  var onboardingImportProfileButton = document.getElementById("onboardingImportProfileButton");
+  var profileActionsSelect = document.getElementById("profileActionsSelect");
   var defaultPresetSelect = document.getElementById("defaultPresetSelect");
   var presetName = document.getElementById("presetName");
   var presetDescription = document.getElementById("presetDescription");
@@ -55,6 +57,23 @@
   var curatedShuffleFrequency = document.getElementById("curatedShuffleFrequency");
   var curatedShuffleAvoidRepeats = document.getElementById("curatedShuffleAvoidRepeats");
   var curatedShuffleCustomPool = document.getElementById("curatedShuffleCustomPool");
+  var profileTransferModal = document.getElementById("profileTransferModal");
+  var profileTransferTitle = document.getElementById("profileTransferTitle");
+  var profileTransferSubtitle = document.getElementById("profileTransferSubtitle");
+  var profileTransferCloseButton = document.getElementById("profileTransferCloseButton");
+  var profileImportPanel = document.getElementById("profileImportPanel");
+  var profileExportPanel = document.getElementById("profileExportPanel");
+  var profileImportTextarea = document.getElementById("profileImportTextarea");
+  var profileImportFile = document.getElementById("profileImportFile");
+  var validateProfileImportButton = document.getElementById("validateProfileImportButton");
+  var profileImportPreview = document.getElementById("profileImportPreview");
+  var confirmProfileImportButton = document.getElementById("confirmProfileImportButton");
+  var profileExportTextarea = document.getElementById("profileExportTextarea");
+  var copyProfileJsonButton = document.getElementById("copyProfileJsonButton");
+  var downloadProfileJsonButton = document.getElementById("downloadProfileJsonButton");
+  var pendingImportedProfile = null;
+  var currentExportJson = "";
+  var currentExportFilename = "";
   var sidebarBackgroundAssets = namespace.sidebarBackgroundAssets || [];
   var sidebarPatternAssets = namespace.sidebarPatternAssets || [];
   var sidebarImageAssets = namespace.sidebarImageAssets || [];
@@ -133,6 +152,38 @@
     { value: "after_calendars", label: "After Calendars" },
     { value: "above_settings", label: "Above Settings" },
     { value: "after_settings", label: "After Settings" }
+  ];
+  var cleanViewProfileSchemaVersion = "1.0.0";
+  var dangerousProfileKeys = [
+    "customJavaScript",
+    "customCSS",
+    "html",
+    "script",
+    "remoteScriptUrl",
+    "rawSelector",
+    "querySelector",
+    "xpath",
+    "eval",
+    "unsafeExternalUrl",
+    "webhookUrl",
+    "trackingPixel"
+  ];
+  var dangerousProfileKeyLookup = dangerousProfileKeys.reduce(function indexDangerousKeys(lookup, key) {
+    lookup[key.toLowerCase()] = true;
+    return lookup;
+  }, {});
+  var allowedQuickLinkIcons = [
+    "link",
+    "calendar",
+    "pipeline",
+    "contacts",
+    "dashboard",
+    "reporting",
+    "settings",
+    "payments",
+    "marketing",
+    "automation",
+    "sites"
   ];
   var sidebarStyleFields = [
     { key: "backgroundColor", label: "Background Color", type: "color", mode: "solid" },
@@ -670,6 +721,973 @@
     }
 
     return storage.normalizeSidebarStyle(nextStyle);
+  }
+
+  function applyAssetDefaultsForProfileJson(style, asset) {
+    var nextStyle = storage.normalizeSidebarStyle(style);
+
+    if (!asset) {
+      return nextStyle;
+    }
+
+    nextStyle.backgroundAssetId = asset.id;
+    nextStyle.backgroundType = asset.type === "pattern" ? "pattern" : "image";
+    nextStyle.textColor = asset.textColor || nextStyle.textColor;
+    nextStyle.activeBackgroundColor = asset.activeBackgroundColor || nextStyle.activeBackgroundColor;
+    nextStyle.activeTextColor = asset.activeTextColor || nextStyle.activeTextColor;
+    nextStyle.hoverBackgroundColor = asset.hoverBackgroundColor || nextStyle.hoverBackgroundColor;
+
+    if (asset.type === "image") {
+      nextStyle.customImageDataUrl = "";
+      nextStyle.backgroundImageUrl = "";
+      nextStyle.imageSettings = Object.assign({}, nextStyle.imageSettings || {}, {
+        positionX: asset.focalPointX || 50,
+        positionY: asset.focalPointY || 50,
+        scale: asset.defaultScale || 1,
+        blur: asset.recommendedBlur || 0,
+        overlayOpacity: asset.recommendedOverlayOpacity || 0.55
+      });
+    }
+
+    if (asset.type === "pattern") {
+      nextStyle.backgroundColor = asset.backgroundColor || nextStyle.backgroundColor;
+      nextStyle.patternSettings = Object.assign({}, nextStyle.patternSettings || {}, {
+        scale: asset.defaultScale || 1,
+        opacity: 0.5,
+        overlayOpacity: asset.recommendedOverlayOpacity || 0.35
+      });
+    }
+
+    return storage.normalizeSidebarStyle(nextStyle);
+  }
+
+  function getCuratedStyleForProfileJson(presetId) {
+    var curatedPreset = getCuratedPresetById(presetId);
+    var style = null;
+
+    if (!curatedPreset) {
+      return null;
+    }
+
+    style = storage.normalizeSidebarStyle(Object.assign({}, namespace.defaultSidebarStyle, curatedPreset.style || {}));
+    style.enabled = true;
+    style.stylePath = "preset";
+    style.preset = "custom";
+    style.activePresetId = curatedPreset.id;
+    if (curatedPreset.assetId) {
+      style = applyAssetDefaultsForProfileJson(style, getAssetById(curatedPreset.assetId));
+    }
+    return storage.normalizeSidebarStyle(style);
+  }
+
+  function parsePixelNumber(value, fallback) {
+    var match = String(value || "").match(/-?\d+(\.\d+)?/);
+    return match ? Number(match[0]) : fallback;
+  }
+
+  function shadowStrengthName(value) {
+    var numeric = clampNumber(value, 0, 1, 0.35);
+    if (numeric <= 0.05) {
+      return "none";
+    }
+    if (numeric <= 0.3) {
+      return "soft";
+    }
+    if (numeric <= 0.6) {
+      return "medium";
+    }
+    return "strong";
+  }
+
+  function shadowStrengthValue(value) {
+    if (value === "none") {
+      return 0;
+    }
+    if (value === "medium") {
+      return 0.5;
+    }
+    if (value === "strong") {
+      return 0.75;
+    }
+    return 0.25;
+  }
+
+  function spacingDensityName(value) {
+    var numeric = parsePixelNumber(value, 4);
+    if (numeric <= 2) {
+      return "compact";
+    }
+    if (numeric >= 7) {
+      return "spacious";
+    }
+    return "comfortable";
+  }
+
+  function spacingDensityValue(value) {
+    if (value === "compact") {
+      return "2px";
+    }
+    if (value === "spacious") {
+      return "8px";
+    }
+    return "4px";
+  }
+
+  function logoSizeName(value) {
+    var numeric = parsePixelNumber(value, 32);
+    if (numeric <= 26) {
+      return "small";
+    }
+    if (numeric >= 38) {
+      return "large";
+    }
+    return "medium";
+  }
+
+  function logoSizeValue(value) {
+    if (value === "small") {
+      return "24px";
+    }
+    if (value === "large") {
+      return "40px";
+    }
+    return "32px";
+  }
+
+  function isSafeRgbaColor(value) {
+    var match = String(value || "").trim().match(/^rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(0|1|0?\.\d+)\s*\)$/i);
+    if (!match) {
+      return false;
+    }
+    return [1, 2, 3].every(function checkChannel(index) {
+      var channel = Number(match[index]);
+      return channel >= 0 && channel <= 255;
+    }) && Number(match[4]) >= 0 && Number(match[4]) <= 1;
+  }
+
+  function isSafeProfileColor(value) {
+    return isValidHexColor(value) || isSafeRgbaColor(value);
+  }
+
+  function normalizeProfileColor(value, fallback) {
+    var trimmed = String(value || "").trim();
+    if (isValidHexColor(trimmed)) {
+      return normalizeHexColor(trimmed, fallback);
+    }
+    if (isSafeRgbaColor(trimmed)) {
+      return trimmed;
+    }
+    return fallback || "";
+  }
+
+  function isSafeImageDataUrl(value) {
+    return /^data:image\/(png|jpe?g|webp);base64,/i.test(String(value || ""));
+  }
+
+  function hasUnsafeText(value) {
+    return /[<>]/.test(String(value || "")) || /[\u0000-\u001f\u007f]/.test(String(value || "").replace(/[\r\n\t]/g, ""));
+  }
+
+  function sanitizeProfileText(value, maxLength, fieldName, errors, required) {
+    var text = "";
+
+    if (value !== undefined && value !== null && typeof value !== "string") {
+      errors.push(fieldName + " must be plain text.");
+      return "";
+    }
+
+    text = String(value === undefined || value === null ? "" : value).trim();
+
+    if (required && !text) {
+      errors.push(fieldName + " is required.");
+      return "";
+    }
+
+    if (hasUnsafeText(text)) {
+      errors.push(fieldName + " must be plain text.");
+      return "";
+    }
+
+    if (text.length > maxLength) {
+      errors.push(fieldName + " must be " + maxLength + " characters or fewer.");
+      return "";
+    }
+
+    return text;
+  }
+
+  function findDangerousProfileFields(value, path, errors) {
+    if (typeof value === "string") {
+      if (/<[^>]*>|javascript:|data:text\/html|expression\s*\(/i.test(value)) {
+        errors.push("Unsafe content is not allowed in " + (path || "Profile JSON") + ".");
+      }
+      return;
+    }
+
+    if (!value || typeof value !== "object") {
+      return;
+    }
+
+    Object.keys(value).forEach(function inspectKey(key) {
+      var keyPath = path ? path + "." + key : key;
+      if (dangerousProfileKeyLookup[key.toLowerCase()] === true) {
+        errors.push("Unsupported executable field is not allowed: " + keyPath);
+        return;
+      }
+      findDangerousProfileFields(value[key], keyPath, errors);
+    });
+  }
+
+  function menuKeyFromProfileJson(value) {
+    var normalized = String(value || "").trim();
+    var lower = normalized.toLowerCase();
+    var match = null;
+
+    if (registry[normalized]) {
+      return normalized;
+    }
+
+    allMenuKeys.some(function findByLabel(key) {
+      var label = registry[key] && registry[key].label ? registry[key].label.toLowerCase() : "";
+      if (label === lower || key.toLowerCase() === lower) {
+        match = key;
+        return true;
+      }
+      return false;
+    });
+
+    return match;
+  }
+
+  function validateMenuList(list, fieldName, errors) {
+    if (list === undefined) {
+      return [];
+    }
+    if (!Array.isArray(list)) {
+      errors.push(fieldName + " must be an array.");
+      return [];
+    }
+    return list.reduce(function collectMenuIds(menuIds, item) {
+      var key = menuKeyFromProfileJson(item);
+      if (!key) {
+        errors.push(fieldName + " contains an unsupported menu ID: " + item);
+        return menuIds;
+      }
+      if (menuIds.indexOf(key) === -1) {
+        menuIds.push(key);
+      }
+      return menuIds;
+    }, []);
+  }
+
+  function resolveMenuItemsFromProfileJson(menuItems, errors) {
+    var hidden = [];
+    var visible = [];
+
+    if (!menuItems || typeof menuItems !== "object" || Array.isArray(menuItems)) {
+      return allMenuKeys.slice();
+    }
+
+    hidden = validateMenuList(menuItems.hidden, "menuItems.hidden", errors);
+    visible = validateMenuList(menuItems.visible, "menuItems.visible", errors);
+
+    if (visible.length) {
+      return visible;
+    }
+
+    if (hidden.length) {
+      return allMenuKeys.filter(function keepVisibleMenu(key) {
+        return hidden.indexOf(key) === -1;
+      });
+    }
+
+    return allMenuKeys.slice();
+  }
+
+  function resolveRenameLabelsFromProfileJson(renameLabels, errors) {
+    var labelOverrides = {};
+    var entries = [];
+
+    if (!renameLabels) {
+      return labelOverrides;
+    }
+
+    if (typeof renameLabels !== "object" || Array.isArray(renameLabels)) {
+      errors.push("renameLabels must be an object.");
+      return labelOverrides;
+    }
+
+    entries = Object.keys(renameLabels).slice(0, 31);
+    if (entries.length > 30) {
+      errors.push("renameLabels can include at most 30 entries.");
+      return labelOverrides;
+    }
+
+    entries.forEach(function collectRename(originalLabel) {
+      var key = menuKeyFromProfileJson(originalLabel);
+      var replacement = sanitizeProfileText(renameLabels[originalLabel], 60, "renameLabels." + originalLabel, errors, true);
+
+      if (!key) {
+        errors.push("renameLabels contains an unsupported menu label: " + originalLabel);
+        return;
+      }
+      if (String(originalLabel).length > 60) {
+        errors.push("Rename source labels must be 60 characters or fewer.");
+        return;
+      }
+      if (replacement) {
+        labelOverrides[key] = replacement;
+      }
+    });
+
+    return labelOverrides;
+  }
+
+  function isSafeRelativePath(value) {
+    var text = String(value || "").trim();
+    return /^\/(?!\/)[A-Za-z0-9/_?&=.#%+-]*$/.test(text) &&
+      !/javascript:|data:|<|>|script/i.test(text);
+  }
+
+  function requireProfileColor(value, fallback, fieldName, errors) {
+    if (value === undefined || value === null || value === "") {
+      return fallback;
+    }
+    if (!isSafeProfileColor(value)) {
+      errors.push(fieldName + " must be a hex or safe rgba color.");
+      return fallback;
+    }
+    return normalizeProfileColor(value, fallback);
+  }
+
+  function requireHexProfileColor(value, fallback, fieldName, errors) {
+    if (value === undefined || value === null || value === "") {
+      return fallback;
+    }
+    if (!isValidHexColor(value)) {
+      errors.push(fieldName + " must be a hex color.");
+      return fallback;
+    }
+    return normalizeHexColor(value, fallback);
+  }
+
+  function normalizeImportedGradientDirection(value, errors) {
+    var direction = String(value || "135deg").trim();
+    var directionMap = {
+      "to bottom": "180deg",
+      "to right": "90deg",
+      "to top": "0deg",
+      "to left": "270deg"
+    };
+    var allowedDirections = gradientDirections.map(function mapDirection(option) {
+      return option.value;
+    }).concat(["270deg"]);
+
+    direction = directionMap[direction] || direction;
+    if (allowedDirections.indexOf(direction) === -1) {
+      errors.push("sidebarStyle.custom.gradient.direction is not supported.");
+      return "135deg";
+    }
+    return direction;
+  }
+
+  function resolveQuickLinksFromProfileJson(quickLinks, errors) {
+    if (!quickLinks) {
+      return [];
+    }
+
+    if (!Array.isArray(quickLinks)) {
+      errors.push("quickLinks must be an array.");
+      return [];
+    }
+
+    if (quickLinks.length > 12) {
+      errors.push("quickLinks can include at most 12 links.");
+      return [];
+    }
+
+    return quickLinks.reduce(function collectLinks(links, link, index) {
+      var label = "";
+      var url = "";
+      var icon = "";
+      var openIn = "";
+
+      if (!link || typeof link !== "object" || Array.isArray(link)) {
+        errors.push("quickLinks[" + index + "] must be an object.");
+        return links;
+      }
+
+      label = sanitizeProfileText(link.label, 40, "quickLinks[" + index + "].label", errors, true);
+      url = String(link.url || "").trim();
+      icon = String(link.icon || "link").trim();
+      openIn = String(link.openIn || "new_tab").trim();
+
+      if (!isSafeRelativePath(url)) {
+        errors.push("quickLinks[" + index + "].url must be a relative GHL path starting with /.");
+        return links;
+      }
+      if (allowedQuickLinkIcons.indexOf(icon) === -1) {
+        errors.push("quickLinks[" + index + "].icon is not supported.");
+        return links;
+      }
+      if (openIn !== "same_tab" && openIn !== "new_tab") {
+        errors.push("quickLinks[" + index + "].openIn must be same_tab or new_tab.");
+        return links;
+      }
+      if (label) {
+        links.push({
+          id: namespace.createId("link"),
+          label: label,
+          url: url,
+          placement: "bottom",
+          openMode: openIn,
+          enabled: true
+        });
+      }
+      return links;
+    }, []);
+  }
+
+  function exportSidebarStyleToProfileJson(style) {
+    var normalized = storage.normalizeSidebarStyle(style || {});
+    var logoSource = normalized.sidebarBrandingMode === "hide" ? "none" : "default";
+    var customType = normalized.backgroundType === "gradient" ? "gradient" : normalized.backgroundType === "image" || normalized.backgroundType === "pattern" ? "visual" : "solid";
+    var exportedStyle = {
+      mode: normalized.stylePath === "custom" ? "custom" : "preset",
+      presetId: normalized.stylePath === "custom" ? null : normalized.activePresetId || normalized.preset || "default",
+      custom: null,
+      global: {
+        applyStyling: normalized.enabled === true,
+        autoReadability: normalized.autoReadability !== false,
+        readabilityStrength: "balanced",
+        logo: {
+          enabled: normalized.sidebarBrandingMode !== "hide",
+          source: logoSource,
+          url: null,
+          size: logoSizeName(normalized.logoSize),
+          showBrandName: Boolean(normalized.headerLabel),
+          brandName: normalized.headerLabel || "CleanView"
+        },
+        shape: {
+          sidebarRadius: parsePixelNumber(normalized.sidebarRadius, 16),
+          menuItemRadius: parsePixelNumber(normalized.borderRadius || normalized.buttonRadius, 8),
+          spacingDensity: spacingDensityName(normalized.itemSpacing),
+          shadowStrength: shadowStrengthName(normalized.shadowStrength),
+          showBorder: normalized.borderVisible !== false
+        },
+        menuColors: {
+          textColor: normalized.textColor || "",
+          iconColor: normalized.iconColor || "",
+          activeBackgroundColor: normalized.activeBackgroundColor || "",
+          activeTextColor: normalized.activeTextColor || "",
+          hoverBackgroundColor: normalized.hoverBackgroundColor || "",
+          dividerColor: normalized.dividerColor || "",
+          badgeColor: normalized.badgeColor || ""
+        }
+      }
+    };
+
+    if (normalized.sidebarBrandingMode === "replace") {
+      exportedStyle.global.logo.source = normalized.customLogoDataUrl ? "uploaded" : "default";
+      exportedStyle.global.logo.url = normalized.customLogoDataUrl || normalized.logoUrl || null;
+    }
+
+    if (exportedStyle.mode === "custom") {
+      exportedStyle.custom = {
+        type: customType,
+        solid: customType === "solid" ? {
+          backgroundColor: normalized.backgroundColor || "#ffffff",
+          darken: clampOpacity(normalized.backgroundOverlayOpacity),
+          fade: 1 - clampOpacity(normalized.backgroundOpacity === undefined ? 1 : normalized.backgroundOpacity)
+        } : null,
+        gradient: customType === "gradient" ? {
+          color1: normalized.gradientStartColor || normalized.backgroundColor || "#0f172a",
+          color2: normalized.gradientEndColor || "#1d4ed8",
+          direction: normalized.gradientDirection || "135deg",
+          darken: clampOpacity(normalized.backgroundOverlayOpacity),
+          fade: 1 - clampOpacity(normalized.backgroundOpacity === undefined ? 1 : normalized.backgroundOpacity)
+        } : null,
+        visual: customType === "visual" ? {
+          assetId: normalized.backgroundAssetId || null,
+          assetSource: normalized.customImageDataUrl ? "uploaded" : "curated",
+          assetUrl: normalized.customImageDataUrl || null,
+          positionX: getByPath(normalized, "imageSettings.positionX", 50),
+          positionY: getByPath(normalized, "imageSettings.positionY", 50),
+          zoom: getByPath(normalized, "imageSettings.scale", 1),
+          fade: 1 - clampOpacity(getByPath(normalized, "imageSettings.opacity", 0.85)),
+          darken: clampOpacity(getByPath(normalized, "imageSettings.overlayOpacity", 0.55)),
+          blur: getByPath(normalized, "imageSettings.blur", 0)
+        } : null
+      };
+    }
+
+    return exportedStyle;
+  }
+
+  function applyGlobalSidebarStyleFromProfileJson(style, globalSettings, errors) {
+    var logo = globalSettings && globalSettings.logo ? globalSettings.logo : {};
+    var shape = globalSettings && globalSettings.shape ? globalSettings.shape : {};
+    var menuColors = globalSettings && globalSettings.menuColors ? globalSettings.menuColors : {};
+    var allowedLogoSources = ["default", "uploaded", "none"];
+    var allowedLogoSizes = ["small", "medium", "large"];
+    var allowedSpacing = ["compact", "comfortable", "spacious"];
+    var allowedShadows = ["none", "soft", "medium", "strong"];
+
+    if (!globalSettings || typeof globalSettings !== "object" || Array.isArray(globalSettings)) {
+      return style;
+    }
+
+    style.enabled = globalSettings.applyStyling === true;
+    style.autoReadability = globalSettings.autoReadability !== false;
+
+    if (logo.source && allowedLogoSources.indexOf(logo.source) === -1) {
+      errors.push("sidebarStyle.global.logo.source is not supported.");
+    } else if (logo.source === "none") {
+      style.sidebarBrandingMode = "hide";
+    } else if (logo.source === "uploaded") {
+      style.sidebarBrandingMode = "replace";
+      if (logo.url && isSafeImageDataUrl(logo.url)) {
+        style.customLogoDataUrl = logo.url;
+      } else if (logo.url) {
+        errors.push("sidebarStyle.global.logo.url must be a safe uploaded image data URL.");
+      }
+    } else if (logo.source === "default") {
+      style.sidebarBrandingMode = logo.showBrandName === false ? "keep" : "replace";
+    }
+
+    if (logo.size && allowedLogoSizes.indexOf(logo.size) === -1) {
+      errors.push("sidebarStyle.global.logo.size is not supported.");
+    } else if (logo.size) {
+      style.logoSize = logoSizeValue(logo.size);
+    }
+    if (logo.brandName !== undefined) {
+      style.headerLabel = sanitizeProfileText(logo.brandName, 60, "sidebarStyle.global.logo.brandName", errors, false);
+    }
+
+    if (shape.sidebarRadius !== undefined) {
+      style.sidebarRadius = Math.round(clampNumber(shape.sidebarRadius, 0, 32, 16)) + "px";
+    }
+    if (shape.menuItemRadius !== undefined) {
+      style.borderRadius = Math.round(clampNumber(shape.menuItemRadius, 0, 32, 8)) + "px";
+      style.buttonRadius = style.borderRadius;
+    }
+    if (shape.spacingDensity && allowedSpacing.indexOf(shape.spacingDensity) === -1) {
+      errors.push("sidebarStyle.global.shape.spacingDensity is not supported.");
+    } else if (shape.spacingDensity) {
+      style.itemSpacing = spacingDensityValue(shape.spacingDensity);
+    }
+    if (shape.shadowStrength && allowedShadows.indexOf(shape.shadowStrength) === -1) {
+      errors.push("sidebarStyle.global.shape.shadowStrength is not supported.");
+    } else if (shape.shadowStrength) {
+      style.shadowStrength = shadowStrengthValue(shape.shadowStrength);
+    }
+    if (shape.showBorder !== undefined) {
+      style.borderVisible = shape.showBorder !== false;
+    }
+
+    [
+      "textColor",
+      "iconColor",
+      "activeBackgroundColor",
+      "activeTextColor",
+      "hoverBackgroundColor",
+      "dividerColor",
+      "badgeColor"
+    ].forEach(function applyColor(key) {
+      if (menuColors[key] === undefined || menuColors[key] === null || menuColors[key] === "") {
+        return;
+      }
+      if (!isSafeProfileColor(menuColors[key])) {
+        errors.push("sidebarStyle.global.menuColors." + key + " must be a hex or safe rgba color.");
+        return;
+      }
+      style[key] = normalizeProfileColor(menuColors[key], style[key]);
+    });
+
+    return storage.normalizeSidebarStyle(style);
+  }
+
+  function importSidebarStyleFromProfileJson(sidebarStyle, errors, warnings) {
+    var style = storage.normalizeSidebarStyle(namespace.defaultSidebarStyle);
+    var mode = sidebarStyle && sidebarStyle.mode ? sidebarStyle.mode : "preset";
+    var custom = sidebarStyle && sidebarStyle.custom ? sidebarStyle.custom : null;
+    var presetId = sidebarStyle && sidebarStyle.presetId ? String(sidebarStyle.presetId).trim() : "default";
+    var asset = null;
+
+    if (!sidebarStyle) {
+      return style;
+    }
+
+    if (typeof sidebarStyle !== "object" || Array.isArray(sidebarStyle)) {
+      errors.push("sidebarStyle must be an object.");
+      return style;
+    }
+
+    if (mode !== "preset" && mode !== "custom") {
+      errors.push("sidebarStyle.mode must be preset or custom.");
+      return style;
+    }
+
+    if (mode === "preset") {
+      if (sidebarStylePresets[presetId]) {
+        style = storage.normalizeSidebarStyle(sidebarStylePresets[presetId]);
+        style.stylePath = "preset";
+        style.preset = presetId;
+      } else if (getCuratedPresetById(presetId)) {
+        style = getCuratedStyleForProfileJson(presetId);
+      } else {
+        warnings.push("Unknown sidebar preset was replaced with Default.");
+        style = storage.normalizeSidebarStyle(sidebarStylePresets.default || namespace.defaultSidebarStyle);
+        style.stylePath = "preset";
+        style.preset = "default";
+      }
+    }
+
+    if (mode === "custom") {
+      if (!custom || typeof custom !== "object" || Array.isArray(custom)) {
+        errors.push("sidebarStyle.custom is required for custom mode.");
+      } else if (["solid", "gradient", "visual"].indexOf(custom.type) === -1) {
+        errors.push("sidebarStyle.custom.type must be solid, gradient, or visual.");
+      } else if (custom.type === "solid") {
+        style.stylePath = "custom";
+        style.backgroundType = "solid";
+        style.backgroundColor = requireHexProfileColor(custom.solid && custom.solid.backgroundColor, "#ffffff", "sidebarStyle.custom.solid.backgroundColor", errors);
+        style.backgroundOverlayOpacity = clampOpacity(custom.solid && custom.solid.darken);
+        style.backgroundOpacity = 1 - clampOpacity(custom.solid && custom.solid.fade);
+      } else if (custom.type === "gradient") {
+        style.stylePath = "custom";
+        style.backgroundType = "gradient";
+        style.gradientStartColor = requireHexProfileColor(custom.gradient && custom.gradient.color1, "#0f172a", "sidebarStyle.custom.gradient.color1", errors);
+        style.gradientEndColor = requireHexProfileColor(custom.gradient && custom.gradient.color2, "#1d4ed8", "sidebarStyle.custom.gradient.color2", errors);
+        style.gradientDirection = normalizeImportedGradientDirection(custom.gradient && custom.gradient.direction, errors);
+        style.backgroundOverlayOpacity = clampOpacity(custom.gradient && custom.gradient.darken);
+        style.backgroundOpacity = 1 - clampOpacity(custom.gradient && custom.gradient.fade);
+      } else if (custom.type === "visual") {
+        style.stylePath = "custom";
+        style.backgroundType = "image";
+        if (custom.visual && custom.visual.assetSource === "curated") {
+          asset = getAssetById(custom.visual.assetId);
+          if (!asset) {
+            warnings.push("Unknown curated visual was ignored.");
+          } else {
+            style = applyAssetDefaultsForProfileJson(style, asset);
+          }
+        } else if (custom.visual && custom.visual.assetSource === "uploaded") {
+          if (custom.visual.assetUrl && isSafeImageDataUrl(custom.visual.assetUrl)) {
+            style.customImageDataUrl = custom.visual.assetUrl;
+          } else if (custom.visual.assetUrl) {
+            errors.push("sidebarStyle.custom.visual.assetUrl must be a safe uploaded image data URL.");
+          }
+        } else if (custom.visual && custom.visual.assetSource) {
+          errors.push("sidebarStyle.custom.visual.assetSource must be curated or uploaded.");
+        }
+        style.imageSettings = Object.assign({}, style.imageSettings || {}, {
+          positionX: clampNumber(custom.visual && custom.visual.positionX, 0, 100, 50),
+          positionY: clampNumber(custom.visual && custom.visual.positionY, 0, 100, 50),
+          scale: clampNumber(custom.visual && custom.visual.zoom, 0.5, 2.5, 1),
+          opacity: 1 - clampOpacity(custom.visual && custom.visual.fade),
+          overlayOpacity: clampOpacity(custom.visual && custom.visual.darken),
+          blur: clampNumber(custom.visual && custom.visual.blur, 0, 12, 0)
+        });
+      }
+    }
+
+    return applyGlobalSidebarStyleFromProfileJson(style, sidebarStyle.global, errors);
+  }
+
+  function profileJsonFromPreset(preset) {
+    var visibleSet = new Set(preset.visibleItems || []);
+    var hiddenMenus = allMenuKeys.filter(function findHiddenMenu(key) {
+      return !visibleSet.has(key);
+    });
+    var renameLabels = {};
+
+    Object.keys(preset.labelOverrides || {}).forEach(function exportRename(key) {
+      var label = registry[key] && registry[key].label ? registry[key].label : key;
+      renameLabels[label] = preset.labelOverrides[key];
+    });
+
+    return {
+      cleanViewProfile: true,
+      schemaVersion: cleanViewProfileSchemaVersion,
+      type: "profile",
+      profile: {
+        name: preset.name || preset.label || "Untitled Profile",
+        description: preset.description || "",
+        source: {
+          kind: "user",
+          createdBy: "CleanView",
+          origin: "manual"
+        },
+        sidebarStyle: exportSidebarStyleToProfileJson(preset.sidebarStyle),
+        menuItems: {
+          hidden: hiddenMenus,
+          visible: (preset.visibleItems || []).slice()
+        },
+        renameLabels: renameLabels,
+        quickLinks: (preset.customLinks || []).map(function exportQuickLink(link) {
+          return {
+            label: link.label || "",
+            url: link.url || link.href || "",
+            icon: "link",
+            openIn: link.openMode === "same_tab" ? "same_tab" : "new_tab"
+          };
+        })
+      }
+    };
+  }
+
+  function importProfileJsonObject(profileJson) {
+    var errors = [];
+    var warnings = [];
+    var profile = profileJson && profileJson.profile;
+    var name = "";
+    var description = "";
+    var preset = null;
+
+    if (!profileJson || typeof profileJson !== "object" || Array.isArray(profileJson)) {
+      return { ok: false, errors: ["CleanView Profile JSON must be an object."], warnings: warnings };
+    }
+
+    findDangerousProfileFields(profileJson, "", errors);
+
+    if (profileJson.cleanViewProfile !== true) {
+      errors.push("cleanViewProfile must be true.");
+    }
+    if (profileJson.schemaVersion !== cleanViewProfileSchemaVersion) {
+      errors.push("schemaVersion must be " + cleanViewProfileSchemaVersion + ".");
+    }
+    if (profileJson.type !== "profile") {
+      errors.push("type must be profile.");
+    }
+    if (!profile || typeof profile !== "object" || Array.isArray(profile)) {
+      errors.push("profile must be an object.");
+      return { ok: false, errors: errors, warnings: warnings };
+    }
+
+    name = sanitizeProfileText(profile.name, 80, "profile.name", errors, true);
+    description = sanitizeProfileText(profile.description || "", 240, "profile.description", errors, false);
+
+    preset = storage.normalizePreset({
+      id: namespace.createId("custom"),
+      name: name || "Imported Profile",
+      description: description,
+      visibleItems: resolveMenuItemsFromProfileJson(profile.menuItems, errors),
+      labelOverrides: resolveRenameLabelsFromProfileJson(profile.renameLabels, errors),
+      customLinks: resolveQuickLinksFromProfileJson(profile.quickLinks, errors),
+      sidebarStyle: importSidebarStyleFromProfileJson(profile.sidebarStyle, errors, warnings),
+      showInPopup: true
+    });
+
+    return {
+      ok: errors.length === 0,
+      errors: errors,
+      warnings: warnings,
+      preset: preset,
+      source: profile.source || null
+    };
+  }
+
+  function validateProfileImportText() {
+    var parsed = null;
+    var text = profileImportTextarea ? profileImportTextarea.value.trim() : "";
+
+    pendingImportedProfile = null;
+    if (confirmProfileImportButton) {
+      confirmProfileImportButton.disabled = true;
+    }
+    if (profileImportPreview) {
+      profileImportPreview.hidden = true;
+      profileImportPreview.innerHTML = "";
+    }
+
+    if (!text) {
+      setStatus("Paste CleanView Profile JSON or choose a .json file.", true);
+      return;
+    }
+
+    try {
+      parsed = JSON.parse(text);
+    } catch (error) {
+      setStatus("Invalid JSON: " + error.message, true);
+      return;
+    }
+
+    renderImportPreview(importProfileJsonObject(parsed));
+  }
+
+  function appendPreviewList(container, title, items) {
+    var heading = document.createElement("p");
+    var list = document.createElement("ul");
+
+    heading.textContent = title;
+    container.appendChild(heading);
+    items.forEach(function addItem(item) {
+      var row = document.createElement("li");
+      row.textContent = item;
+      list.appendChild(row);
+    });
+    container.appendChild(list);
+  }
+
+  function renderImportPreview(result) {
+    var title = document.createElement("h3");
+    var description = document.createElement("p");
+    var source = document.createElement("p");
+    var visibleSet = null;
+    var hiddenMenus = [];
+    var visibleMenus = [];
+    var renamedLabels = [];
+    var quickLinks = [];
+    var style = null;
+    var styleSummary = "";
+
+    if (!profileImportPreview) {
+      return;
+    }
+
+    profileImportPreview.innerHTML = "";
+    profileImportPreview.hidden = false;
+
+    if (!result.ok) {
+      title.textContent = "Import needs attention";
+      profileImportPreview.appendChild(title);
+      appendPreviewList(profileImportPreview, "Errors", result.errors);
+      setStatus("Profile import validation failed.", true);
+      return;
+    }
+
+    pendingImportedProfile = result.preset;
+    if (confirmProfileImportButton) {
+      confirmProfileImportButton.disabled = false;
+    }
+
+    visibleSet = new Set(result.preset.visibleItems || []);
+    hiddenMenus = allMenuKeys.filter(function findHiddenMenu(key) {
+      return !visibleSet.has(key);
+    }).map(function labelMenu(key) {
+      return registry[key] ? registry[key].label : key;
+    });
+    visibleMenus = (result.preset.visibleItems || []).map(function labelVisibleMenu(key) {
+      return registry[key] ? registry[key].label : key;
+    });
+    renamedLabels = Object.keys(result.preset.labelOverrides || {}).map(function labelRename(key) {
+      return (registry[key] ? registry[key].label : key) + " -> " + result.preset.labelOverrides[key];
+    });
+    quickLinks = (result.preset.customLinks || []).map(function labelLink(link) {
+      return link.label;
+    });
+    style = result.preset.sidebarStyle || {};
+    styleSummary = style.stylePath === "custom" ?
+      "Custom " + (style.backgroundType === "image" || style.backgroundType === "pattern" ? "Visual" : style.backgroundType || "Solid") :
+      "Preset " + (style.activePresetId || style.preset || "default");
+
+    title.textContent = "Profile Preview";
+    description.textContent = result.preset.description ? result.preset.name + ": " + result.preset.description : result.preset.name;
+    profileImportPreview.appendChild(title);
+    profileImportPreview.appendChild(description);
+    if (result.source) {
+      source.textContent = "Source: " + JSON.stringify(result.source);
+      profileImportPreview.appendChild(source);
+    }
+    appendPreviewList(profileImportPreview, "Includes", [
+      "Sidebar Style: " + styleSummary,
+      "Hidden Menus: " + hiddenMenus.length + (hiddenMenus.length ? " (" + hiddenMenus.join(", ") + ")" : ""),
+      "Visible Menus: " + visibleMenus.length + (visibleMenus.length ? " (" + visibleMenus.join(", ") + ")" : ""),
+      "Renamed Labels: " + renamedLabels.length + (renamedLabels.length ? " (" + renamedLabels.join(", ") + ")" : ""),
+      "Quick Links: " + quickLinks.length + (quickLinks.length ? " (" + quickLinks.join(", ") + ")" : "")
+    ]);
+    if (result.warnings.length) {
+      appendPreviewList(profileImportPreview, "Warnings", result.warnings);
+    }
+    setStatus("Profile JSON is valid. Review the preview, then import.");
+  }
+
+  function safeProfileFilename(name) {
+    var slug = String(name || "profile")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "profile";
+    return "cleanview-profile-" + slug + ".json";
+  }
+
+  function openProfileTransferModal(mode) {
+    var preset = selectedPreset();
+
+    if (!profileTransferModal) {
+      return;
+    }
+
+    profileTransferModal.hidden = false;
+    if (mode === "export") {
+      if (!isEditableProfile(preset)) {
+        closeProfileTransferModal();
+        setStatus("Create My Profile before exporting a Template.", true);
+        return;
+      }
+      currentExportJson = JSON.stringify(profileJsonFromPreset(storage.normalizePreset(preset)), null, 2);
+      currentExportFilename = safeProfileFilename(preset.name || preset.label);
+      profileTransferTitle.textContent = "Export Profile";
+      profileTransferSubtitle.textContent = "Export this Profile as CleanView JSON.";
+      profileImportPanel.hidden = true;
+      profileExportPanel.hidden = false;
+      profileExportTextarea.value = currentExportJson;
+      setStatus("Profile JSON is ready to export.");
+      return;
+    }
+
+    pendingImportedProfile = null;
+    profileTransferTitle.textContent = "Import Profile";
+    profileTransferSubtitle.textContent = "Paste CleanView Profile JSON or upload a .json file.";
+    profileImportPanel.hidden = false;
+    profileExportPanel.hidden = true;
+    profileImportTextarea.value = "";
+    profileImportFile.value = "";
+    profileImportPreview.innerHTML = "";
+    profileImportPreview.hidden = true;
+    confirmProfileImportButton.disabled = true;
+    profileImportTextarea.focus();
+  }
+
+  function closeProfileTransferModal() {
+    if (profileTransferModal) {
+      profileTransferModal.hidden = true;
+    }
+  }
+
+  function copyTextToClipboard(text, successMessage) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function handleCopied() {
+        setStatus(successMessage);
+      }).catch(function handleCopyError() {
+        profileExportTextarea.focus();
+        profileExportTextarea.select();
+        document.execCommand("copy");
+        setStatus(successMessage);
+      });
+      return;
+    }
+
+    profileExportTextarea.focus();
+    profileExportTextarea.select();
+    document.execCommand("copy");
+    setStatus(successMessage);
+  }
+
+  function downloadProfileJson() {
+    var blob = new Blob([currentExportJson], { type: "application/json" });
+    var link = document.createElement("a");
+
+    link.href = URL.createObjectURL(blob);
+    link.download = currentExportFilename || "cleanview-profile.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(function revokeDownloadUrl() {
+      URL.revokeObjectURL(link.href);
+    }, 0);
+    setStatus("Profile JSON downloaded.");
   }
 
   function createFieldLabel(text, input) {
@@ -2137,6 +3155,54 @@
     }), "Profile created.", false);
   }
 
+  function importPendingProfile() {
+    if (!pendingImportedProfile) {
+      setStatus("Validate a CleanView Profile before importing.", true);
+      return;
+    }
+
+    closeProfileTransferModal();
+    persistPreset(pendingImportedProfile, "Imported successfully. Active Profile: " + pendingImportedProfile.name + ".", false);
+  }
+
+  function handleProfileAction(action) {
+    var selectedTemplateId = templateIds()[0] || "builtin:simple";
+
+    if (!action) {
+      return;
+    }
+
+    if (action === "create_blank") {
+      document.getElementById("createPresetButton").click();
+    } else if (action === "create_template") {
+      if (selectedPreset() && selectedPreset().source === "builtin") {
+        createProfileFromPreset(selectedPresetId);
+      } else {
+        selectedPresetId = selectedTemplateId;
+        render();
+        setStatus("Choose a Template, then select Create My Profile.");
+      }
+    } else if (action === "duplicate") {
+      document.getElementById("duplicatePresetButton").click();
+    } else if (action === "rename") {
+      if (!isEditableProfile(selectedPreset())) {
+        setStatus("Create My Profile before renaming a Template.", true);
+      } else {
+        presetName.focus();
+        presetName.select();
+        setStatus("Update the Profile Name field, then Save Profile.");
+      }
+    } else if (action === "import") {
+      openProfileTransferModal("import");
+    } else if (action === "export") {
+      openProfileTransferModal("export");
+    } else if (action === "copy") {
+      openProfileTransferModal("export");
+    } else if (action === "delete") {
+      document.getElementById("deletePresetButton").click();
+    }
+  }
+
   document.querySelectorAll("[data-tab-button]").forEach(function bindTab(button) {
     button.addEventListener("click", function switchTab() {
       activeTab = button.dataset.tabButton;
@@ -2177,6 +3243,69 @@
     onboardingCreateBlankButton.addEventListener("click", function createBlankFromOnboarding() {
       createBlankProfile(blankProfileName.value || "My CleanView");
     });
+  }
+
+  if (onboardingImportProfileButton) {
+    onboardingImportProfileButton.addEventListener("click", function importFromOnboarding() {
+      openProfileTransferModal("import");
+    });
+  }
+
+  if (profileActionsSelect) {
+    profileActionsSelect.addEventListener("change", function chooseProfileAction() {
+      handleProfileAction(profileActionsSelect.value);
+      profileActionsSelect.value = "";
+    });
+  }
+
+  if (profileTransferCloseButton) {
+    profileTransferCloseButton.addEventListener("click", closeProfileTransferModal);
+  }
+
+  if (validateProfileImportButton) {
+    validateProfileImportButton.addEventListener("click", validateProfileImportText);
+  }
+
+  if (confirmProfileImportButton) {
+    confirmProfileImportButton.addEventListener("click", importPendingProfile);
+  }
+
+  if (profileImportFile) {
+    profileImportFile.addEventListener("change", function readProfileImportFile(event) {
+      var file = event.target.files && event.target.files[0];
+      var reader = new FileReader();
+
+      if (!file) {
+        return;
+      }
+      if (!/\.json$/i.test(file.name) && file.type !== "application/json") {
+        setStatus("Choose a .json file.", true);
+        return;
+      }
+      if (file.size > 512 * 1024) {
+        setStatus("Profile JSON files must be 512KB or smaller.", true);
+        return;
+      }
+
+      reader.onload = function handleProfileFileLoaded() {
+        profileImportTextarea.value = String(reader.result || "");
+        validateProfileImportText();
+      };
+      reader.onerror = function handleProfileFileError() {
+        setStatus("Unable to read that Profile JSON file.", true);
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  if (copyProfileJsonButton) {
+    copyProfileJsonButton.addEventListener("click", function copyProfileJson() {
+      copyTextToClipboard(currentExportJson, "Profile JSON copied.");
+    });
+  }
+
+  if (downloadProfileJsonButton) {
+    downloadProfileJsonButton.addEventListener("click", downloadProfileJson);
   }
 
   document.getElementById("selectAllMenusButton").addEventListener("click", function selectAllMenus() {

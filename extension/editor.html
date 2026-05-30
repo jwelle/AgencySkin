@@ -42,13 +42,32 @@
             </label>
             <button id="onboardingCreateBlankButton" class="secondary" type="button">Create Blank Profile</button>
           </section>
+          <section class="onboarding-choice">
+            <h3>Import Profile JSON</h3>
+            <p class="help-text">Paste or upload a CleanView Profile shared by your team.</p>
+            <button id="onboardingImportProfileButton" type="button">Import Profile JSON</button>
+          </section>
         </div>
       </section>
 
       <section id="profileManagementPanel" class="panel">
         <div class="panel-header">
           <h2>My Profiles</h2>
-          <div class="button-row compact">
+          <label class="field profile-actions-field" for="profileActionsSelect">
+            Profile Actions
+            <select id="profileActionsSelect">
+              <option value="">Choose action...</option>
+              <option value="create_blank">Create New Profile</option>
+              <option value="create_template">Create from Template</option>
+              <option value="duplicate">Duplicate Profile</option>
+              <option value="rename">Rename Profile</option>
+              <option value="import">Import Profile</option>
+              <option value="export">Export Profile</option>
+              <option value="copy">Copy Profile JSON</option>
+              <option value="delete">Delete Profile</option>
+            </select>
+          </label>
+          <div class="button-row compact" hidden>
             <button id="duplicatePresetButton" class="secondary" type="button">Create My Profile</button>
             <button id="createPresetButton" type="button">Create Blank Profile</button>
             <button id="deletePresetButton" class="danger" type="button">Delete Profile</button>
@@ -276,6 +295,48 @@
           <div id="locationRules" class="location-rules"></div>
         </section>
 
+      </section>
+
+      <section id="profileTransferModal" class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profileTransferTitle" hidden>
+        <div class="profile-modal-panel">
+          <div class="panel-header">
+            <div>
+              <h2 id="profileTransferTitle">Import Profile</h2>
+              <p id="profileTransferSubtitle">Paste CleanView Profile JSON or upload a .json file.</p>
+            </div>
+            <button id="profileTransferCloseButton" class="secondary" type="button">Cancel</button>
+          </div>
+
+          <div id="profileImportPanel" class="profile-transfer-section">
+            <label class="field" for="profileImportTextarea">
+              Paste CleanView JSON
+              <textarea id="profileImportTextarea" rows="10" spellcheck="false"></textarea>
+            </label>
+            <label class="field" for="profileImportFile">
+              Upload a .json file
+              <input id="profileImportFile" type="file" accept="application/json,.json">
+            </label>
+            <div class="button-row">
+              <button id="validateProfileImportButton" type="button">Validate Profile</button>
+            </div>
+            <div id="profileImportPreview" class="profile-transfer-preview" hidden></div>
+            <div class="button-row">
+              <button id="confirmProfileImportButton" type="button" disabled>Import as New Profile</button>
+            </div>
+          </div>
+
+          <div id="profileExportPanel" class="profile-transfer-section" hidden>
+            <p class="help-text">Export this Profile as CleanView JSON.</p>
+            <label class="field" for="profileExportTextarea">
+              Profile JSON
+              <textarea id="profileExportTextarea" rows="12" readonly spellcheck="false"></textarea>
+            </label>
+            <div class="button-row">
+              <button id="copyProfileJsonButton" type="button">Copy JSON</button>
+              <button id="downloadProfileJsonButton" class="secondary" type="button">Download .json</button>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
 

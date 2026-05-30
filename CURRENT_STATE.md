@@ -6,6 +6,7 @@
 - Curated sidebar style cards, bundled visual backgrounds, pattern-backed presets, and controlled Curated Rotation were added to the Chrome extension.
 - Sidebar background settings now store structured image, pattern, readability, favorite, and rotation configuration.
 - GoHighLevel sidebar backgrounds now apply through internal non-click-blocking background layers.
+- Phase 1 Profile JSON import/export was added to the CleanView Profile Builder.
 - Install Code Generator added to the AgencySkin dashboard.
 - Generated CSS uses current theme settings and hides only menu items disabled in the dashboard.
 - Optional hosted loader script snippet is shown separately and remains experimental.
@@ -45,6 +46,7 @@
 14. Confirm the Sidebar Style tab uses a guided `Use Preset` / `Custom Configuration` editor.
 15. Confirm the right panel keeps a tall sticky sidebar preview, Menu Colors, and Save / Reset controls visible while scrolling.
 16. Save a custom Profile and apply it on a supported GoHighLevel page.
+17. Export a Profile JSON file from Profile Actions, then import it as a new editable Profile.
 
 ## Known Limitations
 

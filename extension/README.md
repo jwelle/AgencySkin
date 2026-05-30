@@ -48,6 +48,9 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 20. Navigate inside GoHighLevel and confirm the sidebar state reapplies after rerenders without duplicate branding.
 21. Click `Restore current page` to restore the original sidebar for the current page.
 22. Toggle CleanView off and confirm the original sidebar remains visible.
+23. Use `Profile Actions` to export the active Profile JSON.
+24. Copy or download the exported JSON, then import it as a new Profile.
+25. Confirm invalid JSON and unsafe quick link URLs are rejected before import.
 
 ## Templates
 
@@ -69,6 +72,18 @@ Templates are read-only starting points. Create a Profile from a Template or cre
 Personal Profiles are stored in `chrome.storage.local` on this browser.
 
 Use `Show this Profile in popup` to keep the popup Active Profile dropdown focused. Hidden Profiles remain available in the Profile Builder and are not deleted.
+
+## Profile Import / Export
+
+Use `Profile Actions` in the Profile Builder to import or export CleanView Profile JSON.
+
+- `Export Profile` opens a JSON preview with copy and download actions.
+- `Copy Profile JSON` uses the same export preview.
+- `Import Profile` accepts pasted CleanView JSON or an uploaded `.json` file.
+- Imported JSON is validated, previewed, and saved as a new editable Profile.
+- Imports never overwrite the active Profile or edit a Template directly.
+
+Phase 1 imports support schema version `1.0.0` and allow safe Profile configuration only. Quick link URLs must be relative GHL paths beginning with `/`.
 
 ## CleanView Quick Links
 

@@ -193,6 +193,10 @@ button.secondary:hover {
   justify-content: flex-end;
 }
 
+.profile-actions-field {
+  min-width: 220px;
+}
+
 .onboarding-panel {
   gap: 1.25rem;
 }
@@ -226,6 +230,69 @@ button.secondary:hover {
   color: var(--as-text);
   font-size: 0.9rem;
   margin: 0;
+}
+
+.profile-modal {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.48);
+  inset: 0;
+  justify-content: center;
+  padding: 1.5rem;
+  position: fixed;
+  z-index: 20;
+}
+
+.profile-modal:not([hidden]) {
+  display: flex;
+}
+
+.profile-modal-panel {
+  background: var(--as-surface);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-md);
+  box-shadow: var(--as-shadow-md);
+  display: grid;
+  gap: 1rem;
+  max-height: min(760px, calc(100vh - 3rem));
+  max-width: 760px;
+  overflow: auto;
+  padding: 1rem;
+  width: min(760px, 100%);
+}
+
+.profile-transfer-section {
+  display: grid;
+  gap: 0.85rem;
+}
+
+textarea {
+  background: var(--as-surface);
+  border: 1px solid #cbd5e1;
+  border-radius: var(--as-radius-sm);
+  font: 0.84rem ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  min-height: 8rem;
+  padding: 0.65rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.profile-transfer-preview {
+  background: var(--as-surface-muted);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-sm);
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.85rem;
+}
+
+.profile-transfer-preview h3,
+.profile-transfer-preview p {
+  margin: 0;
+}
+
+.profile-transfer-preview ul {
+  margin: 0;
+  padding-left: 1.2rem;
 }
 
 .menu-actions {
