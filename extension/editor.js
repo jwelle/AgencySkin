@@ -7,8 +7,9 @@
   var enableLocationViewDefaults = namespace.ENABLE_LOCATION_VIEW_DEFAULTS === true;
   var state = null;
   var selectedPresetId = "builtin:simple";
-  var activeTab = "menu";
+  var activeTab = "style";
   var activeLocationId = null;
+  var draftSidebarStyle = null;
 
   var presetSelect = document.getElementById("presetSelect");
   var defaultPresetSelect = document.getElementById("defaultPresetSelect");
@@ -27,11 +28,26 @@
   var sidebarBackgroundType = document.getElementById("sidebarBackgroundType");
   var sidebarStyleEditor = document.getElementById("sidebarStyleEditor");
   var sidebarStylePreview = document.getElementById("sidebarStylePreview");
+  var sidebarStylePreviewBackground = document.getElementById("sidebarStylePreviewBackground");
+  var sidebarStylePreviewOverlay = document.getElementById("sidebarStylePreviewOverlay");
   var sidebarStylePreviewHeaderText = document.getElementById("sidebarStylePreviewHeaderText");
   var sidebarStylePreviewLogo = document.getElementById("sidebarStylePreviewLogo");
+  var curatedPresetGrid = document.getElementById("curatedPresetGrid");
+  var curatedShuffleButton = document.getElementById("curatedShuffleButton");
+  var autoReadabilityToggle = document.getElementById("autoReadabilityToggle");
+  var curatedShuffleEnabled = document.getElementById("curatedShuffleEnabled");
+  var curatedShufflePool = document.getElementById("curatedShufflePool");
+  var curatedShuffleFrequency = document.getElementById("curatedShuffleFrequency");
+  var curatedShuffleAvoidRepeats = document.getElementById("curatedShuffleAvoidRepeats");
+  var curatedShuffleCustomPool = document.getElementById("curatedShuffleCustomPool");
+  var sidebarBackgroundAssets = namespace.sidebarBackgroundAssets || [];
+  var sidebarPatternAssets = namespace.sidebarPatternAssets || [];
+  var sidebarImageAssets = namespace.sidebarImageAssets || [];
+  var curatedSidebarStylePresets = namespace.curatedSidebarStylePresets || [];
   var sidebarBackgroundTypes = [
     { value: "solid", label: "Solid Color" },
     { value: "gradient", label: "Gradient" },
+    { value: "pattern", label: "Pattern" },
     { value: "image", label: "Image" }
   ];
 
@@ -41,7 +57,7 @@
     });
 
     if (!enableLocationViewDefaults && activeTab === "locations") {
-      activeTab = "menu";
+      activeTab = "style";
     }
   }
   var gradientDirections = [
@@ -65,6 +81,25 @@
     { value: "center top", label: "Center Top" },
     { value: "center bottom", label: "Center Bottom" }
   ];
+  var curatedShufflePoolOptions = [
+    { value: "selected-type-only", label: "Selected Type Only" },
+    { value: "images-patterns", label: "Images + Patterns" },
+    { value: "professional", label: "Professional Presets" },
+    { value: "favorites", label: "Favorites Only" },
+    { value: "custom", label: "Custom Pool" }
+  ];
+  var curatedShuffleFrequencyOptions = [
+    { value: "manual", label: "Manual only" },
+    { value: "session", label: "Every session" },
+    { value: "daily", label: "Daily" },
+    { value: "page-load", label: "Every page load" }
+  ];
+  var curatedShuffleCustomPoolOptions = [
+    { value: "solids", label: "Solids" },
+    { value: "gradients", label: "Gradients" },
+    { value: "patterns", label: "Patterns" },
+    { value: "images", label: "Images" }
+  ];
   var sidebarBrandingModes = [
     { value: "keep", label: "Keep default" },
     { value: "hide", label: "Hide default" },
@@ -74,100 +109,6 @@
     { value: "left", label: "Left" },
     { value: "center", label: "Center" },
     { value: "right", label: "Right" }
-  ];
-  var randomGradientDirections = ["135deg", "180deg", "90deg", "45deg"];
-  var borderRadiusOptions = ["6px", "8px", "10px", "12px"];
-  var itemSpacingOptions = ["2px", "3px", "4px", "6px"];
-  var sidebarPaddingOptions = ["8px", "10px", "12px"];
-  var randomStylePalettes = [
-    {
-      name: "Midnight Blue",
-      backgroundType: "gradient",
-      backgroundColor: "#0f172a",
-      gradientStartColor: "#020617",
-      gradientEndColor: "#1d4ed8",
-      textColor: "#e5e7eb",
-      activeBackgroundColor: "#2563eb",
-      activeTextColor: "#ffffff",
-      hoverBackgroundColor: "#1e293b"
-    },
-    {
-      name: "Emerald Night",
-      backgroundType: "gradient",
-      backgroundColor: "#064e3b",
-      gradientStartColor: "#022c22",
-      gradientEndColor: "#047857",
-      textColor: "#ecfdf5",
-      activeBackgroundColor: "#10b981",
-      activeTextColor: "#052e16",
-      hoverBackgroundColor: "#065f46"
-    },
-    {
-      name: "Purple Slate",
-      backgroundType: "gradient",
-      backgroundColor: "#312e81",
-      gradientStartColor: "#111827",
-      gradientEndColor: "#7c3aed",
-      textColor: "#f5f3ff",
-      activeBackgroundColor: "#8b5cf6",
-      activeTextColor: "#ffffff",
-      hoverBackgroundColor: "#4c1d95"
-    },
-    {
-      name: "Ocean Steel",
-      backgroundType: "gradient",
-      backgroundColor: "#0f172a",
-      gradientStartColor: "#0f172a",
-      gradientEndColor: "#0891b2",
-      textColor: "#ecfeff",
-      activeBackgroundColor: "#06b6d4",
-      activeTextColor: "#083344",
-      hoverBackgroundColor: "#155e75"
-    },
-    {
-      name: "Graphite",
-      backgroundType: "solid",
-      backgroundColor: "#18181b",
-      gradientStartColor: "",
-      gradientEndColor: "",
-      textColor: "#f4f4f5",
-      activeBackgroundColor: "#3f3f46",
-      activeTextColor: "#ffffff",
-      hoverBackgroundColor: "#27272a"
-    },
-    {
-      name: "Clean Cloud",
-      backgroundType: "solid",
-      backgroundColor: "#ffffff",
-      gradientStartColor: "",
-      gradientEndColor: "",
-      textColor: "#111827",
-      activeBackgroundColor: "#dbeafe",
-      activeTextColor: "#1e3a8a",
-      hoverBackgroundColor: "#f1f5f9"
-    },
-    {
-      name: "Royal Night",
-      backgroundType: "gradient",
-      backgroundColor: "#1e1b4b",
-      gradientStartColor: "#0f172a",
-      gradientEndColor: "#4f46e5",
-      textColor: "#eef2ff",
-      activeBackgroundColor: "#6366f1",
-      activeTextColor: "#ffffff",
-      hoverBackgroundColor: "#312e81"
-    },
-    {
-      name: "Copper Slate",
-      backgroundType: "gradient",
-      backgroundColor: "#292524",
-      gradientStartColor: "#1c1917",
-      gradientEndColor: "#b45309",
-      textColor: "#fffbeb",
-      activeBackgroundColor: "#f59e0b",
-      activeTextColor: "#1c1917",
-      hoverBackgroundColor: "#78350f"
-    }
   ];
   var quickLinkPlacements = [
     { value: "top", label: "Top of menu" },
@@ -181,14 +122,36 @@
   ];
   var sidebarStyleFields = [
     { section: "Solid Background", key: "backgroundColor", label: "Sidebar Background", type: "color", mode: "solid" },
+    { key: "backgroundOverlayOpacity", label: "Darken Overlay", type: "range", mode: "solid" },
     { section: "Gradient Background", key: "gradientStartColor", label: "Start Color", type: "color", mode: "gradient" },
     { key: "gradientEndColor", label: "End Color", type: "color", mode: "gradient" },
     { key: "gradientDirection", label: "Direction", type: "select", options: gradientDirections, mode: "gradient" },
+    { key: "backgroundOverlayOpacity", label: "Darken Overlay", type: "range", mode: "gradient" },
+    { section: "Pattern Background", key: "backgroundAssetId", label: "Pattern", type: "select", options: function patternOptions() {
+      return sidebarPatternAssets.map(function mapPattern(asset) {
+        return { value: asset.id, label: asset.label };
+      });
+    }, mode: "pattern" },
+    { key: "patternSettings.scale", label: "Pattern Scale", type: "range", min: "0.5", max: "2.5", step: "0.05", mode: "pattern" },
+    { key: "patternSettings.opacity", label: "Pattern Opacity", type: "range", mode: "pattern" },
+    { key: "patternSettings.overlayOpacity", label: "Darken Overlay", type: "range", mode: "pattern" },
+    { key: "patternSettings.accentColor", label: "Accent Color", type: "color", mode: "pattern" },
     { section: "Image Background", key: "backgroundImageUrl", label: "Image URL", type: "url", mode: "image" },
+    { key: "backgroundAssetId", label: "Curated Image", type: "select", options: function imageOptions() {
+      return [{ value: "", label: "Custom / URL" }].concat(sidebarImageAssets.map(function mapImage(asset) {
+        return { value: asset.id, label: asset.label };
+      }));
+    }, mode: "image" },
+    { key: "customImageDataUrl", label: "Upload Custom Image", type: "file", mode: "image" },
+    { key: "imageSettings.scale", label: "Zoom", type: "range", min: "0.5", max: "2.5", step: "0.05", mode: "image" },
+    { key: "imageSettings.opacity", label: "Fade", type: "range", mode: "image" },
+    { key: "imageSettings.overlayOpacity", label: "Darken Overlay", type: "range", mode: "image" },
+    { key: "imageSettings.blur", label: "Blur", type: "range", min: "0", max: "12", step: "1", mode: "image" },
     { key: "backgroundImageFit", label: "Image Fit", type: "select", options: backgroundImageFitOptions, mode: "image" },
     { key: "backgroundImagePosition", label: "Image Position", type: "select", options: backgroundImagePositionOptions, mode: "image" },
     { key: "backgroundOverlayColor", label: "Overlay Color", type: "color", mode: "image" },
-    { key: "backgroundOverlayOpacity", label: "Overlay Opacity", type: "range", mode: "image" },
+    { key: "imageSettings.positionX", label: "Position X", type: "range", min: "0", max: "100", step: "1", mode: "image" },
+    { key: "imageSettings.positionY", label: "Position Y", type: "range", min: "0", max: "100", step: "1", mode: "image" },
     { section: "Menu Colors", key: "textColor", label: "Menu Text", type: "color" },
     { key: "activeBackgroundColor", label: "Active Item Background", type: "color" },
     { key: "activeTextColor", label: "Active Item Text", type: "color" },
@@ -418,6 +381,164 @@
     return "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + clampOpacity(opacity) + ")";
   }
 
+  function clampNumber(value, min, max, fallback) {
+    var numeric = Number(value);
+
+    if (Number.isNaN(numeric)) {
+      return fallback;
+    }
+
+    return Math.min(max, Math.max(min, numeric));
+  }
+
+  function getByPath(object, path, fallback) {
+    var value = String(path || "").split(".").reduce(function readPath(current, part) {
+      return current && current[part] !== undefined ? current[part] : undefined;
+    }, object);
+
+    return value === undefined ? fallback : value;
+  }
+
+  function setByPath(object, path, value) {
+    var parts = String(path || "").split(".");
+    var target = object;
+
+    parts.slice(0, -1).forEach(function ensurePart(part) {
+      if (!target[part] || typeof target[part] !== "object") {
+        target[part] = {};
+      }
+      target = target[part];
+    });
+    target[parts[parts.length - 1]] = value;
+  }
+
+  function getAssetById(assetId) {
+    return namespace.getSidebarBackgroundAssetById ? namespace.getSidebarBackgroundAssetById(assetId) : sidebarBackgroundAssets.find(function findAsset(asset) {
+      return asset.id === assetId;
+    }) || null;
+  }
+
+  function getCuratedPresetById(presetId) {
+    return namespace.getCuratedSidebarStylePresetById ? namespace.getCuratedSidebarStylePresetById(presetId) : curatedSidebarStylePresets.find(function findPreset(preset) {
+      return preset.id === presetId;
+    }) || null;
+  }
+
+  function getExtensionAssetUrl(asset) {
+    if (!asset || !asset.filename) {
+      return "";
+    }
+
+    if (typeof chrome !== "undefined" && chrome.runtime && typeof chrome.runtime.getURL === "function") {
+      return chrome.runtime.getURL(asset.filename);
+    }
+
+    return asset.filename;
+  }
+
+  function getPatternSize(style) {
+    var scale = clampNumber(getByPath(style, "patternSettings.scale", 1), 0.5, 2.5, 1);
+    return Math.round(28 * scale) + "px " + Math.round(28 * scale) + "px";
+  }
+
+  function getImagePosition(style) {
+    var x = clampNumber(getByPath(style, "imageSettings.positionX", 50), 0, 100, 50);
+    var y = clampNumber(getByPath(style, "imageSettings.positionY", 50), 0, 100, 50);
+    return x + "% " + y + "%";
+  }
+
+  function getImageScale(style) {
+    var scale = clampNumber(getByPath(style, "imageSettings.scale", 1), 0.5, 2.5, 1);
+    return Math.round(scale * 100) + "% auto";
+  }
+
+  function getImageUrl(style) {
+    var asset = getAssetById(style.backgroundAssetId);
+
+    return style.customImageDataUrl || getExtensionAssetUrl(asset) || style.backgroundImageUrl || "";
+  }
+
+  function getStylePreviewBackground(style) {
+    var asset = getAssetById(style.backgroundAssetId);
+
+    if (style.backgroundType === "image") {
+      var imageUrl = getImageUrl(style);
+      return imageUrl ? "url(\"" + imageUrl + "\")" : "";
+    }
+
+    if (style.backgroundType === "pattern" && asset) {
+      return asset.patternCss || "";
+    }
+
+    return "";
+  }
+
+  function getOverlayOpacity(style) {
+    var asset = getAssetById(style.backgroundAssetId);
+    var fallback = asset && asset.recommendedOverlayOpacity !== undefined ? asset.recommendedOverlayOpacity : 0.35;
+
+    if (style.backgroundType === "image") {
+      return style.autoReadability === false ? clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)) : Math.max(fallback, clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)));
+    }
+
+    if (style.backgroundType === "pattern") {
+      return clampOpacity(getByPath(style, "patternSettings.overlayOpacity", fallback));
+    }
+
+    return clampOpacity(style.backgroundOverlayOpacity);
+  }
+
+  function applyAssetDefaults(style, asset) {
+    if (!asset) {
+      return style;
+    }
+
+    style.backgroundAssetId = asset.id;
+    style.backgroundType = asset.type;
+    style.textColor = asset.textColor || style.textColor;
+    style.activeBackgroundColor = asset.activeBackgroundColor || style.activeBackgroundColor;
+    style.activeTextColor = asset.activeTextColor || style.activeTextColor;
+    style.hoverBackgroundColor = asset.hoverBackgroundColor || style.hoverBackgroundColor;
+
+    if (asset.type === "image") {
+      style.customImageDataUrl = "";
+      style.backgroundImageUrl = "";
+      style.imageSettings = Object.assign({}, style.imageSettings || {}, {
+        positionX: asset.focalPointX || 50,
+        positionY: asset.focalPointY || 50,
+        scale: asset.defaultScale || 1,
+        blur: asset.recommendedBlur || 0,
+        overlayOpacity: asset.recommendedOverlayOpacity || 0.55
+      });
+    }
+
+    if (asset.type === "pattern") {
+      style.backgroundColor = asset.backgroundColor || style.backgroundColor;
+      style.patternSettings = Object.assign({}, style.patternSettings || {}, {
+        scale: asset.defaultScale || 1,
+        opacity: 0.5,
+        overlayOpacity: asset.recommendedOverlayOpacity || 0.35
+      });
+    }
+
+    draftSidebarStyle = storage.normalizeSidebarStyle(style);
+    return draftSidebarStyle;
+  }
+
+  function applyCuratedStyleToStyle(style, preset) {
+    var nextStyle = storage.normalizeSidebarStyle(Object.assign({}, style, preset.style || {}));
+    var asset = preset.assetId ? getAssetById(preset.assetId) : null;
+
+    nextStyle.enabled = true;
+    nextStyle.preset = "custom";
+    nextStyle.activePresetId = preset.id;
+    if (asset) {
+      nextStyle = applyAssetDefaults(nextStyle, asset);
+    }
+
+    return storage.normalizeSidebarStyle(nextStyle);
+  }
+
   function createFieldLabel(text, input) {
     var label = document.createElement("label");
     label.className = "inline-field";
@@ -478,8 +599,17 @@
 
   function getSidebarBackgroundValue(style) {
     if (style.backgroundType === "image" && style.backgroundImageUrl) {
-      var overlay = getOverlayRgba(style.backgroundOverlayColor || "#000000", style.backgroundOverlayOpacity);
-      return "linear-gradient(" + overlay + ", " + overlay + "), url(\"" + style.backgroundImageUrl + "\")";
+      return "url(\"" + style.backgroundImageUrl + "\")";
+    }
+
+    if (style.backgroundType === "image") {
+      var imageUrl = getImageUrl(style);
+      return imageUrl ? "url(\"" + imageUrl + "\")" : style.backgroundColor || "#0f172a";
+    }
+
+    if (style.backgroundType === "pattern") {
+      var asset = getAssetById(style.backgroundAssetId);
+      return asset && asset.patternCss ? asset.patternCss : style.backgroundColor || "#0f172a";
     }
 
     if (style.backgroundType === "gradient") {
@@ -612,15 +742,26 @@
 
   function createSelectField(field, style) {
     var select = document.createElement("select");
-    (field.options || []).forEach(function addOption(optionDefinition) {
+    var options = typeof field.options === "function" ? field.options() : field.options || [];
+    options.forEach(function addOption(optionDefinition) {
       var option = document.createElement("option");
       option.value = optionDefinition.value;
       option.textContent = optionDefinition.label;
       select.appendChild(option);
     });
-    select.value = style[field.key] || field.defaultValue || "";
+    select.value = getByPath(style, field.key, field.defaultValue || "");
     select.dataset.sidebarStyleField = field.key;
-    select.addEventListener("change", updateSidebarStylePreview);
+    select.addEventListener("change", function handleSelectChange() {
+      if (field.key === "backgroundAssetId" && select.value) {
+        var nextStyle = collectSidebarStyleFromForm();
+        populateSidebarStyleForm(applyAssetDefaults(nextStyle, getAssetById(select.value)), {
+          presetValue: "custom",
+          optionLabel: "Custom Draft"
+        });
+        return;
+      }
+      updateSidebarStylePreview();
+    });
     return createFieldLabel(field.label, select);
   }
 
@@ -629,7 +770,7 @@
     var controls = document.createElement("span");
     var picker = document.createElement("input");
     var textInput = document.createElement("input");
-    var value = style[field.key] || "";
+    var value = getByPath(style, field.key, "");
 
     wrapper.className = "inline-field color-field";
     controls.className = "color-control";
@@ -654,7 +795,7 @@
   function createTextField(field, style) {
     var input = document.createElement("input");
     input.type = field.type;
-    input.value = style[field.key] || "";
+    input.value = getByPath(style, field.key, "");
     input.dataset.sidebarStyleField = field.key;
     input.addEventListener("input", updateSidebarStylePreview);
     return createFieldLabel(field.label, input);
@@ -669,16 +810,16 @@
     wrapper.className = "inline-field range-field";
     controls.className = "range-control";
     input.type = "range";
-    input.min = "0";
-    input.max = "1";
-    input.step = "0.05";
-    input.value = clampOpacity(style[field.key]);
+    input.min = field.min || "0";
+    input.max = field.max || "1";
+    input.step = field.step || "0.05";
+    input.value = clampNumber(getByPath(style, field.key, 0), Number(input.min), Number(input.max), Number(input.min));
     input.dataset.sidebarStyleField = field.key;
     valueLabel.className = "range-value";
-    valueLabel.textContent = Math.round(clampOpacity(input.value) * 100) + "%";
+    valueLabel.textContent = formatRangeValue(input.value, field);
 
     input.addEventListener("input", function updateRangeValue() {
-      valueLabel.textContent = Math.round(clampOpacity(input.value) * 100) + "%";
+      valueLabel.textContent = formatRangeValue(input.value, field);
       updateSidebarStylePreview();
     });
 
@@ -689,16 +830,114 @@
     return wrapper;
   }
 
+  function formatRangeValue(value, field) {
+    var numeric = Number(value);
+
+    if (field.max && Number(field.max) > 1) {
+      return field.max === "100" ? Math.round(numeric) + "%" : numeric.toFixed(2).replace(/\.?0+$/, "") + "x";
+    }
+
+    return Math.round(clampOpacity(value) * 100) + "%";
+  }
+
+  function createFileField(field) {
+    var wrapper = document.createElement("label");
+    var controls = document.createElement("span");
+    var input = document.createElement("input");
+    var removeButton = document.createElement("button");
+
+    wrapper.className = "inline-field file-field";
+    controls.className = "file-control";
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp";
+    input.dataset.sidebarStyleField = field.key;
+    input.addEventListener("change", handleCustomImageUpload);
+    removeButton.type = "button";
+    removeButton.className = "secondary";
+    removeButton.textContent = "Remove";
+    removeButton.dataset.removeCustomImage = "true";
+
+    wrapper.appendChild(document.createTextNode(field.label));
+    controls.appendChild(input);
+    controls.appendChild(removeButton);
+    wrapper.appendChild(controls);
+    return wrapper;
+  }
+
+  function handleCustomImageUpload(event) {
+    var file = event.target.files && event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) {
+      setStatus("Use a JPG, PNG, or WebP image.", true);
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setStatus("Custom images must be 2MB or smaller.", true);
+      event.target.value = "";
+      return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function handleReaderLoad() {
+      var image = new Image();
+      image.onload = function handleImageLoad() {
+        var canvas = document.createElement("canvas");
+        var width = 520;
+        var height = 980;
+        var context = canvas.getContext("2d");
+        var scale = Math.max(width / image.width, height / image.height);
+        var drawWidth = image.width * scale;
+        var drawHeight = image.height * scale;
+        var drawX = (width - drawWidth) / 2;
+        var drawY = (height - drawHeight) / 2;
+        var nextStyle = collectSidebarStyleFromForm();
+
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+        nextStyle.backgroundType = "image";
+        nextStyle.backgroundAssetId = "";
+        nextStyle.backgroundImageUrl = "";
+        nextStyle.customImageDataUrl = canvas.toDataURL("image/webp", 0.78);
+        nextStyle.imageSettings = Object.assign({}, nextStyle.imageSettings || {}, {
+          positionX: 50,
+          positionY: 50,
+          scale: 1,
+          opacity: 0.85,
+          blur: 0,
+          overlayOpacity: Math.max(0.45, getByPath(nextStyle, "imageSettings.overlayOpacity", 0.55))
+        });
+        populateSidebarStyleForm(nextStyle, { presetValue: "custom", optionLabel: "Custom Image Draft" });
+        setStatus("Custom image loaded. Save this view to keep it.");
+      };
+      image.onerror = function handleImageError() {
+        setStatus("Unable to read that image.", true);
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   function syncSidebarModeState() {
     var backgroundType = sidebarBackgroundType.value || "solid";
     sidebarStyleEditor.querySelectorAll("[data-sidebar-style-mode]").forEach(function updateMode(element) {
-      element.classList.toggle("is-muted", element.dataset.sidebarStyleMode !== backgroundType);
+      var isActiveMode = element.dataset.sidebarStyleMode === backgroundType;
+      element.hidden = !isActiveMode;
+      element.classList.toggle("is-muted", !isActiveMode);
     });
   }
 
   function populateSidebarStyleForm(style, options) {
     var normalizedStyle = storage.normalizeSidebarStyle(style);
     var presetValue = options && options.presetValue ? options.presetValue : normalizedStyle.preset || "default";
+    draftSidebarStyle = normalizedStyle;
+    renderCuratedPresetCards(normalizedStyle);
 
     if (!sidebarStylePresets[presetValue]) {
       ensureCustomStyleOption(options && options.optionLabel ? options.optionLabel : "Custom Draft");
@@ -707,13 +946,23 @@
     sidebarStyleEnabled.checked = normalizedStyle.enabled === true;
     sidebarStylePreset.value = presetValue;
     sidebarBackgroundType.value = normalizedStyle.backgroundType || "solid";
+    if (autoReadabilityToggle) {
+      autoReadabilityToggle.checked = normalizedStyle.autoReadability !== false;
+    }
+    populateCuratedShuffleForm(normalizedStyle);
     sidebarStyleEditor.querySelectorAll("[data-sidebar-style-field]").forEach(function updateField(input) {
-      var value = normalizedStyle[input.dataset.sidebarStyleField];
+      var value = getByPath(normalizedStyle, input.dataset.sidebarStyleField, "");
+      if (input.type === "file") {
+        return;
+      }
       input.value = value === undefined || value === null ? "" : value;
       if (input.type === "range") {
-        input.value = clampOpacity(value);
+        input.value = value === undefined || value === null ? input.value : value;
         if (input.closest(".range-control")) {
-          input.closest(".range-control").querySelector(".range-value").textContent = Math.round(clampOpacity(input.value) * 100) + "%";
+          var rangeField = sidebarStyleFields.find(function findRange(field) {
+            return field.key === input.dataset.sidebarStyleField;
+          }) || {};
+          input.closest(".range-control").querySelector(".range-value").textContent = formatRangeValue(input.value, rangeField);
         }
       }
       if (input.closest(".color-control")) {
@@ -727,10 +976,89 @@
     updateSidebarStylePreview();
   }
 
+  function populateSelect(select, options, selectedValue) {
+    if (!select) {
+      return;
+    }
+
+    select.innerHTML = "";
+    options.forEach(function addOption(optionDefinition) {
+      var option = document.createElement("option");
+      option.value = optionDefinition.value;
+      option.textContent = optionDefinition.label;
+      select.appendChild(option);
+    });
+    select.value = selectedValue;
+  }
+
+  function populateCuratedShuffleForm(style) {
+    var shuffle = storage.normalizeSidebarStyle(style).curatedShuffle;
+
+    populateSelect(curatedShufflePool, curatedShufflePoolOptions, shuffle.poolMode);
+    populateSelect(curatedShuffleFrequency, curatedShuffleFrequencyOptions, shuffle.frequency);
+    if (curatedShuffleEnabled) {
+      curatedShuffleEnabled.checked = shuffle.enabled === true;
+    }
+    if (curatedShuffleAvoidRepeats) {
+      curatedShuffleAvoidRepeats.checked = shuffle.avoidRecentRepeats !== false;
+    }
+    renderCustomPool(shuffle.customPool);
+  }
+
+  function renderCustomPool(selectedPool) {
+    var selectedSet = new Set(selectedPool || []);
+
+    if (!curatedShuffleCustomPool) {
+      return;
+    }
+
+    curatedShuffleCustomPool.innerHTML = "";
+    curatedShuffleCustomPool.hidden = !curatedShufflePool || curatedShufflePool.value !== "custom";
+    curatedShuffleCustomPoolOptions.forEach(function renderPoolOption(poolOption) {
+      var label = document.createElement("label");
+      var checkbox = document.createElement("input");
+      var text = document.createElement("span");
+
+      label.className = "check-row compact-check";
+      checkbox.type = "checkbox";
+      checkbox.value = poolOption.value;
+      checkbox.checked = selectedSet.has(poolOption.value);
+      checkbox.dataset.shufflePoolType = poolOption.value;
+      text.textContent = poolOption.label;
+      label.appendChild(checkbox);
+      label.appendChild(text);
+      curatedShuffleCustomPool.appendChild(label);
+    });
+  }
+
+  function collectCuratedShuffleFromForm(style) {
+    var current = storage.normalizeSidebarStyle(style || {}).curatedShuffle;
+    var customPool = [];
+
+    if (curatedShuffleCustomPool) {
+      curatedShuffleCustomPool.querySelectorAll("[data-shuffle-pool-type]").forEach(function collectPoolType(checkbox) {
+        if (checkbox.checked) {
+          customPool.push(checkbox.dataset.shufflePoolType);
+        }
+      });
+    }
+
+    return {
+      ...current,
+      enabled: curatedShuffleEnabled ? curatedShuffleEnabled.checked : current.enabled,
+      poolMode: curatedShufflePool ? curatedShufflePool.value : current.poolMode,
+      customPool: customPool.length ? customPool : current.customPool,
+      frequency: curatedShuffleFrequency ? curatedShuffleFrequency.value : current.frequency,
+      favoritesOnly: curatedShufflePool ? curatedShufflePool.value === "favorites" : current.favoritesOnly,
+      avoidRecentRepeats: curatedShuffleAvoidRepeats ? curatedShuffleAvoidRepeats.checked : current.avoidRecentRepeats
+    };
+  }
+
   function renderSidebarStyle() {
     var preset = selectedPreset();
     var style = storage.normalizeSidebarStyle(preset.sidebarStyle);
     renderSidebarBackgroundTypeOptions(style.backgroundType);
+    renderCuratedPresetCards(style);
     sidebarStyleEditor.innerHTML = "";
 
     sidebarStyleFields.forEach(function renderStyleField(field) {
@@ -746,6 +1074,8 @@
         label = createSelectField(field, style);
       } else if (field.type === "range") {
         label = createRangeField(field, style);
+      } else if (field.type === "file") {
+        label = createFileField(field);
       } else {
         label = createTextField(field, style);
       }
@@ -756,6 +1086,188 @@
       sidebarStyleEditor.appendChild(label);
     });
     populateSidebarStyleForm(style, { presetValue: style.preset || "default" });
+  }
+
+  function getCuratedPresetPreview(preset) {
+    var asset = preset.assetId ? getAssetById(preset.assetId) : null;
+
+    if (asset && asset.type === "image") {
+      return "url(\"" + getExtensionAssetUrl(asset) + "\")";
+    }
+
+    if (asset && asset.type === "pattern") {
+      return asset.patternCss || "";
+    }
+
+    if (preset.style && preset.style.backgroundType === "gradient") {
+      return getSidebarBackgroundValue(storage.normalizeSidebarStyle(preset.style));
+    }
+
+    return preset.style && preset.style.backgroundColor ? preset.style.backgroundColor : "#0f172a";
+  }
+
+  function renderCuratedPresetCards(style) {
+    var favoriteSet = new Set(style.favoriteAssetIds || []);
+
+    if (!curatedPresetGrid) {
+      return;
+    }
+
+    curatedPresetGrid.innerHTML = "";
+    curatedSidebarStylePresets.forEach(function renderPresetCard(preset) {
+      var card = document.createElement("button");
+      var preview = document.createElement("span");
+      var label = document.createElement("span");
+      var meta = document.createElement("span");
+      var favorite = document.createElement("span");
+      var isActive = style.activePresetId === preset.id;
+
+      card.type = "button";
+      card.className = "curated-preset-card" + (isActive ? " active" : "");
+      card.dataset.curatedPresetId = preset.id;
+      preview.className = "curated-preset-preview";
+      preview.style.background = getCuratedPresetPreview(preset);
+      if (preset.type === "image") {
+        preview.style.backgroundSize = "cover";
+        preview.style.backgroundPosition = "center";
+      }
+      label.className = "curated-preset-label";
+      label.textContent = preset.label;
+      meta.className = "curated-preset-meta";
+      meta.textContent = preset.category === "personal" ? "Personal" : "Professional";
+      favorite.className = "curated-preset-favorite";
+      favorite.dataset.favoritePresetId = preset.id;
+      favorite.textContent = favoriteSet.has(preset.id) ? "Starred" : "Star";
+
+      card.appendChild(preview);
+      card.appendChild(label);
+      card.appendChild(meta);
+      card.appendChild(favorite);
+      curatedPresetGrid.appendChild(card);
+    });
+  }
+
+  function applyCuratedPresetFromCard(presetId) {
+    var preset = getCuratedPresetById(presetId);
+
+    if (!preset) {
+      return;
+    }
+
+    populateSidebarStyleForm(applyCuratedStyleToStyle(getCurrentWorkingSidebarStyle(), preset), {
+      presetValue: "custom",
+      optionLabel: "Custom Draft - " + preset.label
+    });
+    setStatus(preset.label + " applied. Save this view to keep it.");
+  }
+
+  function toggleFavoritePreset(presetId) {
+    var style = getCurrentWorkingSidebarStyle();
+    var favoriteSet = new Set(style.favoriteAssetIds || []);
+    var preset = getCuratedPresetById(presetId);
+
+    if (!preset) {
+      return;
+    }
+
+    if (favoriteSet.has(presetId)) {
+      favoriteSet.delete(presetId);
+    } else {
+      favoriteSet.add(presetId);
+    }
+
+    style.favoriteAssetIds = Array.from(favoriteSet);
+    populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
+    setStatus((favoriteSet.has(presetId) ? "Favorited " : "Removed favorite ") + preset.label + ".");
+  }
+
+  function getCandidateTypesForShuffle(style, shuffle) {
+    if (shuffle.poolMode === "images-patterns") {
+      return ["image", "pattern"];
+    }
+
+    if (shuffle.poolMode === "custom") {
+      return (shuffle.customPool || []).map(function mapPoolType(type) {
+        return type === "images" ? "image" : type === "patterns" ? "pattern" : type === "gradients" ? "gradient" : "solid";
+      });
+    }
+
+    if (shuffle.poolMode === "professional" || shuffle.poolMode === "favorites") {
+      return ["solid", "gradient", "pattern", "image"];
+    }
+
+    return [style.backgroundType || "solid"];
+  }
+
+  function getShuffleCandidates(style) {
+    var shuffle = collectCuratedShuffleFromForm(style);
+    var types = new Set(getCandidateTypesForShuffle(style, shuffle));
+    var favoriteSet = new Set(style.favoriteAssetIds || []);
+    var candidates = curatedSidebarStylePresets.filter(function keepPreset(preset) {
+      if (!preset.safeForCuratedShuffle || !types.has(preset.type)) {
+        return false;
+      }
+
+      if (shuffle.poolMode === "professional" && preset.category !== "professional") {
+        return false;
+      }
+
+      if (shuffle.poolMode === "favorites" && !favoriteSet.has(preset.id)) {
+        return false;
+      }
+
+      return true;
+    });
+    var recent = shuffle.avoidRecentRepeats ? new Set(shuffle.lastAppliedAssetIds || []) : new Set();
+    var filtered = candidates.filter(function removeRecent(preset) {
+      return !recent.has(preset.id) && (!preset.assetId || !recent.has(preset.assetId));
+    });
+
+    return filtered.length ? filtered : candidates;
+  }
+
+  function applyCuratedShuffle() {
+    var style = getCurrentWorkingSidebarStyle();
+    var candidates = getShuffleCandidates(style);
+    var selected = null;
+    var shuffle = collectCuratedShuffleFromForm(style);
+    var recent = (shuffle.lastAppliedAssetIds || []).slice();
+
+    if (!candidates.length) {
+      setStatus("No curated styles match this shuffle pool.", true);
+      return;
+    }
+
+    selected = pickRandom(candidates);
+    style = applyCuratedStyleToStyle(style, selected);
+    recent.unshift(selected.assetId || selected.id);
+    style.curatedShuffle = Object.assign({}, shuffle, {
+      lastAppliedAssetIds: recent.slice(0, shuffle.avoidRecentCount || 3),
+      lastAppliedAt: namespace.nowIso(),
+      sessionKey: String(Date.now())
+    });
+    populateSidebarStyleForm(style, {
+      presetValue: "custom",
+      optionLabel: "Custom Draft - " + selected.label
+    });
+    setStatus("Curated Shuffle picked " + selected.label + ". Save this view to keep it.");
+  }
+
+  function updateImagePositionFromPointer(event) {
+    var rect = sidebarStylePreview.getBoundingClientRect();
+    var style = getCurrentWorkingSidebarStyle();
+    var x = clampNumber(((event.clientX - rect.left) / rect.width) * 100, 0, 100, 50);
+    var y = clampNumber(((event.clientY - rect.top) / rect.height) * 100, 0, 100, 50);
+
+    if (style.backgroundType !== "image") {
+      return;
+    }
+
+    style.imageSettings = Object.assign({}, style.imageSettings || {}, {
+      positionX: Math.round(x),
+      positionY: Math.round(y)
+    });
+    populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
   }
 
   function renderLocationRules() {
@@ -810,15 +1322,32 @@
     setContainerControlsDisabled(renameEditor, !isEditable);
     setContainerControlsDisabled(linkEditor, !isEditable);
     setContainerControlsDisabled(sidebarStyleEditor, !isEditable);
+    setContainerControlsDisabled(curatedPresetGrid, !isEditable);
+    setContainerControlsDisabled(curatedShuffleCustomPool, !isEditable);
     sidebarStyleEnabled.disabled = !isEditable;
     sidebarStylePreset.disabled = !isEditable;
     sidebarBackgroundType.disabled = !isEditable;
+    if (autoReadabilityToggle) {
+      autoReadabilityToggle.disabled = !isEditable;
+    }
+    if (curatedShuffleEnabled) {
+      curatedShuffleEnabled.disabled = !isEditable;
+    }
+    if (curatedShufflePool) {
+      curatedShufflePool.disabled = !isEditable;
+    }
+    if (curatedShuffleFrequency) {
+      curatedShuffleFrequency.disabled = !isEditable;
+    }
+    if (curatedShuffleAvoidRepeats) {
+      curatedShuffleAvoidRepeats.disabled = !isEditable;
+    }
     document.getElementById("selectAllMenusButton").disabled = !isEditable;
     document.getElementById("deselectAllMenusButton").disabled = !isEditable;
     document.getElementById("resetMenuDefaultsButton").disabled = !isEditable;
     document.getElementById("addRenameButton").disabled = !isEditable;
     document.getElementById("addLinkButton").disabled = !isEditable;
-    document.getElementById("randomizeStyleButton").disabled = !isEditable;
+    curatedShuffleButton.disabled = !isEditable;
     document.getElementById("resetStyleButton").disabled = !isEditable;
   }
 
@@ -836,27 +1365,50 @@
   }
 
   function collectSidebarStyleFromForm() {
-    var style = storage.normalizeSidebarStyle(sidebarStylePresets[sidebarStylePreset.value] || {});
+    var style = storage.normalizeSidebarStyle(draftSidebarStyle || sidebarStylePresets[sidebarStylePreset.value] || {});
     style.enabled = sidebarStyleEnabled.checked;
     style.preset = sidebarStylePreset.value || "default";
     style.backgroundType = sidebarBackgroundType.value || "solid";
+    style.autoReadability = autoReadabilityToggle ? autoReadabilityToggle.checked : true;
+    style.curatedShuffle = collectCuratedShuffleFromForm(style);
 
     sidebarStyleEditor.querySelectorAll("[data-sidebar-style-field]").forEach(function collectField(input) {
       var key = input.dataset.sidebarStyleField;
-      if (key === "backgroundOverlayOpacity") {
-        style[key] = clampOpacity(input.value);
+      var rangeField = sidebarStyleFields.find(function findField(field) {
+        return field.key === key;
+      }) || {};
+      var modeElement = input.closest("[data-sidebar-style-mode]");
+
+      if (modeElement && modeElement.hidden) {
+        return;
+      }
+
+      if (input.type === "file") {
+        return;
+      }
+
+      if (input.type === "range") {
+        setByPath(style, key, clampNumber(input.value, Number(rangeField.min || 0), Number(rangeField.max || 1), 0));
         return;
       }
 
       if (key === "backgroundImageUrl" || key === "logoUrl") {
-        style[key] = normalizeUrl(input.value);
+        setByPath(style, key, normalizeUrl(input.value));
         return;
       }
 
-      style[key] = input.value.trim();
+      setByPath(style, key, input.value.trim());
     });
 
-    return storage.normalizeSidebarStyle(style);
+    if (style.backgroundType === "pattern" && !getAssetById(style.backgroundAssetId)) {
+      style.backgroundAssetId = sidebarPatternAssets[0] ? sidebarPatternAssets[0].id : "";
+    }
+    if (style.backgroundType === "image" && style.backgroundAssetId && !getAssetById(style.backgroundAssetId)) {
+      style.backgroundAssetId = "";
+    }
+
+    draftSidebarStyle = storage.normalizeSidebarStyle(style);
+    return draftSidebarStyle;
   }
 
   function getCurrentWorkingSidebarStyle() {
@@ -881,17 +1433,50 @@
     var logoUrl = brandingMode === "replace" ? resolveBrandLogoUrl(style) : "";
     var alignment = style.headerAlignment || "center";
     var alignItems = getAlignmentFlexValue(alignment);
+    var overlayOpacity = getOverlayOpacity(style);
+    var imageOpacity = clampOpacity(getByPath(style, "imageSettings.opacity", 0.85));
+    var imageBlur = clampNumber(getByPath(style, "imageSettings.blur", 0), 0, 12, 0);
+    var patternOpacity = clampOpacity(getByPath(style, "patternSettings.opacity", 0.5));
 
     sidebarStylePreview.style.background = "";
     sidebarStylePreview.style.backgroundImage = "";
     sidebarStylePreview.style.backgroundSize = "";
     sidebarStylePreview.style.backgroundPosition = "";
     sidebarStylePreview.style.backgroundRepeat = "";
-    if (style.backgroundType === "image" && style.backgroundImageUrl) {
-      sidebarStylePreview.style.backgroundImage = background;
-      sidebarStylePreview.style.backgroundSize = style.backgroundImageFit || "cover";
-      sidebarStylePreview.style.backgroundPosition = style.backgroundImagePosition || "center";
-      sidebarStylePreview.style.backgroundRepeat = "no-repeat";
+    sidebarStylePreview.style.background = style.backgroundColor || "#ffffff";
+    if (sidebarStylePreviewBackground) {
+      sidebarStylePreviewBackground.style.background = "";
+      sidebarStylePreviewBackground.style.backgroundImage = "";
+      sidebarStylePreviewBackground.style.backgroundSize = "";
+      sidebarStylePreviewBackground.style.backgroundPosition = "";
+      sidebarStylePreviewBackground.style.backgroundRepeat = "";
+      sidebarStylePreviewBackground.style.opacity = "1";
+      sidebarStylePreviewBackground.style.filter = "none";
+    }
+    if (sidebarStylePreviewOverlay) {
+      sidebarStylePreviewOverlay.style.background = getOverlayRgba(style.backgroundOverlayColor || "#000000", overlayOpacity);
+      sidebarStylePreviewOverlay.style.opacity = overlayOpacity > 0 ? "1" : "0";
+    }
+    if (style.backgroundType === "image") {
+      if (sidebarStylePreviewBackground) {
+        sidebarStylePreviewBackground.style.backgroundImage = background;
+        sidebarStylePreviewBackground.style.backgroundSize = style.customImageDataUrl || style.backgroundAssetId ? getImageScale(style) : style.backgroundImageFit || "cover";
+        sidebarStylePreviewBackground.style.backgroundPosition = style.customImageDataUrl || style.backgroundAssetId ? getImagePosition(style) : style.backgroundImagePosition || "center";
+        sidebarStylePreviewBackground.style.backgroundRepeat = "no-repeat";
+        sidebarStylePreviewBackground.style.opacity = imageOpacity;
+        sidebarStylePreviewBackground.style.filter = imageBlur ? "blur(" + imageBlur + "px)" : "none";
+      } else {
+        sidebarStylePreview.style.backgroundImage = background;
+      }
+    } else if (style.backgroundType === "pattern") {
+      if (sidebarStylePreviewBackground) {
+        sidebarStylePreviewBackground.style.backgroundImage = background;
+        sidebarStylePreviewBackground.style.backgroundSize = getPatternSize(style);
+        sidebarStylePreviewBackground.style.backgroundRepeat = "repeat";
+        sidebarStylePreviewBackground.style.opacity = patternOpacity;
+      } else {
+        sidebarStylePreview.style.backgroundImage = background;
+      }
     } else {
       sidebarStylePreview.style.background = background || "#ffffff";
     }
@@ -1067,38 +1652,6 @@
     populateSidebarStyleForm(style, { presetValue: presetKey || "default" });
   }
 
-  function randomizeSidebarStyle() {
-    var palette = pickRandom(randomStylePalettes);
-    var backgroundType = palette.backgroundType === "gradient" ? "gradient" : "solid";
-    var randomizedStyle = storage.normalizeSidebarStyle({
-      enabled: true,
-      preset: "custom",
-      backgroundType: backgroundType,
-      backgroundColor: palette.backgroundColor,
-      gradientStartColor: backgroundType === "gradient" ? palette.gradientStartColor : "",
-      gradientEndColor: backgroundType === "gradient" ? palette.gradientEndColor : "",
-      gradientDirection: backgroundType === "gradient" ? pickRandom(randomGradientDirections) : "135deg",
-      textColor: palette.textColor,
-      activeBackgroundColor: palette.activeBackgroundColor,
-      activeTextColor: palette.activeTextColor,
-      hoverBackgroundColor: palette.hoverBackgroundColor,
-      borderRadius: pickRandom(borderRadiusOptions),
-      itemSpacing: pickRandom(itemSpacingOptions),
-      sidebarPadding: pickRandom(sidebarPaddingOptions),
-      sidebarBrandingMode: "keep",
-      logoUrl: "",
-      headerLabel: "AgencySkin",
-      logoSize: "32px",
-      headerAlignment: "center"
-    });
-
-    populateSidebarStyleForm(randomizedStyle, {
-      presetValue: "custom",
-      optionLabel: "Custom Draft - " + palette.name
-    });
-    setStatus("Randomized style preview. Save this view to keep it.");
-  }
-
   function refreshActiveLocation() {
     if (!enableLocationViewDefaults) {
       activeLocationId = null;
@@ -1245,8 +1798,6 @@
     setStatus("Sidebar style reset.");
   });
 
-  document.getElementById("randomizeStyleButton").addEventListener("click", randomizeSidebarStyle);
-
   if (enableLocationViewDefaults) {
     document.getElementById("assignCurrentLocationButton").addEventListener("click", function assignCurrentLocation() {
       if (!activeLocationId) {
@@ -1306,16 +1857,95 @@
     }
   });
 
+  if (curatedPresetGrid) {
+    curatedPresetGrid.addEventListener("click", function handleCuratedPresetClick(event) {
+      var favorite = event.target.closest("[data-favorite-preset-id]");
+      var card = event.target.closest("[data-curated-preset-id]");
+
+      if (favorite) {
+        event.stopPropagation();
+        toggleFavoritePreset(favorite.dataset.favoritePresetId);
+        return;
+      }
+
+      if (card) {
+        applyCuratedPresetFromCard(card.dataset.curatedPresetId);
+      }
+    });
+  }
+
+  sidebarStyleEditor.addEventListener("click", function handleSidebarStyleEditorClick(event) {
+    if (event.target.dataset.removeCustomImage) {
+      var style = getCurrentWorkingSidebarStyle();
+      style.customImageDataUrl = "";
+      populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
+      setStatus("Custom image removed. Save this view to keep the change.");
+    }
+  });
+
   sidebarStylePreset.addEventListener("change", function chooseStylePreset() {
     applySidebarPresetToForm(sidebarStylePreset.value);
   });
 
   sidebarStyleEnabled.addEventListener("change", updateSidebarStylePreview);
 
+  if (autoReadabilityToggle) {
+    autoReadabilityToggle.addEventListener("change", updateSidebarStylePreview);
+  }
+
   sidebarBackgroundType.addEventListener("change", function changeBackgroundType() {
+    var style = getCurrentWorkingSidebarStyle();
+    if (sidebarBackgroundType.value === "pattern" && !getAssetById(style.backgroundAssetId)) {
+      style.backgroundAssetId = sidebarPatternAssets[0] ? sidebarPatternAssets[0].id : "";
+      populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
+      return;
+    }
     syncSidebarModeState();
     updateSidebarStylePreview();
   });
+
+  if (curatedShuffleButton) {
+    curatedShuffleButton.addEventListener("click", applyCuratedShuffle);
+  }
+
+  [curatedShuffleEnabled, curatedShufflePool, curatedShuffleFrequency, curatedShuffleAvoidRepeats].forEach(function bindShuffleControl(control) {
+    if (!control) {
+      return;
+    }
+
+    control.addEventListener("change", function updateShuffleControl() {
+      if (control === curatedShufflePool) {
+        renderCustomPool(collectCuratedShuffleFromForm(getCurrentWorkingSidebarStyle()).customPool);
+      }
+      updateSidebarStylePreview();
+    });
+  });
+
+  if (curatedShuffleCustomPool) {
+    curatedShuffleCustomPool.addEventListener("change", updateSidebarStylePreview);
+  }
+
+  if (sidebarStylePreview) {
+    sidebarStylePreview.addEventListener("pointerdown", function startImageDrag(event) {
+      if (getCurrentWorkingSidebarStyle().backgroundType !== "image") {
+        return;
+      }
+
+      sidebarStylePreview.setPointerCapture(event.pointerId);
+      updateImagePositionFromPointer(event);
+    });
+    sidebarStylePreview.addEventListener("pointermove", function dragImage(event) {
+      if (!sidebarStylePreview.hasPointerCapture(event.pointerId)) {
+        return;
+      }
+      updateImagePositionFromPointer(event);
+    });
+    sidebarStylePreview.addEventListener("pointerup", function stopImageDrag(event) {
+      if (sidebarStylePreview.hasPointerCapture(event.pointerId)) {
+        sidebarStylePreview.releasePointerCapture(event.pointerId);
+      }
+    });
+  }
 
   if (enableLocationViewDefaults) {
     locationRules.addEventListener("click", function handleRuleClick(event) {

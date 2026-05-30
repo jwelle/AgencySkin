@@ -2,6 +2,10 @@
 
 ## Added
 
+- CleanView Sidebar Style is now the first View Builder tab.
+- Curated sidebar style cards, Pattern backgrounds, bundled WebP image backgrounds, and controlled Curated Shuffle were added to the Chrome extension.
+- Sidebar background settings now store structured image, pattern, readability, favorite, and shuffle configuration.
+- GoHighLevel sidebar backgrounds now apply through internal non-click-blocking background layers.
 - Install Code Generator added to the AgencySkin dashboard.
 - Generated CSS uses current theme settings and hides only menu items disabled in the dashboard.
 - Optional hosted loader script snippet is shown separately and remains experimental.
@@ -11,6 +15,15 @@
 
 - `client/src/App.jsx`
 - `client/src/styles.css`
+- `extension/content.js`
+- `extension/editor.css`
+- `extension/editor.html`
+- `extension/editor.js`
+- `extension/manifest.json`
+- `extension/popup.html`
+- `extension/sidebarBackgrounds.js`
+- `extension/storage.js`
+- `extension/assets/backgrounds/*.webp`
 - `README.md`
 - `CURRENT_STATE.md`
 
@@ -26,6 +39,12 @@
 8. Confirm the CSS output includes `/* AgencySkin Generated CSS */`.
 9. Confirm hidden menu items generate `display: none !important` CSS rules.
 10. Use both copy buttons and confirm feedback appears.
+11. Load the unpacked Chrome extension from `extension/`.
+12. Open the View Builder and confirm Sidebar Style is the first tab.
+13. Apply curated sidebar preset cards and confirm the preview updates.
+14. Switch Background Type between Solid, Gradient, Pattern, and Image and confirm only relevant controls are shown.
+15. Use Curated Shuffle with Selected Type Only and confirm it does not switch to other background types.
+16. Save a custom view and apply it on a supported GoHighLevel page.
 
 ## Known Limitations
 
@@ -33,6 +52,8 @@
 - The hosted loader script remains non-mutating and is reserved for a future hosted configuration workflow.
 - Selector coverage is limited to the current MVP menu registry.
 - Settings are still stored in local JSON files under `server/data`.
+- Curated image assets are bundled local placeholder/cropped WebP assets and should be replaced with approved production art if desired.
+- Motion backgrounds are intentionally deferred.
 
 ## Recommended Next Step
 

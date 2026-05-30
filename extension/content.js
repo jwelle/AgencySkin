@@ -160,6 +160,12 @@
     }
   }
 
+  function removeSidebarBackgroundLayers() {
+    document.querySelectorAll("[data-agencyskin-sidebar-bg-layer='true']").forEach(function removeLayer(layer) {
+      layer.remove();
+    });
+  }
+
   function removeCustomSidebarBranding() {
     document.querySelectorAll("[data-agencyskin-custom-sidebar-branding='true']").forEach(function removeBranding(branding) {
       branding.remove();
@@ -182,6 +188,7 @@
   }
 
   function resetSidebarStyle() {
+    removeSidebarBackgroundLayers();
     removeCustomSidebarBranding();
     restoreNativeSidebarBranding();
     removeSidebarStyleBlock();
@@ -237,10 +244,89 @@
     return "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + clampOpacity(opacity) + ")";
   }
 
+  function clampNumber(value, min, max, fallback) {
+    var numeric = Number(value);
+
+    if (Number.isNaN(numeric)) {
+      return fallback;
+    }
+
+    return Math.min(max, Math.max(min, numeric));
+  }
+
+  function getByPath(object, path, fallback) {
+    var value = String(path || "").split(".").reduce(function readPath(current, part) {
+      return current && current[part] !== undefined ? current[part] : undefined;
+    }, object);
+
+    return value === undefined ? fallback : value;
+  }
+
+  function getAssetById(assetId) {
+    return namespace.getSidebarBackgroundAssetById ? namespace.getSidebarBackgroundAssetById(assetId) : null;
+  }
+
+  function getCuratedPresetById(presetId) {
+    return namespace.getCuratedSidebarStylePresetById ? namespace.getCuratedSidebarStylePresetById(presetId) : null;
+  }
+
+  function getExtensionAssetUrl(asset) {
+    if (!asset || !asset.filename || !chrome.runtime || typeof chrome.runtime.getURL !== "function") {
+      return "";
+    }
+
+    return chrome.runtime.getURL(asset.filename);
+  }
+
+  function getImageUrl(style) {
+    var asset = getAssetById(style.backgroundAssetId);
+    return style.customImageDataUrl || getExtensionAssetUrl(asset) || styleValue(style.backgroundImageUrl);
+  }
+
+  function getOverlayOpacity(style) {
+    var asset = getAssetById(style.backgroundAssetId);
+    var fallback = asset && asset.recommendedOverlayOpacity !== undefined ? asset.recommendedOverlayOpacity : 0.35;
+
+    if (style.backgroundType === "image") {
+      return style.autoReadability === false ? clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)) : Math.max(fallback, clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)));
+    }
+
+    if (style.backgroundType === "pattern") {
+      return clampOpacity(getByPath(style, "patternSettings.overlayOpacity", fallback));
+    }
+
+    return clampOpacity(style.backgroundOverlayOpacity);
+  }
+
+  function getPatternSize(style) {
+    var scale = clampNumber(getByPath(style, "patternSettings.scale", 1), 0.5, 2.5, 1);
+    return Math.round(28 * scale) + "px " + Math.round(28 * scale) + "px";
+  }
+
+  function getImagePosition(style) {
+    var x = clampNumber(getByPath(style, "imageSettings.positionX", 50), 0, 100, 50);
+    var y = clampNumber(getByPath(style, "imageSettings.positionY", 50), 0, 100, 50);
+    return x + "% " + y + "%";
+  }
+
+  function getImageScale(style) {
+    var scale = clampNumber(getByPath(style, "imageSettings.scale", 1), 0.5, 2.5, 1);
+    return Math.round(scale * 100) + "% auto";
+  }
+
   function getSidebarBackgroundValue(style) {
     if (style.backgroundType === "image" && styleValue(style.backgroundImageUrl)) {
-      var overlay = getOverlayRgba(style.backgroundOverlayColor || "#000000", style.backgroundOverlayOpacity);
-      return "linear-gradient(" + overlay + ", " + overlay + "), url(\"" + styleValue(style.backgroundImageUrl) + "\")";
+      return "url(\"" + styleValue(style.backgroundImageUrl) + "\")";
+    }
+
+    if (style.backgroundType === "image") {
+      var imageUrl = getImageUrl(style);
+      return imageUrl ? "url(\"" + imageUrl + "\")" : styleValue(style.backgroundColor);
+    }
+
+    if (style.backgroundType === "pattern") {
+      var asset = getAssetById(style.backgroundAssetId);
+      return asset && asset.patternCss ? asset.patternCss : styleValue(style.backgroundColor);
     }
 
     if (style.backgroundType === "gradient") {
@@ -255,18 +341,54 @@
 
   function applySidebarBackground(sidebar, style) {
     var backgroundValue = getSidebarBackgroundValue(style);
+    var layer = null;
+    var overlay = null;
+    var imageOpacity = clampOpacity(getByPath(style, "imageSettings.opacity", 0.85));
+    var imageBlur = clampNumber(getByPath(style, "imageSettings.blur", 0), 0, 12, 0);
+    var patternOpacity = clampOpacity(getByPath(style, "patternSettings.opacity", 0.5));
+    var overlayOpacity = getOverlayOpacity(style);
 
+    removeSidebarBackgroundLayers();
     sidebar.style.background = "";
     sidebar.style.backgroundImage = "";
     sidebar.style.backgroundSize = "";
     sidebar.style.backgroundPosition = "";
     sidebar.style.backgroundRepeat = "";
 
-    if (style.backgroundType === "image" && styleValue(style.backgroundImageUrl)) {
-      sidebar.style.backgroundImage = backgroundValue;
-      sidebar.style.backgroundSize = styleValue(style.backgroundImageFit) || "cover";
-      sidebar.style.backgroundPosition = styleValue(style.backgroundImagePosition) || "center";
-      sidebar.style.backgroundRepeat = "no-repeat";
+    if (style.backgroundType === "image" || style.backgroundType === "pattern") {
+      sidebar.style.background = styleValue(style.backgroundColor) || "#0f172a";
+      layer = document.createElement("div");
+      overlay = document.createElement("div");
+      layer.setAttribute("data-agencyskin-sidebar-bg-layer", "true");
+      overlay.setAttribute("data-agencyskin-sidebar-bg-layer", "true");
+      layer.setAttribute("data-agencyskin-sidebar-bg-kind", style.backgroundType);
+      overlay.setAttribute("data-agencyskin-sidebar-bg-kind", "overlay");
+      layer.style.position = "absolute";
+      layer.style.inset = "0";
+      layer.style.pointerEvents = "none";
+      layer.style.zIndex = "0";
+      overlay.style.position = "absolute";
+      overlay.style.inset = "0";
+      overlay.style.pointerEvents = "none";
+      overlay.style.zIndex = "0";
+      overlay.style.background = getOverlayRgba(style.backgroundOverlayColor || "#000000", overlayOpacity);
+
+      if (style.backgroundType === "image") {
+        layer.style.backgroundImage = backgroundValue;
+        layer.style.backgroundSize = style.customImageDataUrl || style.backgroundAssetId ? getImageScale(style) : styleValue(style.backgroundImageFit) || "cover";
+        layer.style.backgroundPosition = style.customImageDataUrl || style.backgroundAssetId ? getImagePosition(style) : styleValue(style.backgroundImagePosition) || "center";
+        layer.style.backgroundRepeat = "no-repeat";
+        layer.style.opacity = imageOpacity;
+        layer.style.filter = imageBlur ? "blur(" + imageBlur + "px)" : "";
+      } else {
+        layer.style.backgroundImage = backgroundValue;
+        layer.style.backgroundSize = getPatternSize(style);
+        layer.style.backgroundRepeat = "repeat";
+        layer.style.opacity = patternOpacity;
+      }
+
+      sidebar.insertBefore(overlay, sidebar.firstChild);
+      sidebar.insertBefore(layer, sidebar.firstChild);
       return;
     }
 
@@ -290,6 +412,15 @@
       "[data-agencyskin-cleanview-style-role='menu-item'] *,",
       "[data-agencyskin-cleanview-style-role='header'] * {",
       styleValue(style.textColor) ? "color: inherit !important;" : "",
+      "}",
+      "[data-agencyskin-cleanview-style-role='sidebar'] {",
+      "isolation: isolate !important;",
+      "overflow: hidden !important;",
+      "position: relative !important;",
+      "}",
+      "[data-agencyskin-cleanview-style-role='sidebar'] > *:not([data-agencyskin-sidebar-bg-layer='true']) {",
+      "position: relative;",
+      "z-index: 1;",
       "}"
     ].join("\n");
     var styleBlock = document.createElement("style");
@@ -485,8 +616,148 @@
     return changedCount;
   }
 
+  function applyAssetDefaults(style, asset) {
+    if (!asset) {
+      return style;
+    }
+
+    style.backgroundType = asset.type;
+    style.backgroundAssetId = asset.id;
+    style.textColor = asset.textColor || style.textColor;
+    style.activeBackgroundColor = asset.activeBackgroundColor || style.activeBackgroundColor;
+    style.activeTextColor = asset.activeTextColor || style.activeTextColor;
+    style.hoverBackgroundColor = asset.hoverBackgroundColor || style.hoverBackgroundColor;
+
+    if (asset.type === "image") {
+      style.customImageDataUrl = "";
+      style.backgroundImageUrl = "";
+      style.imageSettings = Object.assign({}, style.imageSettings || {}, {
+        positionX: asset.focalPointX || 50,
+        positionY: asset.focalPointY || 50,
+        scale: asset.defaultScale || 1,
+        blur: asset.recommendedBlur || 0,
+        overlayOpacity: asset.recommendedOverlayOpacity || 0.55
+      });
+    }
+
+    if (asset.type === "pattern") {
+      style.backgroundColor = asset.backgroundColor || style.backgroundColor;
+      style.patternSettings = Object.assign({}, style.patternSettings || {}, {
+        scale: asset.defaultScale || 1,
+        opacity: getByPath(style, "patternSettings.opacity", 0.5),
+        overlayOpacity: asset.recommendedOverlayOpacity || 0.35
+      });
+    }
+
+    return style;
+  }
+
+  function applyCuratedStylePreset(style, preset) {
+    var nextStyle = Object.assign({}, style, preset.style || {});
+    var asset = preset.assetId ? getAssetById(preset.assetId) : null;
+
+    nextStyle.activePresetId = preset.id;
+    if (asset) {
+      nextStyle = applyAssetDefaults(nextStyle, asset);
+    }
+
+    return nextStyle;
+  }
+
+  function getShuffleTypes(style, shuffle) {
+    if (shuffle.poolMode === "images-patterns") {
+      return ["image", "pattern"];
+    }
+
+    if (shuffle.poolMode === "custom") {
+      return (shuffle.customPool || []).map(function mapCustomType(type) {
+        return type === "images" ? "image" : type === "patterns" ? "pattern" : type === "gradients" ? "gradient" : "solid";
+      });
+    }
+
+    if (shuffle.poolMode === "professional" || shuffle.poolMode === "favorites") {
+      return ["solid", "gradient", "pattern", "image"];
+    }
+
+    return [style.backgroundType || "solid"];
+  }
+
+  function shouldShuffleNow(style, shuffle) {
+    var key = "agencyskin-shuffle-" + (style.activePresetId || style.preset || "custom");
+    var today = new Date().toISOString().slice(0, 10);
+    var stored = null;
+
+    if (!shuffle.enabled || shuffle.frequency === "manual") {
+      return false;
+    }
+
+    if (shuffle.frequency === "page-load") {
+      return true;
+    }
+
+    try {
+      if (shuffle.frequency === "session") {
+        stored = window.sessionStorage.getItem(key);
+        if (stored) {
+          return false;
+        }
+        window.sessionStorage.setItem(key, "1");
+        return true;
+      }
+
+      if (shuffle.frequency === "daily") {
+        stored = window.localStorage.getItem(key);
+        if (stored === today) {
+          return false;
+        }
+        window.localStorage.setItem(key, today);
+        return true;
+      }
+    } catch (error) {
+      return shuffle.frequency === "page-load";
+    }
+
+    return false;
+  }
+
+  function resolveShuffledSidebarStyle(sidebarStyle) {
+    var style = Object.assign({}, sidebarStyle || {});
+    var shuffle = style.curatedShuffle || {};
+    var types = new Set(getShuffleTypes(style, shuffle));
+    var favorites = new Set(style.favoriteAssetIds || []);
+    var recent = shuffle.avoidRecentRepeats ? new Set(shuffle.lastAppliedAssetIds || []) : new Set();
+    var candidates = (namespace.curatedSidebarStylePresets || []).filter(function keepPreset(preset) {
+      if (!preset.safeForCuratedShuffle || !types.has(preset.type)) {
+        return false;
+      }
+      if (shuffle.poolMode === "professional" && preset.category !== "professional") {
+        return false;
+      }
+      if (shuffle.poolMode === "favorites" && !favorites.has(preset.id)) {
+        return false;
+      }
+      return true;
+    });
+    var filtered = candidates.filter(function removeRecent(preset) {
+      return !recent.has(preset.id) && (!preset.assetId || !recent.has(preset.assetId));
+    });
+    var selected = null;
+
+    if (!shouldShuffleNow(style, shuffle)) {
+      return style;
+    }
+
+    candidates = filtered.length ? filtered : candidates;
+    if (!candidates.length) {
+      return style;
+    }
+
+    selected = candidates[Math.floor(Math.random() * candidates.length)];
+    return applyCuratedStylePreset(style, selected);
+  }
+
   function applySidebarStyle(sidebarStyle) {
-    var style = sidebarStyle || {};
+    var style = resolveShuffledSidebarStyle(sidebarStyle || {});
     var sidebar = null;
     var menuItems = [];
     var brandingCount = 0;

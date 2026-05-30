@@ -56,14 +56,104 @@
 
       <section class="panel builder-panel">
         <nav class="tabs" aria-label="View Builder sections">
-          <button class="tab-button active" type="button" data-tab-button="menu">Menu Items</button>
-          <button class="tab-button" type="button" data-tab-button="rename">Rename Labels</button>
-          <button class="tab-button" type="button" data-tab-button="links">Quick Links</button>
-          <button class="tab-button" type="button" data-tab-button="style">Sidebar Style</button>
+          <button class="tab-button active" type="button" data-tab-button="style" data-tab-icon="palette">Sidebar Style</button>
+          <button class="tab-button" type="button" data-tab-button="menu" data-tab-icon="menu">Menu Items</button>
+          <button class="tab-button" type="button" data-tab-button="rename" data-tab-icon="tag">Rename Labels</button>
+          <button class="tab-button" type="button" data-tab-button="links" data-tab-icon="link">Quick Links</button>
           <button class="tab-button" type="button" data-tab-button="locations" data-location-defaults-ui hidden>Location Rules</button>
         </nav>
 
-        <section class="tab-panel active" data-tab-panel="menu">
+        <section class="tab-panel active" data-tab-panel="style">
+          <div class="panel-header">
+            <h2>Sidebar Style</h2>
+            <p>Pick a curated sidebar style, then adjust it only if needed.</p>
+          </div>
+          <div class="sidebar-style-layout">
+            <div class="sidebar-style-controls">
+              <section class="style-card">
+                <div class="style-panel-header">
+                  <label class="field compact-fallback" for="sidebarStylePreset">
+                    Style Preset
+                    <select id="sidebarStylePreset"></select>
+                  </label>
+                  <label class="toggle-row compact-toggle">
+                    <span>Apply styling</span>
+                    <input id="sidebarStyleEnabled" type="checkbox">
+                  </label>
+                </div>
+                <div id="curatedPresetGrid" class="curated-preset-grid" aria-label="Curated sidebar style presets"></div>
+                <div class="compact-field-grid">
+                  <label class="field" for="sidebarBackgroundType">
+                    Background Type
+                    <select id="sidebarBackgroundType"></select>
+                  </label>
+                  <label class="toggle-row compact-toggle">
+                    <span>Auto Readability</span>
+                    <input id="autoReadabilityToggle" type="checkbox">
+                  </label>
+                </div>
+                <div class="sidebar-style-actions">
+                  <button id="curatedShuffleButton" class="secondary" type="button">Curated Shuffle</button>
+                  <button id="resetStyleButton" class="secondary" type="button">Reset Style</button>
+                </div>
+              </section>
+
+              <section class="style-card">
+                <div class="style-panel-header simple-header">
+                  <h3>Curated Shuffle</h3>
+                  <label class="toggle-row compact-toggle">
+                    <span>Enabled</span>
+                    <input id="curatedShuffleEnabled" type="checkbox">
+                  </label>
+                </div>
+                <div class="form-grid two-columns compact-style-editor">
+                  <label class="inline-field" for="curatedShufflePool">
+                    Shuffle Pool
+                    <select id="curatedShufflePool"></select>
+                  </label>
+                  <label class="inline-field" for="curatedShuffleFrequency">
+                    Frequency
+                    <select id="curatedShuffleFrequency"></select>
+                  </label>
+                  <label class="toggle-row compact-toggle">
+                    <span>Avoid recent repeats</span>
+                    <input id="curatedShuffleAvoidRepeats" type="checkbox">
+                  </label>
+                </div>
+                <div id="curatedShuffleCustomPool" class="custom-pool-grid"></div>
+              </section>
+
+              <section class="style-card">
+                <div id="sidebarStyleEditor" class="form-grid two-columns compact-style-editor"></div>
+              </section>
+            </div>
+
+            <aside class="sidebar-style-preview-panel">
+              <div class="panel-header compact-header">
+                <h3>Preview</h3>
+                <p>Your actual GHL sidebar may vary slightly.</p>
+              </div>
+              <div id="sidebarStylePreview" class="sidebar-style-preview">
+                <div id="sidebarStylePreviewBackground" class="sidebar-preview-background"></div>
+                <div id="sidebarStylePreviewOverlay" class="sidebar-preview-overlay"></div>
+                <div id="sidebarStylePreviewHeader" class="sidebar-preview-header">
+                  <img id="sidebarStylePreviewLogo" alt="">
+                  <span id="sidebarStylePreviewHeaderText">AgencySkin</span>
+                </div>
+                <div class="sidebar-preview-item">Dashboard</div>
+                <div class="sidebar-preview-item">Conversations</div>
+                <div class="sidebar-preview-item active">Pipeline</div>
+                <div class="sidebar-preview-item">Contacts</div>
+                <div class="sidebar-preview-divider"></div>
+                <div class="sidebar-preview-item quick-link">Pricing Sheet</div>
+                <div class="sidebar-preview-spacer"></div>
+                <div class="sidebar-preview-item settings">Settings</div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="menu">
           <div class="panel-header">
             <h2>Menu Items</h2>
             <p>Choose which GHL menu items should remain visible in this view.</p>
@@ -94,64 +184,6 @@
           <button id="addLinkButton" type="button">Add Quick Link</button>
         </section>
 
-        <section class="tab-panel" data-tab-panel="style">
-          <div class="panel-header">
-            <h2>Sidebar Style</h2>
-            <p>Control how the GHL sidebar looks when this view is active.</p>
-          </div>
-          <div class="sidebar-style-layout">
-            <div class="sidebar-style-controls">
-              <section class="style-card">
-                <div class="style-panel-header">
-                  <label class="field" for="sidebarStylePreset">
-                    Style Preset
-                    <select id="sidebarStylePreset"></select>
-                  </label>
-                  <label class="toggle-row compact-toggle">
-                    <span>Apply styling</span>
-                    <input id="sidebarStyleEnabled" type="checkbox">
-                  </label>
-                </div>
-                <div class="compact-field-grid">
-                  <label class="field" for="sidebarBackgroundType">
-                    Sidebar Background Type
-                    <select id="sidebarBackgroundType"></select>
-                  </label>
-                </div>
-                <div class="sidebar-style-actions">
-                  <button id="randomizeStyleButton" class="secondary" type="button">Randomize Style</button>
-                  <button id="resetStyleButton" class="secondary" type="button">Reset Style</button>
-                </div>
-              </section>
-
-              <section class="style-card">
-                <div id="sidebarStyleEditor" class="form-grid two-columns compact-style-editor"></div>
-              </section>
-            </div>
-
-            <aside class="sidebar-style-preview-panel">
-              <div class="panel-header compact-header">
-                <h3>Preview</h3>
-                <p>Preview only. Your actual GHL sidebar may vary slightly.</p>
-              </div>
-              <div id="sidebarStylePreview" class="sidebar-style-preview">
-                <div id="sidebarStylePreviewHeader" class="sidebar-preview-header">
-                  <img id="sidebarStylePreviewLogo" alt="">
-                  <span id="sidebarStylePreviewHeaderText">AgencySkin</span>
-                </div>
-                <div class="sidebar-preview-item">Dashboard</div>
-                <div class="sidebar-preview-item">Conversations</div>
-                <div class="sidebar-preview-item active">Pipeline</div>
-                <div class="sidebar-preview-item">Contacts</div>
-                <div class="sidebar-preview-divider"></div>
-                <div class="sidebar-preview-item quick-link">Pricing Sheet</div>
-                <div class="sidebar-preview-spacer"></div>
-                <div class="sidebar-preview-item settings">Settings</div>
-              </div>
-            </aside>
-          </div>
-        </section>
-
         <section class="tab-panel" data-tab-panel="locations" data-location-defaults-ui hidden>
           <div class="panel-header">
             <h2>Location Rules</h2>
@@ -174,6 +206,7 @@
 
     <script src="namespace.js"></script>
     <script src="selectorRegistry.js"></script>
+    <script src="sidebarBackgrounds.js"></script>
     <script src="presets.js"></script>
     <script src="storage.js"></script>
     <script src="editor.js"></script>

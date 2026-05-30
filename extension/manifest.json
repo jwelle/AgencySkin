@@ -8,6 +8,15 @@
     "https://app.gohighlevel.com/*",
     "https://*.leadconnectorhq.com/*"
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/backgrounds/*.webp"],
+      "matches": [
+        "https://app.gohighlevel.com/*",
+        "https://*.leadconnectorhq.com/*"
+      ]
+    }
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "AgencySkin"
@@ -19,7 +28,7 @@
         "https://app.gohighlevel.com/*",
         "https://*.leadconnectorhq.com/*"
       ],
-      "js": ["namespace.js", "selectorRegistry.js", "presets.js", "storage.js", "content.js"],
+      "js": ["namespace.js", "selectorRegistry.js", "sidebarBackgrounds.js", "presets.js", "storage.js", "content.js"],
       "run_at": "document_idle"
     }
   ]

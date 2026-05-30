@@ -26,7 +26,10 @@
     return Object.assign({
       enabled: false,
       preset: "default",
+      activePresetId: "",
       backgroundType: "solid",
+      backgroundAssetId: "",
+      customImageDataUrl: "",
       backgroundColor: "",
       gradientStartColor: "",
       gradientEndColor: "",
@@ -36,6 +39,35 @@
       backgroundImagePosition: "center",
       backgroundOverlayColor: "#000000",
       backgroundOverlayOpacity: 0.35,
+      imageSettings: {
+        positionX: 50,
+        positionY: 50,
+        scale: 1,
+        opacity: 0.85,
+        blur: 0,
+        overlayColor: "#000000",
+        overlayOpacity: 0.55
+      },
+      patternSettings: {
+        scale: 1,
+        opacity: 0.5,
+        overlayOpacity: 0.35,
+        accentColor: "#60a5fa"
+      },
+      curatedShuffle: {
+        enabled: false,
+        poolMode: "selected-type-only",
+        customPool: ["patterns", "images"],
+        frequency: "daily",
+        favoritesOnly: false,
+        avoidRecentRepeats: true,
+        avoidRecentCount: 3,
+        lastAppliedAssetIds: [],
+        lastAppliedAt: "",
+        sessionKey: ""
+      },
+      favoriteAssetIds: [],
+      autoReadability: true,
       textColor: "",
       activeBackgroundColor: "",
       activeTextColor: "",
@@ -53,18 +85,60 @@
 
   function normalizeSidebarStyle(style) {
     var normalized = Object.assign(defaultSidebarStyle(), style || {});
-    var allowedBackgroundTypes = ["solid", "gradient", "image"];
+    var allowedBackgroundTypes = ["solid", "gradient", "pattern", "image"];
     var allowedBrandingModes = ["keep", "hide", "replace"];
     var allowedHeaderAlignments = ["left", "center", "right"];
+    var defaultImageSettings = defaultSidebarStyle().imageSettings;
+    var defaultPatternSettings = defaultSidebarStyle().patternSettings;
+    var defaultShuffle = defaultSidebarStyle().curatedShuffle;
+    var allowedShufflePools = ["selected-type-only", "images-patterns", "professional", "favorites", "custom"];
+    var allowedShuffleFrequencies = ["manual", "session", "daily", "page-load"];
+    var allowedCustomPool = ["solids", "gradients", "patterns", "images"];
     normalized.enabled = normalized.enabled === true;
     normalized.preset = normalized.preset || "default";
     normalized.backgroundType = allowedBackgroundTypes.indexOf(normalized.backgroundType) === -1 ? "solid" : normalized.backgroundType;
+    normalized.activePresetId = normalized.activePresetId || "";
+    normalized.backgroundAssetId = normalized.backgroundAssetId || "";
+    normalized.customImageDataUrl = isSafeImageDataUrl(normalized.customImageDataUrl) ? normalized.customImageDataUrl : "";
     normalized.gradientDirection = normalized.gradientDirection || "135deg";
     normalized.backgroundImageUrl = normalizeUrl(normalized.backgroundImageUrl);
     normalized.backgroundImageFit = ["cover", "contain", "auto"].indexOf(normalized.backgroundImageFit) === -1 ? "cover" : normalized.backgroundImageFit;
     normalized.backgroundImagePosition = normalized.backgroundImagePosition || "center";
     normalized.backgroundOverlayColor = normalized.backgroundOverlayColor || "#000000";
     normalized.backgroundOverlayOpacity = clampOpacity(normalized.backgroundOverlayOpacity);
+    normalized.imageSettings = Object.assign({}, defaultImageSettings, normalized.imageSettings || {});
+    normalized.imageSettings.positionX = clampPercent(normalized.imageSettings.positionX, defaultImageSettings.positionX);
+    normalized.imageSettings.positionY = clampPercent(normalized.imageSettings.positionY, defaultImageSettings.positionY);
+    normalized.imageSettings.scale = clampNumber(normalized.imageSettings.scale, 0.5, 2.5, defaultImageSettings.scale);
+    normalized.imageSettings.opacity = clampOpacity(normalized.imageSettings.opacity);
+    normalized.imageSettings.blur = clampNumber(normalized.imageSettings.blur, 0, 12, defaultImageSettings.blur);
+    normalized.imageSettings.overlayColor = normalized.imageSettings.overlayColor || "#000000";
+    normalized.imageSettings.overlayOpacity = clampOpacity(normalized.imageSettings.overlayOpacity);
+    normalized.patternSettings = Object.assign({}, defaultPatternSettings, normalized.patternSettings || {});
+    normalized.patternSettings.scale = clampNumber(normalized.patternSettings.scale, 0.5, 2.5, defaultPatternSettings.scale);
+    normalized.patternSettings.opacity = clampOpacity(normalized.patternSettings.opacity);
+    normalized.patternSettings.overlayOpacity = clampOpacity(normalized.patternSettings.overlayOpacity);
+    normalized.patternSettings.accentColor = normalized.patternSettings.accentColor || "#60a5fa";
+    normalized.curatedShuffle = Object.assign({}, defaultShuffle, normalized.curatedShuffle || {});
+    normalized.curatedShuffle.enabled = normalized.curatedShuffle.enabled === true;
+    normalized.curatedShuffle.poolMode = allowedShufflePools.indexOf(normalized.curatedShuffle.poolMode) === -1 ? "selected-type-only" : normalized.curatedShuffle.poolMode;
+    normalized.curatedShuffle.customPool = Array.isArray(normalized.curatedShuffle.customPool) ?
+      normalized.curatedShuffle.customPool.filter(function keepPoolType(type) {
+        return allowedCustomPool.indexOf(type) !== -1;
+      }) :
+      defaultShuffle.customPool.slice();
+    if (normalized.curatedShuffle.customPool.length === 0) {
+      normalized.curatedShuffle.customPool = defaultShuffle.customPool.slice();
+    }
+    normalized.curatedShuffle.frequency = allowedShuffleFrequencies.indexOf(normalized.curatedShuffle.frequency) === -1 ? "daily" : normalized.curatedShuffle.frequency;
+    normalized.curatedShuffle.favoritesOnly = normalized.curatedShuffle.favoritesOnly === true;
+    normalized.curatedShuffle.avoidRecentRepeats = normalized.curatedShuffle.avoidRecentRepeats !== false;
+    normalized.curatedShuffle.avoidRecentCount = Math.round(clampNumber(normalized.curatedShuffle.avoidRecentCount, 0, 10, 3));
+    normalized.curatedShuffle.lastAppliedAssetIds = Array.isArray(normalized.curatedShuffle.lastAppliedAssetIds) ? normalized.curatedShuffle.lastAppliedAssetIds.slice(0, 10) : [];
+    normalized.curatedShuffle.lastAppliedAt = normalized.curatedShuffle.lastAppliedAt || "";
+    normalized.curatedShuffle.sessionKey = normalized.curatedShuffle.sessionKey || "";
+    normalized.favoriteAssetIds = Array.isArray(normalized.favoriteAssetIds) ? normalized.favoriteAssetIds.filter(Boolean) : [];
+    normalized.autoReadability = normalized.autoReadability !== false;
     normalized.sidebarBrandingMode = allowedBrandingModes.indexOf(normalized.sidebarBrandingMode) === -1 ? "keep" : normalized.sidebarBrandingMode;
     normalized.logoUrl = normalizeUrl(normalized.logoUrl);
     normalized.headerLabel = normalized.headerLabel || "";
@@ -83,6 +157,10 @@
     return /^https?:\/\//i.test(trimmed) ? trimmed : "https://" + trimmed;
   }
 
+  function isSafeImageDataUrl(value) {
+    return /^data:image\/(png|jpe?g|webp);base64,/i.test(String(value || ""));
+  }
+
   function clampOpacity(value) {
     var numeric = Number(value);
 
@@ -91,6 +169,20 @@
     }
 
     return Math.min(1, Math.max(0, numeric));
+  }
+
+  function clampPercent(value, fallback) {
+    return clampNumber(value, 0, 100, fallback);
+  }
+
+  function clampNumber(value, min, max, fallback) {
+    var numeric = Number(value);
+
+    if (Number.isNaN(numeric)) {
+      return fallback;
+    }
+
+    return Math.min(max, Math.max(min, numeric));
   }
 
   function normalizeCustomLink(link) {
