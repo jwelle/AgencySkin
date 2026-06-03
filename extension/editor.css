@@ -130,6 +130,15 @@ h3 {
   gap: 0.25rem;
 }
 
+.image-reset-field {
+  align-content: end;
+}
+
+.image-guidance {
+  grid-column: 1 / -1;
+  line-height: 1.45;
+}
+
 input,
 select {
   background: var(--as-surface);
@@ -906,6 +915,7 @@ textarea {
   border: 1px solid var(--as-border);
   border-radius: 16px;
   box-shadow: var(--as-shadow-md);
+  cursor: grab;
   display: flex;
   flex-direction: column;
   isolation: isolate;
@@ -915,6 +925,10 @@ textarea {
   position: relative;
   transition: background 160ms ease, color 160ms ease, opacity 160ms ease;
   width: 100%;
+}
+
+.sidebar-style-preview:active {
+  cursor: grabbing;
 }
 
 .sidebar-style-preview.is-disabled {

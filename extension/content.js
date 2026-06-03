@@ -8,6 +8,15 @@
   var currentState = null;
   var currentPreset = null;
   var styleBlockId = "agencyskin-cleanview-sidebar-style";
+  var preloadGuardStyleId = "agencyskin-cleanview-preload-guard";
+  var preloadGuardTimer = null;
+  var preloadGuardMinimumTimer = null;
+  var preloadGuardAttachTimer = null;
+  var preloadGuardInstalledAt = 0;
+  var preloadGuardEnabled = false;
+  var CLEANVIEW_DEBUG_STARTUP_MASK = false;
+  var firstApplyTimer = null;
+  var firstApplyStartedAt = 0;
   var menuGroupOrderCounter = 0;
   var menuGroupExpandedState = {};
 
@@ -23,6 +32,207 @@
     if (typeof sendResponse === "function") {
       sendResponse(payload);
     }
+  }
+
+  function debugStartupMask(message, details) {
+    if (CLEANVIEW_DEBUG_STARTUP_MASK) {
+      console.debug("[AgencySkin CleanView startup mask] " + message, details || "");
+    }
+  }
+
+  function removePreloadGuard() {
+    var styleBlock = document.getElementById(preloadGuardStyleId);
+
+    window.clearTimeout(preloadGuardTimer);
+    window.clearTimeout(preloadGuardMinimumTimer);
+    window.clearTimeout(preloadGuardAttachTimer);
+    preloadGuardTimer = null;
+    preloadGuardMinimumTimer = null;
+    preloadGuardAttachTimer = null;
+    preloadGuardEnabled = false;
+    preloadGuardInstalledAt = 0;
+    document.documentElement.removeAttribute("data-agencyskin-cleanview-preparing");
+    document.querySelectorAll("[data-agencyskin-cleanview-startup-mask='true']").forEach(function removeMask(mask) {
+      mask.remove();
+    });
+    document.querySelectorAll("[data-agencyskin-cleanview-startup-host='true']").forEach(function removeMaskHost(host) {
+      host.removeAttribute("data-agencyskin-cleanview-startup-host");
+    });
+    if (styleBlock) {
+      styleBlock.remove();
+    }
+    debugStartupMask("removed");
+  }
+
+  function removePreloadGuardAfterMinimum() {
+    var elapsed = preloadGuardInstalledAt ? Date.now() - preloadGuardInstalledAt : 0;
+    var minimumVisibleMs = CLEANVIEW_DEBUG_STARTUP_MASK ? 1000 : 200;
+    var remaining = Math.max(0, minimumVisibleMs - elapsed);
+
+    window.clearTimeout(preloadGuardMinimumTimer);
+    if (remaining > 0) {
+      preloadGuardMinimumTimer = window.setTimeout(removePreloadGuard, remaining);
+      debugStartupMask("scheduled minimum-duration removal", { remaining: remaining });
+      return;
+    }
+
+    removePreloadGuard();
+  }
+
+  function createStartupMask() {
+    var mask = document.createElement("div");
+    var brand = document.createElement("p");
+    var message = document.createElement("p");
+    var skeleton = document.createElement("div");
+
+    mask.setAttribute("data-agencyskin-cleanview-startup-mask", "true");
+    mask.setAttribute("aria-live", "polite");
+    brand.setAttribute("data-agencyskin-cleanview-startup-brand", "true");
+    message.setAttribute("data-agencyskin-cleanview-startup-message", "true");
+    skeleton.setAttribute("data-agencyskin-cleanview-startup-skeleton", "true");
+    brand.textContent = "CleanView";
+    message.textContent = "Preparing your workspace...";
+    [0, 1, 2, 3, 4, 5, 6].forEach(function addSkeletonRow(index) {
+      var row = document.createElement("span");
+
+      row.setAttribute("data-agencyskin-cleanview-startup-row", "true");
+      row.style.width = index % 3 === 0 ? "72%" : (index % 3 === 1 ? "88%" : "62%");
+      skeleton.appendChild(row);
+    });
+    mask.appendChild(brand);
+    mask.appendChild(message);
+    mask.appendChild(skeleton);
+    return mask;
+  }
+
+  function installPreloadGuard() {
+    var styleBlock = document.getElementById(preloadGuardStyleId);
+    var sidebar = null;
+
+    if (!document.documentElement || !preloadGuardEnabled) {
+      return;
+    }
+
+    document.documentElement.setAttribute("data-agencyskin-cleanview-preparing", "true");
+    if (!styleBlock) {
+      styleBlock = document.createElement("style");
+      styleBlock.id = preloadGuardStyleId;
+      styleBlock.textContent = [
+        "html[data-agencyskin-cleanview-preparing='true'] #sidebar-v2,",
+        "html[data-agencyskin-cleanview-preparing='true'] aside[class*='sidebar'],",
+        "html[data-agencyskin-cleanview-preparing='true'] nav[class*='sidebar'],",
+        "html[data-agencyskin-cleanview-preparing='true'] aside[class*='sidenav'],",
+        "html[data-agencyskin-cleanview-preparing='true'] nav[class*='sidenav'],",
+        "html[data-agencyskin-cleanview-preparing='true'] aside[class*='side-nav'],",
+        "html[data-agencyskin-cleanview-preparing='true'] nav[class*='side-nav'],",
+        "html[data-agencyskin-cleanview-preparing='true'] [data-agencyskin-cleanview-startup-host='true'] {",
+        "position: relative !important;",
+        "}",
+        "html[data-agencyskin-cleanview-preparing='true'] #sidebar-v2 > *:not([data-agencyskin-cleanview-startup-mask='true']),",
+        "html[data-agencyskin-cleanview-preparing='true'] aside[class*='sidebar'] > *:not([data-agencyskin-cleanview-startup-mask='true']),",
+        "html[data-agencyskin-cleanview-preparing='true'] nav[class*='sidebar'] > *:not([data-agencyskin-cleanview-startup-mask='true']),",
+        "html[data-agencyskin-cleanview-preparing='true'] aside[class*='sidenav'] > *:not([data-agencyskin-cleanview-startup-mask='true']),",
+        "html[data-agencyskin-cleanview-preparing='true'] nav[class*='sidenav'] > *:not([data-agencyskin-cleanview-startup-mask='true']),",
+        "html[data-agencyskin-cleanview-preparing='true'] aside[class*='side-nav'] > *:not([data-agencyskin-cleanview-startup-mask='true']),",
+        "html[data-agencyskin-cleanview-preparing='true'] nav[class*='side-nav'] > *:not([data-agencyskin-cleanview-startup-mask='true']),",
+        "html[data-agencyskin-cleanview-preparing='true'] [data-agencyskin-cleanview-startup-host='true'] > *:not([data-agencyskin-cleanview-startup-mask='true']) {",
+        "opacity: 0 !important;",
+        "pointer-events: none !important;",
+        "transition: none !important;",
+        "}",
+        "[data-agencyskin-cleanview-startup-mask='true'] {",
+        "background: linear-gradient(180deg, #071126 0%, #102349 100%) !important;",
+        "box-sizing: border-box !important;",
+        "color: #e5eefc !important;",
+        "display: grid !important;",
+        "font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;",
+        "gap: 10px !important;",
+        "inset: 0 !important;",
+        "overflow: hidden !important;",
+        "padding: 18px 14px !important;",
+        "pointer-events: auto !important;",
+        "position: absolute !important;",
+        "min-height: 100vh !important;",
+        "width: 100% !important;",
+        "z-index: 2147483000 !important;",
+        "}",
+        "[data-agencyskin-cleanview-startup-brand='true'] {",
+        "font-size: 13px !important;",
+        "font-weight: 800 !important;",
+        "letter-spacing: 0 !important;",
+        "line-height: 1.2 !important;",
+        "margin: 0 !important;",
+        "}",
+        "[data-agencyskin-cleanview-startup-message='true'] {",
+        "color: rgba(229,238,252,0.72) !important;",
+        "font-size: 11px !important;",
+        "font-weight: 650 !important;",
+        "line-height: 1.35 !important;",
+        "margin: 0 0 8px !important;",
+        "}",
+        "[data-agencyskin-cleanview-startup-skeleton='true'] {",
+        "display: grid !important;",
+        "gap: 9px !important;",
+        "margin-top: 4px !important;",
+        "}",
+        "[data-agencyskin-cleanview-startup-row='true'] {",
+        "background: rgba(255,255,255,0.13) !important;",
+        "border-radius: 7px !important;",
+        "display: block !important;",
+        "height: 30px !important;",
+        "max-width: 100% !important;",
+        "min-width: 56% !important;",
+        "}"
+      ].join("\n");
+      document.documentElement.appendChild(styleBlock);
+    }
+
+    sidebar = document.querySelector("#sidebar-v2") || findGhlSidebar();
+    if (sidebar && !sidebar.querySelector("[data-agencyskin-cleanview-startup-mask='true']")) {
+      sidebar.setAttribute("data-agencyskin-cleanview-startup-host", "true");
+      sidebar.appendChild(createStartupMask());
+      if (!preloadGuardInstalledAt) {
+        preloadGuardInstalledAt = Date.now();
+      }
+      debugStartupMask("inserted", { id: sidebar.id, tagName: sidebar.tagName });
+    } else if (!sidebar) {
+      debugStartupMask("waiting for sidebar");
+      window.clearTimeout(preloadGuardAttachTimer);
+      preloadGuardAttachTimer = window.setTimeout(installPreloadGuard, 40);
+    }
+
+    if (!preloadGuardTimer) {
+      preloadGuardTimer = window.setTimeout(removePreloadGuard, 2200);
+    }
+  }
+
+  function primePreloadGuardFromRawState() {
+    if (!chrome || !chrome.storage || !chrome.storage.local) {
+      return;
+    }
+
+    chrome.storage.local.get([namespace.storageKey], function handleRawStartupState(store) {
+      var rawState = store && store[namespace.storageKey];
+
+      if (chrome.runtime.lastError) {
+        debugStartupMask("raw state unavailable", chrome.runtime.lastError);
+        return;
+      }
+
+      if (rawState && rawState.enabled === false) {
+        debugStartupMask("not installed because CleanView is disabled");
+        removePreloadGuard();
+        return;
+      }
+
+      if (!rawState) {
+        debugStartupMask("not installed because no stored CleanView state exists");
+        return;
+      }
+
+      preloadGuardEnabled = true;
+      installPreloadGuard();
+    });
   }
 
   function findElements(selectors) {
@@ -308,6 +518,9 @@
     var fallback = asset && asset.recommendedOverlayOpacity !== undefined ? asset.recommendedOverlayOpacity : 0.35;
 
     if (style.backgroundType === "image") {
+      if (getByPath(style, "imageSettings.overlayEnabled", true) === false) {
+        return 0;
+      }
       return style.autoReadability === false ? clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)) : Math.max(fallback, clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)));
     }
 
@@ -316,6 +529,14 @@
     }
 
     return clampOpacity(style.backgroundOverlayOpacity);
+  }
+
+  function getOverlayColor(style) {
+    if (style.backgroundType === "image") {
+      return getByPath(style, "imageSettings.overlayColor", "#000000");
+    }
+
+    return style.backgroundOverlayColor || "#000000";
   }
 
   function getPatternSize(style) {
@@ -332,6 +553,36 @@
   function getImageScale(style) {
     var scale = clampNumber(getByPath(style, "imageSettings.scale", 1), 0.5, 2.5, 1);
     return Math.round(scale * 100) + "% auto";
+  }
+
+  function getImageCssSettings(style) {
+    var fit = styleValue(style.backgroundImageFit) || "cover";
+    var scale = clampNumber(getByPath(style, "imageSettings.scale", 1), 0.5, 2.5, 1);
+    var settings = {
+      size: "cover",
+      position: getImagePosition(style),
+      repeat: "no-repeat"
+    };
+
+    if (fit === "contain") {
+      settings.size = "contain";
+    } else if (fit === "stretch") {
+      settings.size = "100% 100%";
+      settings.position = "center";
+    } else if (fit === "tile") {
+      settings.size = "auto";
+      settings.repeat = "repeat";
+    } else if (fit === "center") {
+      settings.size = "auto";
+    } else {
+      settings.size = "cover";
+    }
+
+    if (scale !== 1 && fit !== "stretch" && fit !== "tile") {
+      settings.size = getImageScale(style);
+    }
+
+    return settings;
   }
 
   function getSidebarBackgroundValue(style) {
@@ -378,6 +629,7 @@
     sidebar.style.backgroundRepeat = "";
 
     if (style.backgroundType === "image" || style.backgroundType === "pattern") {
+      var imageCss = style.backgroundType === "image" ? getImageCssSettings(style) : null;
       sidebar.style.background = styleValue(style.backgroundColor) || "#0f172a";
       wrapper = document.createElement("div");
       layer = document.createElement("div");
@@ -402,13 +654,13 @@
       overlay.style.inset = "0";
       overlay.style.pointerEvents = "none";
       overlay.style.zIndex = "0";
-      overlay.style.background = getOverlayRgba(style.backgroundOverlayColor || "#000000", overlayOpacity);
+      overlay.style.background = getOverlayRgba(getOverlayColor(style), overlayOpacity);
 
       if (style.backgroundType === "image") {
         layer.style.backgroundImage = backgroundValue;
-        layer.style.backgroundSize = style.customImageDataUrl || style.backgroundAssetId ? getImageScale(style) : styleValue(style.backgroundImageFit) || "cover";
-        layer.style.backgroundPosition = style.customImageDataUrl || style.backgroundAssetId ? getImagePosition(style) : styleValue(style.backgroundImagePosition) || "center";
-        layer.style.backgroundRepeat = "no-repeat";
+        layer.style.backgroundSize = imageCss.size;
+        layer.style.backgroundPosition = imageCss.position;
+        layer.style.backgroundRepeat = imageCss.repeat;
         layer.style.opacity = imageOpacity;
         layer.style.filter = imageBlur ? "blur(" + imageBlur + "px)" : "";
       } else {
@@ -1501,6 +1753,7 @@
     options = options || {};
     if (!options.preserveMenuGroupState) {
       menuGroupExpandedState = {};
+      removePreloadGuard();
     }
     restoreMenuGroupChildState(sidebar);
     restoreMenuGroupOriginalOrder(sidebar);
@@ -1567,20 +1820,50 @@
 
     return withObserverPaused(function applyWithObserverPaused() {
       if (!state.enabled) {
+        removePreloadGuard();
         return resetPage();
       }
 
-      return applyPresetObject(resolvePreset(state));
+      var result = applyPresetObject(resolvePreset(state));
+      removePreloadGuardAfterMinimum();
+      startObserverWhenReady();
+      return result;
     });
+  }
+
+  function applyInitialStateWhenSidebarReady(state) {
+    var elapsed = firstApplyStartedAt ? Date.now() - firstApplyStartedAt : 0;
+
+    currentState = state;
+    window.clearTimeout(firstApplyTimer);
+
+    if (!state.enabled) {
+      removePreloadGuard();
+      applyCurrentState(state);
+      return;
+    }
+
+    preloadGuardEnabled = true;
+    installPreloadGuard();
+    if (findGhlSidebar() || elapsed > 1800) {
+      applyCurrentState(state);
+      return;
+    }
+
+    firstApplyTimer = window.setTimeout(function retryInitialApply() {
+      applyInitialStateWhenSidebarReady(state);
+    }, elapsed < 600 ? 40 : 90);
   }
 
   function loadAndApply() {
     storage.getState(function handleState(state, error) {
       if (error) {
         console.warn("[AgencySkin CleanView] Unable to load stored settings.", error);
+        removePreloadGuard();
         return;
       }
-      applyCurrentState(state);
+      firstApplyStartedAt = Date.now();
+      applyInitialStateWhenSidebarReady(state);
     });
   }
 
@@ -1602,6 +1885,19 @@
 
     observer = new window.MutationObserver(scheduleReapply);
     observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  function startObserverWhenReady() {
+    if (observer) {
+      return;
+    }
+
+    if (document.body) {
+      startObserver();
+      return;
+    }
+
+    window.setTimeout(startObserverWhenReady, 50);
   }
 
   function withObserverPaused(callback) {
@@ -1717,6 +2013,7 @@
     return false;
   });
 
+  primePreloadGuardFromRawState();
   loadAndApply();
-  startObserver();
+  startObserverWhenReady();
 })();

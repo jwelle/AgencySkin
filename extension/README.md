@@ -73,6 +73,10 @@ Personal Profiles are stored in `chrome.storage.local` on this browser.
 
 Use `Show this Profile in popup` to keep the popup Active Profile dropdown focused. Hidden Profiles remain available in the Profile Builder and are not deleted.
 
+## Sidebar Image Guidance
+
+For visual sidebar backgrounds, use vertical portrait images. Recommended size is `600 x 1600 px`, premium size is `800 x 2000 px`, and minimum size is `400 x 1200 px`. WebP is best, JPG is a good fallback, and files should stay under `750 KB` when possible. Keep important content near the center because `cover` mode may crop the image on different sidebar heights.
+
 ## Profile Import / Export
 
 Use `Create Profile` in the Profile Builder to import CleanView Profile JSON. Use `More` to export or copy JSON for the selected Profile.

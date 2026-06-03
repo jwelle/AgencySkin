@@ -47,6 +47,7 @@
         scale: 1,
         opacity: 0.85,
         blur: 0,
+        overlayEnabled: true,
         overlayColor: "#000000",
         overlayOpacity: 0.55
       },
@@ -120,7 +121,10 @@
     normalized.customImageDataUrl = isSafeImageDataUrl(normalized.customImageDataUrl) ? normalized.customImageDataUrl : "";
     normalized.gradientDirection = normalized.gradientDirection || "135deg";
     normalized.backgroundImageUrl = normalizeUrl(normalized.backgroundImageUrl);
-    normalized.backgroundImageFit = ["cover", "contain", "auto"].indexOf(normalized.backgroundImageFit) === -1 ? "cover" : normalized.backgroundImageFit;
+    if (normalized.backgroundImageFit === "auto") {
+      normalized.backgroundImageFit = "center";
+    }
+    normalized.backgroundImageFit = ["cover", "contain", "stretch", "tile", "center"].indexOf(normalized.backgroundImageFit) === -1 ? "cover" : normalized.backgroundImageFit;
     normalized.backgroundImagePosition = normalized.backgroundImagePosition || "center";
     normalized.backgroundOverlayColor = normalized.backgroundOverlayColor || "#000000";
     normalized.backgroundOpacity = clampOpacity(normalized.backgroundOpacity === undefined ? 1 : normalized.backgroundOpacity);
@@ -131,6 +135,7 @@
     normalized.imageSettings.scale = clampNumber(normalized.imageSettings.scale, 0.5, 2.5, defaultImageSettings.scale);
     normalized.imageSettings.opacity = clampOpacity(normalized.imageSettings.opacity);
     normalized.imageSettings.blur = clampNumber(normalized.imageSettings.blur, 0, 12, defaultImageSettings.blur);
+    normalized.imageSettings.overlayEnabled = normalized.imageSettings.overlayEnabled !== false;
     normalized.imageSettings.overlayColor = normalized.imageSettings.overlayColor || "#000000";
     normalized.imageSettings.overlayOpacity = clampOpacity(normalized.imageSettings.overlayOpacity);
     normalized.patternSettings = Object.assign({}, defaultPatternSettings, normalized.patternSettings || {});

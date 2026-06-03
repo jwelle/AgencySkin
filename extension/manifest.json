@@ -29,7 +29,7 @@
         "https://*.leadconnectorhq.com/*"
       ],
       "js": ["namespace.js", "selectorRegistry.js", "sidebarBackgrounds.js", "presets.js", "storage.js", "content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     }
   ]
 }

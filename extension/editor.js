@@ -113,16 +113,9 @@
   var backgroundImageFitOptions = [
     { value: "cover", label: "Cover" },
     { value: "contain", label: "Contain" },
-    { value: "auto", label: "Auto" }
-  ];
-  var backgroundImagePositionOptions = [
-    { value: "center", label: "Center" },
-    { value: "top", label: "Top" },
-    { value: "bottom", label: "Bottom" },
-    { value: "left", label: "Left" },
-    { value: "right", label: "Right" },
-    { value: "center top", label: "Center Top" },
-    { value: "center bottom", label: "Center Bottom" }
+    { value: "stretch", label: "Stretch" },
+    { value: "tile", label: "Tile" },
+    { value: "center", label: "Center" }
   ];
   var curatedShufflePoolOptions = [
     { value: "professional-patterns", label: "Professional + Curated Visuals" },
@@ -210,9 +203,11 @@
       }));
     }, mode: "image" },
     { key: "customImageDataUrl", label: "Upload Custom Image", type: "file", mode: "image" },
+    { key: "backgroundImageFit", label: "Fit", type: "select", options: backgroundImageFitOptions, mode: "image" },
     { key: "imageSettings.positionX", label: "Position X", type: "range", min: "0", max: "100", step: "1", mode: "image" },
     { key: "imageSettings.positionY", label: "Position Y", type: "range", min: "0", max: "100", step: "1", mode: "image" },
     { key: "imageSettings.scale", label: "Zoom", type: "range", min: "0.5", max: "2.5", step: "0.05", mode: "image" },
+    { key: "resetImagePosition", label: "Position", type: "image-reset", mode: "image" },
     { key: "imageSettings.opacity", label: "Fade", type: "range", mode: "image" },
     { key: "imageSettings.overlayOpacity", label: "Darken", type: "range", mode: "image" },
     { key: "imageSettings.blur", label: "Blur", type: "range", min: "0", max: "12", step: "1", unit: "px", mode: "image" },
@@ -1009,6 +1004,36 @@
     return Math.round(scale * 100) + "% auto";
   }
 
+  function getImageCssSettings(style) {
+    var fit = style.backgroundImageFit || "cover";
+    var scale = clampNumber(getByPath(style, "imageSettings.scale", 1), 0.5, 2.5, 1);
+    var settings = {
+      size: "cover",
+      position: getImagePosition(style),
+      repeat: "no-repeat"
+    };
+
+    if (fit === "contain") {
+      settings.size = "contain";
+    } else if (fit === "stretch") {
+      settings.size = "100% 100%";
+      settings.position = "center";
+    } else if (fit === "tile") {
+      settings.size = "auto";
+      settings.repeat = "repeat";
+    } else if (fit === "center") {
+      settings.size = "auto";
+    } else {
+      settings.size = "cover";
+    }
+
+    if (scale !== 1 && fit !== "stretch" && fit !== "tile") {
+      settings.size = getImageScale(style);
+    }
+
+    return settings;
+  }
+
   function getImageUrl(style) {
     var asset = getAssetById(style.backgroundAssetId);
 
@@ -1035,6 +1060,9 @@
     var fallback = asset && asset.recommendedOverlayOpacity !== undefined ? asset.recommendedOverlayOpacity : 0.35;
 
     if (style.backgroundType === "image") {
+      if (getByPath(style, "imageSettings.overlayEnabled", true) === false) {
+        return 0;
+      }
       return style.autoReadability === false ? clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)) : Math.max(fallback, clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)));
     }
 
@@ -1043,6 +1071,14 @@
     }
 
     return clampOpacity(style.backgroundOverlayOpacity);
+  }
+
+  function getOverlayColor(style) {
+    if (style.backgroundType === "image") {
+      return getByPath(style, "imageSettings.overlayColor", "#000000");
+    }
+
+    return style.backgroundOverlayColor || "#000000";
   }
 
   function applyAssetDefaults(style, asset) {
@@ -1787,11 +1823,22 @@
           assetId: normalized.backgroundImageUrl && !normalized.customImageDataUrl ? null : normalized.backgroundAssetId || null,
           assetSource: normalized.customImageDataUrl ? "uploaded" : isSafeExternalImageUrl(normalized.backgroundImageUrl) ? "external" : "curated",
           assetUrl: normalized.customImageDataUrl || (isSafeExternalImageUrl(normalized.backgroundImageUrl) ? normalized.backgroundImageUrl : null),
+          imageUrl: normalized.customImageDataUrl || (isSafeExternalImageUrl(normalized.backgroundImageUrl) ? normalized.backgroundImageUrl : null),
+          imageFit: normalized.backgroundImageFit || "cover",
           positionX: getByPath(normalized, "imageSettings.positionX", 50),
           positionY: getByPath(normalized, "imageSettings.positionY", 50),
           zoom: getByPath(normalized, "imageSettings.scale", 1),
+          imagePositionX: getByPath(normalized, "imageSettings.positionX", 50),
+          imagePositionY: getByPath(normalized, "imageSettings.positionY", 50),
+          imageScale: Math.round(clampNumber(getByPath(normalized, "imageSettings.scale", 1), 0.5, 2.5, 1) * 100),
+          imageRepeat: normalized.backgroundImageFit === "tile" ? "repeat" : "no-repeat",
           fade: 1 - clampOpacity(getByPath(normalized, "imageSettings.opacity", 0.85)),
           darken: clampOpacity(getByPath(normalized, "imageSettings.overlayOpacity", 0.55)),
+          overlay: {
+            enabled: getByPath(normalized, "imageSettings.overlayEnabled", true) !== false,
+            color: getByPath(normalized, "imageSettings.overlayColor", "#000000"),
+            opacity: clampOpacity(getByPath(normalized, "imageSettings.overlayOpacity", 0.55))
+          },
           blur: getByPath(normalized, "imageSettings.blur", 0)
         } : null
       };
@@ -1952,24 +1999,30 @@
       } else if (custom.type === "visual") {
         style.stylePath = "custom";
         style.backgroundType = "image";
-        if (custom.visual && custom.visual.assetSource === "curated") {
-          asset = getAssetById(custom.visual.assetId);
+        var visual = custom.visual || {};
+        var visualUrl = visual.assetUrl || visual.imageUrl || "";
+        var visualFit = visual.imageFit || visual.fit || (visual.imageRepeat === "repeat" ? "tile" : "cover");
+        var overlay = visual.overlay && typeof visual.overlay === "object" && !Array.isArray(visual.overlay) ? visual.overlay : null;
+        var overlayOpacity = overlay && overlay.enabled === false ? 0 : overlay && overlay.opacity !== undefined ? overlay.opacity : visual.darken;
+        var overlayColor = overlay && overlay.color ? overlay.color : "#000000";
+        if (visual.assetSource === "curated") {
+          asset = getAssetById(visual.assetId);
           if (!asset) {
             warnings.push("Unknown curated visual was ignored.");
           } else {
             style = applyAssetDefaultsForProfileJson(style, asset);
           }
-        } else if (custom.visual && custom.visual.assetSource === "uploaded") {
-          if (custom.visual.assetUrl && isSafeImageDataUrl(custom.visual.assetUrl)) {
-            style.customImageDataUrl = custom.visual.assetUrl;
+        } else if (visual.assetSource === "uploaded") {
+          if (visualUrl && isSafeImageDataUrl(visualUrl)) {
+            style.customImageDataUrl = visualUrl;
             style.backgroundImageUrl = "";
             style.backgroundAssetId = "";
-          } else if (custom.visual.assetUrl) {
+          } else if (visualUrl) {
             errors.push("sidebarStyle.custom.visual.assetUrl must be a safe uploaded image data URL.");
           }
-        } else if (custom.visual && custom.visual.assetSource === "external") {
-          if (custom.visual.assetUrl && isSafeExternalImageUrl(custom.visual.assetUrl)) {
-            style.backgroundImageUrl = custom.visual.assetUrl.trim();
+        } else if (visual.assetSource === "external" || (!visual.assetSource && visualUrl)) {
+          if (visualUrl && isSafeExternalImageUrl(visualUrl)) {
+            style.backgroundImageUrl = visualUrl.trim();
             style.customImageDataUrl = "";
             style.backgroundAssetId = "";
             style.backgroundType = "image";
@@ -1977,16 +2030,23 @@
           } else {
             errors.push("sidebarStyle.custom.visual.assetUrl must be a safe HTTPS image URL.");
           }
-        } else if (custom.visual && custom.visual.assetSource) {
+        } else if (visual.assetSource) {
           errors.push("sidebarStyle.custom.visual.assetSource must be curated, uploaded, or external.");
         }
+        style.backgroundImageFit = ["cover", "contain", "stretch", "tile", "center"].indexOf(visualFit) === -1 ? "cover" : visualFit;
+        if (overlay && overlay.color && !isSafeProfileColor(overlay.color)) {
+          errors.push("sidebarStyle.custom.visual.overlay.color must be a hex or safe rgba color.");
+          overlayColor = "#000000";
+        }
         style.imageSettings = Object.assign({}, style.imageSettings || {}, {
-          positionX: clampNumber(custom.visual && custom.visual.positionX, 0, 100, 50),
-          positionY: clampNumber(custom.visual && custom.visual.positionY, 0, 100, 50),
-          scale: clampNumber(custom.visual && custom.visual.zoom, 0.5, 2.5, 1),
-          opacity: 1 - clampOpacity(custom.visual && custom.visual.fade),
-          overlayOpacity: clampOpacity(custom.visual && custom.visual.darken),
-          blur: clampNumber(custom.visual && custom.visual.blur, 0, 12, 0)
+          positionX: clampNumber(visual.imagePositionX !== undefined ? visual.imagePositionX : visual.positionX, 0, 100, 50),
+          positionY: clampNumber(visual.imagePositionY !== undefined ? visual.imagePositionY : visual.positionY, 0, 100, 50),
+          scale: clampNumber(visual.imageScale !== undefined ? Number(visual.imageScale) / 100 : visual.zoom, 0.5, 2.5, 1),
+          opacity: 1 - clampOpacity(visual.fade),
+          overlayEnabled: !overlay || overlay.enabled !== false,
+          overlayColor: normalizeProfileColor(overlayColor, "#000000"),
+          overlayOpacity: clampOpacity(overlayOpacity),
+          blur: clampNumber(visual.blur, 0, 12, 0)
         });
       }
     }
@@ -2746,6 +2806,20 @@
     return wrapper;
   }
 
+  function createImageResetField(field) {
+    var wrapper = document.createElement("div");
+    var button = document.createElement("button");
+
+    wrapper.className = "inline-field image-reset-field";
+    button.type = "button";
+    button.className = "secondary";
+    button.textContent = "Reset Position";
+    button.dataset.resetImagePosition = "true";
+    wrapper.appendChild(document.createTextNode(field.label));
+    wrapper.appendChild(button);
+    return wrapper;
+  }
+
   function formatRangeValue(value, field) {
     var numeric = Number(value);
 
@@ -3102,6 +3176,8 @@
       label = createLogoFileField(field);
     } else if (field.type === "checkbox") {
       label = createCheckboxField(field, style);
+    } else if (field.type === "image-reset") {
+      label = createImageResetField(field);
     } else {
       label = createTextField(field, style);
     }
@@ -3128,6 +3204,13 @@
       }
       container.appendChild(createSidebarStyleField(field, style));
     });
+    if (fields.some(function hasImageField(field) { return field.mode === "image"; })) {
+      var guidance = document.createElement("p");
+      guidance.className = "help-text image-guidance";
+      guidance.dataset.sidebarStyleMode = "image";
+      guidance.textContent = "Recommended image size: 600 x 1600 px minimum, 800 x 2000 px preferred. Use WebP or JPG, keep files under 750 KB, and place important content near the center because cover mode may crop.";
+      container.appendChild(guidance);
+    }
   }
 
   function renderSidebarStyle() {
@@ -3551,6 +3634,7 @@
 
     var style = getCurrentWorkingSidebarStyle();
     var background = getSidebarBackgroundValue(style);
+    var imageCss = getImageCssSettings(style);
     var textColor = style.textColor || "#111827";
     var iconColor = style.iconColor || textColor;
     var activeBackgroundColor = style.activeBackgroundColor || "#e5e7eb";
@@ -3592,15 +3676,15 @@
       sidebarStylePreviewBackground.style.filter = "none";
     }
     if (sidebarStylePreviewOverlay) {
-      sidebarStylePreviewOverlay.style.background = getOverlayRgba(style.backgroundOverlayColor || "#000000", overlayOpacity);
+      sidebarStylePreviewOverlay.style.background = getOverlayRgba(getOverlayColor(style), overlayOpacity);
       sidebarStylePreviewOverlay.style.opacity = overlayOpacity > 0 ? "1" : "0";
     }
     if (style.backgroundType === "image") {
       if (sidebarStylePreviewBackground) {
         sidebarStylePreviewBackground.style.backgroundImage = background;
-        sidebarStylePreviewBackground.style.backgroundSize = style.customImageDataUrl || style.backgroundAssetId ? getImageScale(style) : style.backgroundImageFit || "cover";
-        sidebarStylePreviewBackground.style.backgroundPosition = style.customImageDataUrl || style.backgroundAssetId ? getImagePosition(style) : style.backgroundImagePosition || "center";
-        sidebarStylePreviewBackground.style.backgroundRepeat = "no-repeat";
+        sidebarStylePreviewBackground.style.backgroundSize = imageCss.size;
+        sidebarStylePreviewBackground.style.backgroundPosition = imageCss.position;
+        sidebarStylePreviewBackground.style.backgroundRepeat = imageCss.repeat;
         sidebarStylePreviewBackground.style.opacity = imageOpacity;
         sidebarStylePreviewBackground.style.filter = imageBlur ? "blur(" + imageBlur + "px)" : "none";
       } else {
@@ -4348,6 +4432,16 @@
       populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
       setStatus("Custom image removed. Save this Profile to keep the change.");
     }
+    if (event.target.dataset.resetImagePosition) {
+      var resetStyle = getCurrentWorkingSidebarStyle();
+      resetStyle.imageSettings = Object.assign({}, resetStyle.imageSettings || {}, {
+        positionX: 50,
+        positionY: 50,
+        scale: 1
+      });
+      populateSidebarStyleForm(resetStyle, { presetValue: "custom", optionLabel: "Custom Draft" });
+      setStatus("Image position reset. Save this Profile to keep the change.");
+    }
   });
 
   if (globalSidebarStyleEditor) {
@@ -4415,6 +4509,9 @@
   if (sidebarStylePreview) {
     sidebarStylePreview.addEventListener("pointerdown", function startImageDrag(event) {
       if (getCurrentWorkingSidebarStyle().backgroundType !== "image") {
+        return;
+      }
+      if (!isCustomPreset(selectedPreset())) {
         return;
       }
 
