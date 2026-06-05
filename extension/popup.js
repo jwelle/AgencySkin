@@ -3,8 +3,9 @@
   var storage = namespace.storage;
   var presetSelect = document.getElementById("presetSelect");
   var enabledToggle = document.getElementById("enabledToggle");
-  var resetPageButton = document.getElementById("resetPageButton");
-  var editorButton = document.getElementById("editorButton");
+  var panelButton = document.getElementById("panelButton");
+  var applyButton = document.getElementById("applyButton");
+  var advancedButton = document.getElementById("advancedButton");
   var statusMessage = document.getElementById("statusMessage");
   var currentState = null;
 
@@ -13,25 +14,56 @@
     statusMessage.className = isError ? "status error" : "status";
   }
 
-  function getActiveTab(callback) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function handleTabs(tabs) {
-      callback(chrome.runtime.lastError || !tabs || !tabs[0] ? null : tabs[0]);
+  function isGhlUrl(url) {
+    try {
+      var parsed = new URL(url || "");
+      return parsed.protocol === "https:" && namespace.isAllowedHost(parsed.hostname);
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function targetGhlTab(callback) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function handleActive(tabs) {
+      var activeTab = chrome.runtime.lastError || !tabs || !tabs[0] ? null : tabs[0];
+
+      if (activeTab && activeTab.id && isGhlUrl(activeTab.url)) {
+        callback(activeTab);
+        return;
+      }
+
+      chrome.tabs.query({
+        currentWindow: true,
+        url: ["https://app.gohighlevel.com/*", "https://*.leadconnectorhq.com/*"]
+      }, function handleGhlTabs(ghlTabs) {
+        if (chrome.runtime.lastError || !ghlTabs || ghlTabs.length !== 1) {
+          callback(null, activeTab, ghlTabs || []);
+          return;
+        }
+        callback(ghlTabs[0], activeTab, ghlTabs);
+      });
     });
   }
 
-  function sendToContentScript(message, callback) {
-    getActiveTab(function handleActiveTab(tab) {
+  function sendToGhlTab(message, callback) {
+    targetGhlTab(function handleTarget(tab, activeTab, ghlTabs) {
       if (!tab || !tab.id) {
-        callback({ ok: false, error: "No active tab found." });
+        callback({
+          ok: false,
+          error: ghlTabs && ghlTabs.length > 1 ?
+            "Focus the GHL tab you want to update, then try again." :
+            "Open a GHL page to apply this live. Your settings are saved and will apply next time GHL opens.",
+          activeUrl: activeTab && activeTab.url
+        });
         return;
       }
 
       chrome.tabs.sendMessage(tab.id, Object.assign({ source: namespace.messageSource }, message), function handleResponse(response) {
         if (chrome.runtime.lastError) {
-          callback({ ok: false, error: "Open a supported GoHighLevel page, then try again." });
+          callback({ ok: false, error: "Content script not reachable. Reload the GHL page and try again." });
           return;
         }
-        callback(response || { ok: false, error: "No response from page." });
+        callback(response || { ok: false, error: "No response from GHL page." });
       });
     });
   }
@@ -91,46 +123,73 @@
     });
   }
 
-  function applyPreset() {
-    sendToContentScript({ type: "applyPreset", presetId: presetSelect.value }, function handleApplied(result) {
+  function applyCurrentSettings(statusPrefix) {
+    sendToGhlTab({ type: "CLEANVIEW_APPLY_ACTIVE_SETTINGS" }, function handleApplied(result) {
       if (!result.ok) {
-        setStatus(result.error || "Unable to apply Profile.", true);
+        setStatus(result.error || "Unable to apply live to GHL.", true);
         return;
       }
-      if (result.skipped) {
-        setStatus("Active Profile saved. Turn CleanView on to apply.");
-        refreshState();
-        return;
-      }
-      setStatus(selectedOptionName() + " applied.");
+      setStatus(statusPrefix || result.message || "Applied to open GHL tab.");
       refreshState();
+    });
+  }
+
+  function saveActivePreset() {
+    storage.updateState(function updateActivePreset(state) {
+      state.activePresetId = presetSelect.value || "builtin:simple";
+      state.lastEditedProfileId = state.activePresetId.indexOf("custom:") === 0 ? state.activePresetId : state.lastEditedProfileId;
+    }, function handleSaved(state, error) {
+      if (error) {
+        setStatus("Unable to save active Profile.", true);
+        return;
+      }
+      currentState = state;
+      applyCurrentSettings(selectedOptionName() + " saved and applied.");
     });
   }
 
   function setEnabled() {
-    sendToContentScript({ type: "setEnabled", enabled: enabledToggle.checked }, function handleEnabled(result) {
-      if (!result.ok) {
-        setStatus(result.error || "Unable to update CleanView.", true);
+    storage.updateState(function updateEnabled(state) {
+      state.enabled = Boolean(enabledToggle.checked);
+    }, function handleSaved(state, error) {
+      if (error) {
+        setStatus("Unable to update CleanView.", true);
         return;
       }
-      setStatus(enabledToggle.checked ? "CleanView enabled." : "CleanView disabled.");
-      refreshState();
+      currentState = state;
+      applyCurrentSettings(enabledToggle.checked ? "CleanView enabled and applied." : "CleanView disabled on GHL.");
     });
   }
 
-  function resetPage() {
-    sendToContentScript({ type: "resetPage" }, function handleReset(result) {
-      setStatus(result.ok ? "CleanView changes removed from this page." : result.error || "Unable to restore page.", !result.ok);
+  function openPanel() {
+    chrome.tabs.query({ active: true, currentWindow: true }, function handleTabs(tabs) {
+      var tab = tabs && tabs[0];
+      var options = tab && tab.windowId ? { windowId: tab.windowId } : {};
+
+      if (chrome.sidePanel && chrome.sidePanel.open) {
+        var opened = chrome.sidePanel.open(options);
+        if (opened && typeof opened.catch === "function") {
+          opened.catch(function fallbackToOptions() {
+            chrome.runtime.openOptionsPage();
+          });
+        }
+        return;
+      }
+
+      chrome.runtime.openOptionsPage();
     });
   }
 
-  function openEditor() {
+  function openAdvanced() {
     chrome.runtime.openOptionsPage();
   }
 
-  presetSelect.addEventListener("change", applyPreset);
+  presetSelect.addEventListener("change", saveActivePreset);
   enabledToggle.addEventListener("change", setEnabled);
-  resetPageButton.addEventListener("click", resetPage);
-  editorButton.addEventListener("click", openEditor);
+  panelButton.addEventListener("click", openPanel);
+  applyButton.addEventListener("click", function applyFromPopup() {
+    applyCurrentSettings();
+  });
+  advancedButton.addEventListener("click", openAdvanced);
   refreshState();
 })();

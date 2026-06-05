@@ -3,7 +3,7 @@
   "name": "AgencySkin",
   "version": "0.1.0",
   "description": "CleanView personal sidebar Profiles for GoHighLevel.",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "tabs", "activeTab", "sidePanel"],
   "host_permissions": [
     "https://app.gohighlevel.com/*",
     "https://*.leadconnectorhq.com/*"
@@ -21,7 +21,10 @@
     "default_popup": "popup.html",
     "default_title": "AgencySkin"
   },
-  "options_page": "editor.html",
+  "side_panel": {
+    "default_path": "editor.html"
+  },
+  "options_page": "advanced.html",
   "content_scripts": [
     {
       "matches": [

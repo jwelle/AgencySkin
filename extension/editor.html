@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AgencySkin - CleanView Profile Builder</title>
+    <title>AgencySkin - CleanView Panel</title>
     <link rel="stylesheet" href="editor.css">
   </head>
   <body>
@@ -11,7 +11,7 @@
       <header class="topbar">
         <div>
           <p class="eyebrow">AgencySkin</p>
-          <h1>CleanView Profile Builder</h1>
+          <h1>CleanView Panel</h1>
         </div>
         <p id="statusMessage" class="status" role="status"></p>
       </header>
@@ -213,9 +213,12 @@
             <aside class="sidebar-style-right-panel">
               <section class="sidebar-style-preview-panel">
                 <div class="panel-header compact-header">
-                  <h3>Live Sidebar Preview</h3>
-                  <p id="sidebarMeasurementStatus">Not synced yet.</p>
-                  <button id="syncSidebarPreviewButton" class="secondary" type="button">Sync Preview to GHL</button>
+                  <h3>Preview</h3>
+                  <p id="sidebarMeasurementStatus">GHL sidebar model: 224 x 1156.</p>
+                  <div class="button-row compact">
+                    <button id="applyLiveButton" type="button">Apply Live to GHL</button>
+                    <button id="detectGhlSidebarButton" class="secondary" type="button">Detect GHL Sidebar</button>
+                  </div>
                 </div>
                 <div id="sidebarStylePreview" class="sidebar-style-preview">
                   <div id="sidebarStylePreviewBackground" class="sidebar-preview-background"></div>
@@ -244,7 +247,7 @@
                 <div id="menuColorEditor" class="form-grid compact-style-editor"></div>
               </section>
               <div class="sidebar-style-actions">
-                <button id="savePresetButton" type="button">Save Profile</button>
+                <button id="savePresetButton" type="button">Save</button>
                 <button id="resetStyleButton" class="secondary" type="button">Reset Style</button>
               </div>
             </aside>

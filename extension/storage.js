@@ -49,7 +49,7 @@
         blur: 0,
         overlayEnabled: true,
         overlayColor: "#000000",
-        overlayOpacity: 0.55
+        overlayOpacity: 0.15
       },
       patternSettings: {
         scale: 1,

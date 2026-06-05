@@ -53,7 +53,8 @@
   var sidebarStylePreviewOverlay = document.getElementById("sidebarStylePreviewOverlay");
   var sidebarStylePreviewHeaderText = document.getElementById("sidebarStylePreviewHeaderText");
   var sidebarStylePreviewLogo = document.getElementById("sidebarStylePreviewLogo");
-  var syncSidebarPreviewButton = document.getElementById("syncSidebarPreviewButton");
+  var applyLiveButton = document.getElementById("applyLiveButton");
+  var detectGhlSidebarButton = document.getElementById("detectGhlSidebarButton");
   var sidebarMeasurementStatus = document.getElementById("sidebarMeasurementStatus");
   var curatedPresetGrid = document.getElementById("curatedPresetGrid");
   var curatedShuffleButton = document.getElementById("curatedShuffleButton");
@@ -345,16 +346,51 @@
     });
   }
 
-  function sendToContentScript(message, callback) {
+  function isGhlUrl(url) {
+    try {
+      var parsed = new URL(url || "");
+      return parsed.protocol === "https:" && namespace.isAllowedHost(parsed.hostname);
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function getTargetGhlTab(callback) {
     getActiveTab(function handleActiveTab(tab) {
+      if (tab && tab.id && isGhlUrl(tab.url)) {
+        callback(tab);
+        return;
+      }
+
+      chrome.tabs.query({
+        currentWindow: true,
+        url: ["https://app.gohighlevel.com/*", "https://*.leadconnectorhq.com/*"]
+      }, function handleGhlTabs(tabs) {
+        if (chrome.runtime.lastError || !tabs || tabs.length !== 1) {
+          callback(null, tab, tabs || []);
+          return;
+        }
+        callback(tabs[0], tab, tabs);
+      });
+    });
+  }
+
+  function sendToContentScript(message, callback) {
+    getTargetGhlTab(function handleActiveTab(tab, activeTab, ghlTabs) {
       if (!tab || !tab.id) {
-        callback({ ok: false, error: "No active GHL tab found." });
+        callback({
+          ok: false,
+          error: ghlTabs && ghlTabs.length > 1 ?
+            "Focus the GHL tab you want to update, then try again." :
+            "Open a GHL page to apply this live. Your settings are saved and will apply next time GHL opens.",
+          activeUrl: activeTab && activeTab.url
+        });
         return;
       }
 
       chrome.tabs.sendMessage(tab.id, Object.assign({ source: namespace.messageSource }, message), function handleResponse(response) {
         if (chrome.runtime.lastError) {
-          callback({ ok: false, error: "Open a supported GoHighLevel page, then try again." });
+          callback({ ok: false, error: "Content script not reachable. Reload the GHL page and try again." });
           return;
         }
         callback(response || { ok: false, error: "No response from page." });
@@ -1079,7 +1115,7 @@
       if (getByPath(style, "imageSettings.overlayEnabled", true) === false) {
         return 0;
       }
-      return style.autoReadability === false ? clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)) : Math.max(fallback, clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)));
+      return clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback));
     }
 
     if (style.backgroundType === "pattern") {
@@ -2933,19 +2969,16 @@
       var image = new Image();
       image.onload = function handleImageLoad() {
         var canvas = document.createElement("canvas");
-        var width = 520;
-        var height = 980;
+        var maxDimension = 1600;
+        var resizeScale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+        var width = Math.max(1, Math.round(image.width * resizeScale));
+        var height = Math.max(1, Math.round(image.height * resizeScale));
         var context = canvas.getContext("2d");
-        var scale = Math.max(width / image.width, height / image.height);
-        var drawWidth = image.width * scale;
-        var drawHeight = image.height * scale;
-        var drawX = (width - drawWidth) / 2;
-        var drawY = (height - drawHeight) / 2;
         var nextStyle = collectSidebarStyleFromForm();
 
         canvas.width = width;
         canvas.height = height;
-        context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+        context.drawImage(image, 0, 0, width, height);
         nextStyle.backgroundType = "image";
         nextStyle.backgroundAssetId = "";
         nextStyle.backgroundImageUrl = "";
@@ -2956,7 +2989,7 @@
           scale: 1,
           opacity: 0.85,
           blur: 0,
-          overlayOpacity: Math.max(0.45, getByPath(nextStyle, "imageSettings.overlayOpacity", 0.55))
+          overlayOpacity: clampOpacity(getByPath(nextStyle, "imageSettings.overlayOpacity", 0.15))
         });
         populateSidebarStyleForm(nextStyle, { presetValue: "custom", optionLabel: "Custom Image Draft" });
         setStatus("Custom image loaded. Save this Profile to keep it.");
@@ -3481,10 +3514,10 @@
 
   function measuredLayoutSummary(layout) {
     if (!layout) {
-      return "Not synced yet.";
+      return "GHL sidebar model: 224 x 1156.";
     }
 
-    return "Synced: sidebar " + Math.round(layout.sidebarWidth) + " x " + Math.round(layout.sidebarHeight) +
+    return "Detected: sidebar " + Math.round(layout.sidebarWidth) + " x " + Math.round(layout.sidebarHeight) +
       ", image slot " + Math.round(layout.imageSlotWidth) + " x " + Math.round(layout.imageSlotHeight) + ".";
   }
 
@@ -3493,7 +3526,7 @@
       return;
     }
 
-    sidebarMeasurementStatus.textContent = hasMeasuredLayout(style) ? measuredLayoutSummary(style.measuredLayout) : "Not synced yet.";
+    sidebarMeasurementStatus.textContent = "GHL sidebar model: 224 x 1156.";
   }
 
   function setLayerMeasuredDimensions(element, width, height) {
@@ -3527,52 +3560,59 @@
   }
 
   function applyMeasuredPreviewLayout(style) {
-    var layout = style && style.measuredLayout;
-
-    if (!hasMeasuredLayout(style)) {
-      sidebarStylePreview.style.width = "";
-      sidebarStylePreview.style.height = "";
-      sidebarStylePreview.style.minHeight = "";
-      sidebarStylePreview.style.maxHeight = "";
-      resetLayerMeasuredDimensions(sidebarStylePreviewBackground);
-      resetLayerMeasuredDimensions(sidebarStylePreviewOverlay);
-      return;
-    }
-
-    sidebarStylePreview.style.width = layout.sidebarWidth + "px";
-    sidebarStylePreview.style.height = layout.sidebarHeight + "px";
-    sidebarStylePreview.style.minHeight = "0";
-    sidebarStylePreview.style.maxHeight = "none";
-    setLayerMeasuredDimensions(sidebarStylePreviewBackground, layout.imageSlotWidth, layout.imageSlotHeight);
-    setLayerMeasuredDimensions(sidebarStylePreviewOverlay, layout.imageSlotWidth, layout.imageSlotHeight);
+    resetLayerMeasuredDimensions(sidebarStylePreviewBackground);
+    resetLayerMeasuredDimensions(sidebarStylePreviewOverlay);
   }
 
-  function syncSidebarPreviewToGhl() {
+  function detectGhlSidebar() {
+    if (detectGhlSidebarButton) {
+      detectGhlSidebarButton.disabled = true;
+    }
+    setStatus("Detecting the GHL sidebar...");
+    sendToContentScript({ type: "CLEANVIEW_DETECT_GHL_SIDEBAR" }, function handleDetected(result) {
+      if (detectGhlSidebarButton) {
+        detectGhlSidebarButton.disabled = false;
+      }
+      if (!result || !result.ok || !result.foundSidebar) {
+        setStatus(result && (result.message || result.error) ? result.message || result.error : "No GHL sidebar found on this page.", true);
+        return;
+      }
+      setStatus("GHL sidebar found: " + result.selectorUsed + ", " + Math.round(result.width) + " x " + Math.round(result.height) + ".");
+    });
+  }
+
+  function applyLiveToGhl() {
+    if (applyLiveButton) {
+      applyLiveButton.disabled = true;
+    }
+    sendToContentScript({ type: "CLEANVIEW_APPLY_ACTIVE_SETTINGS" }, function handleApplied(result) {
+      if (applyLiveButton) {
+        applyLiveButton.disabled = false;
+      }
+      if (!result || !result.ok) {
+        setStatus(result && (result.message || result.error) ? result.message || result.error : "Unable to apply live to GHL.", true);
+        return;
+      }
+      setStatus(result.message || "Applied to open GHL tab.");
+    });
+  }
+
+  function saveThenApplyLive() {
     if (!isCustomPreset(selectedPreset())) {
-      setStatus("Create My Profile before syncing the preview.", true);
+      storage.updateState(function updateActivePreset(nextState) {
+        nextState.activePresetId = selectedPresetId || "builtin:simple";
+      }, function handleSaved(nextState, error) {
+        if (error) {
+          setStatus("Unable to save active Profile.", true);
+          return;
+        }
+        state = nextState;
+        applyLiveToGhl();
+      });
       return;
     }
 
-    if (syncSidebarPreviewButton) {
-      syncSidebarPreviewButton.disabled = true;
-    }
-    setStatus("Measuring the active GoHighLevel sidebar...");
-    sendToContentScript({ type: "measureSidebarPreview" }, function handleMeasured(result) {
-      var style = null;
-
-      if (syncSidebarPreviewButton) {
-        syncSidebarPreviewButton.disabled = !isCustomPreset(selectedPreset());
-      }
-      if (!result || !result.ok || !result.measuredLayout) {
-        setStatus(result && result.error ? result.error : "Unable to sync preview to GHL.", true);
-        return;
-      }
-
-      style = getCurrentWorkingSidebarStyle();
-      style.measuredLayout = result.measuredLayout;
-      populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
-      setStatus(measuredLayoutSummary(result.measuredLayout) + " Save this Profile to keep it.");
-    });
+    persistSelectedView("Saved.", false, applyLiveToGhl);
   }
 
   function renderLocationRules() {
@@ -3660,8 +3700,11 @@
     document.getElementById("addRenameButton").disabled = !isEditable;
     document.getElementById("addLinkButton").disabled = !isEditable;
     curatedShuffleButton.disabled = !isEditable;
-    if (syncSidebarPreviewButton) {
-      syncSidebarPreviewButton.disabled = !isEditable;
+    if (applyLiveButton) {
+      applyLiveButton.disabled = false;
+    }
+    if (detectGhlSidebarButton) {
+      detectGhlSidebarButton.disabled = false;
     }
     document.getElementById("resetStyleButton").disabled = !isEditable;
     document.getElementById("savePresetButton").disabled = !isEditable;
@@ -3954,10 +3997,13 @@
     return storage.normalizePreset(preset);
   }
 
-  function reapplySavedPresetIfActive(presetId, message, reapplyIfActive, nextState) {
+  function reapplySavedPresetIfActive(presetId, message, reapplyIfActive, nextState, afterSave) {
     if (!reapplyIfActive || presetId !== nextState.activePresetId) {
       setStatus(message);
       render();
+      if (afterSave) {
+        afterSave(nextState);
+      }
       return;
     }
 
@@ -3965,13 +4011,16 @@
       if (result.ok && result.skipped) {
         setStatus(message + " CleanView is off; turn it on to apply.");
       } else {
-        setStatus(result.ok ? message + " Applied to current page." : message);
+        setStatus(result.ok ? message + " Applied Live to GHL." : message);
       }
       render();
+      if (afterSave) {
+        afterSave(nextState);
+      }
     });
   }
 
-  function persistPreset(preset, message, reapplyIfActive) {
+  function persistPreset(preset, message, reapplyIfActive, afterSave) {
     storage.updateState(function updatePreset(nextState) {
       nextState.presets[preset.id] = storage.normalizePreset(preset);
       nextState.activePresetId = preset.id;
@@ -3986,15 +4035,15 @@
       }
       state = nextState;
       selectedPresetId = preset.id;
-      reapplySavedPresetIfActive(preset.id, message, reapplyIfActive, nextState);
+      reapplySavedPresetIfActive(preset.id, message, reapplyIfActive, nextState, afterSave);
     });
   }
 
-  function persistSelectedView(message, reapplyIfActive) {
+  function persistSelectedView(message, reapplyIfActive, afterSave) {
     var preset = selectedPreset();
 
     if (isCustomPreset(preset)) {
-      persistPreset(collectPresetFromForm(), message, reapplyIfActive);
+      persistPreset(collectPresetFromForm(), message, reapplyIfActive, afterSave);
       return;
     }
 
@@ -4100,7 +4149,7 @@
       } else {
         presetName.focus();
         presetName.select();
-        setStatus("Update the Profile Name field, then Save Profile.");
+        setStatus("Update the Profile Name field, then Save.");
       }
     } else if (action === "export") {
       openProfileTransferModal("export");
@@ -4132,7 +4181,7 @@
   });
 
   document.getElementById("savePresetButton").addEventListener("click", function savePreset() {
-    persistSelectedView("Profile saved.", true);
+    persistSelectedView("Saved.", false);
   });
 
   if (createProfileButton) {
@@ -4621,8 +4670,12 @@
     curatedShuffleButton.addEventListener("click", applyCuratedShuffle);
   }
 
-  if (syncSidebarPreviewButton) {
-    syncSidebarPreviewButton.addEventListener("click", syncSidebarPreviewToGhl);
+  if (applyLiveButton) {
+    applyLiveButton.addEventListener("click", saveThenApplyLive);
+  }
+
+  if (detectGhlSidebarButton) {
+    detectGhlSidebarButton.addEventListener("click", detectGhlSidebar);
   }
 
   [curatedShuffleEnabled, curatedShufflePool, curatedShuffleFrequency, curatedShuffleAvoidRepeats].forEach(function bindShuffleControl(control) {

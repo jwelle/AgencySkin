@@ -7,6 +7,9 @@
 - Sidebar background settings now store structured image, pattern, readability, favorite, and rotation configuration.
 - GoHighLevel sidebar backgrounds now apply through internal non-click-blocking background layers.
 - Phase 1 Profile JSON import/export was added to the CleanView Profile Builder.
+- CleanView daily configuration now runs in the Chrome side panel, with the popup reduced to a launcher and quick controls.
+- Save now persists local settings separately from `Apply Live to GHL`, which only targets validated open GHL tabs.
+- Advanced options now provide backup/restore/reset and sidebar diagnostics instead of the daily editor.
 - Repository documentation now identifies the AgencySkin CleanView Chrome extension as the current shipping product.
 - The earlier client/server/live site theme builder docs were moved into `docs/legacy-theme-builder.md`.
 - `docs/extension-roadmap.md` now tracks MVP, post-MVP, hosted sync, and Chrome Web Store launch readiness.
@@ -23,6 +26,8 @@
 - `extension/editor.css`
 - `extension/editor.html`
 - `extension/editor.js`
+- `extension/advanced.html`
+- `extension/advanced.js`
 - `extension/manifest.json`
 - `extension/popup.html`
 - `extension/sidebarBackgrounds.js`
@@ -46,12 +51,13 @@
 9. Confirm hidden menu items generate `display: none !important` CSS rules.
 10. Use both copy buttons and confirm feedback appears.
 11. Load the unpacked Chrome extension from `extension/`.
-12. Open the Profile Builder and confirm Sidebar Style is the first tab.
-13. Apply curated sidebar preset cards and confirm the preview updates.
-14. Confirm the Sidebar Style tab uses a guided `Use Preset` / `Custom Configuration` editor.
-15. Confirm the right panel keeps a tall sticky sidebar preview, Menu Colors, and Save / Reset controls visible while scrolling.
-16. Save a custom Profile and apply it on a supported GoHighLevel page.
-17. Export a Profile JSON file from `More`, then import it as a new editable Profile through `Create Profile`.
+12. Open a GHL page, click the extension popup, then click `Open CleanView Panel`.
+13. Confirm the side panel opens while GHL remains the active page and Sidebar Style is the first tab.
+14. Apply curated sidebar preset cards and confirm the local preview updates without needing a live GHL measurement.
+15. Confirm the Sidebar Style tab uses a guided `Use Preset` / `Custom Configuration` editor.
+16. Save a custom Profile, then click `Apply Live to GHL` on a supported GoHighLevel page.
+17. Click `Detect GHL Sidebar` and confirm `#sidebar-v2` is reported when present.
+18. Export a Profile JSON file from `More`, then import it as a new editable Profile through `Create Profile`.
 
 ## Known Limitations
 

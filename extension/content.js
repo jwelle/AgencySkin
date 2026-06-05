@@ -19,6 +19,8 @@
   var firstApplyStartedAt = 0;
   var menuGroupOrderCounter = 0;
   var menuGroupExpandedState = {};
+  var preferredSidebarSelector = "#sidebar-v2";
+  var sidebarWaitTimeoutMs = 20000;
 
   if (!namespace.isAllowedHost(window.location.hostname)) {
     return;
@@ -309,7 +311,7 @@
   }
 
   function findGhlSidebar() {
-    var sidebar = document.querySelector("#sidebar-v2");
+    var sidebar = document.querySelector(preferredSidebarSelector);
 
     if (sidebar) {
       return sidebar;
@@ -521,7 +523,7 @@
       if (getByPath(style, "imageSettings.overlayEnabled", true) === false) {
         return 0;
       }
-      return style.autoReadability === false ? clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)) : Math.max(fallback, clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback)));
+      return clampOpacity(getByPath(style, "imageSettings.overlayOpacity", fallback));
     }
 
     if (style.backgroundType === "pattern") {
@@ -649,6 +651,48 @@
       imageSlotHeight: slotMeasurement.imageSlotHeight,
       imageSlotAspectRatio: slotMeasurement.imageSlotAspectRatio
     };
+  }
+
+  function sidebarStatus(sidebar, options) {
+    var dimensions = sidebar ? rectDimensions(sidebar.getBoundingClientRect()) : null;
+    var selectorUsed = sidebar && sidebar.matches && sidebar.matches(preferredSidebarSelector) ? preferredSidebarSelector : "";
+
+    options = options || {};
+    return {
+      ok: Boolean(sidebar && dimensions),
+      message: sidebar && dimensions ? "Sidebar found." : "No GHL sidebar found on this page.",
+      currentUrl: window.location.href,
+      foundSidebar: Boolean(sidebar && dimensions),
+      selectorUsed: selectorUsed || (sidebar ? "fallback sidebar selector" : ""),
+      width: dimensions ? dimensions.width : 0,
+      height: dimensions ? dimensions.height : 0,
+      applied: Boolean(options.applied),
+      cleanViewApplied: Boolean(sidebar && sidebar.getAttribute("data-agencyskin-cleanview-style-role") === "sidebar"),
+      error: options.error || ""
+    };
+  }
+
+  function waitForGhlSidebar(callback, timeoutMs) {
+    var startedAt = Date.now();
+    var waitMs = timeoutMs || sidebarWaitTimeoutMs;
+
+    function checkSidebar() {
+      var sidebar = findGhlSidebar();
+
+      if (sidebar) {
+        callback(sidebar);
+        return;
+      }
+
+      if (Date.now() - startedAt >= waitMs) {
+        callback(null);
+        return;
+      }
+
+      window.setTimeout(checkSidebar, 100);
+    }
+
+    checkSidebar();
   }
 
   function getSidebarBackgroundValue(style) {
@@ -1897,6 +1941,37 @@
     });
   }
 
+  function applyStateWhenSidebarReady(state, callback) {
+    currentState = state;
+    if (!state.enabled) {
+      callback(applyCurrentState(state));
+      return;
+    }
+
+    waitForGhlSidebar(function handleSidebarReady(sidebar) {
+      var result = null;
+      var status = null;
+
+      if (!sidebar) {
+        callback(Object.assign(sidebarStatus(null, {
+          error: "Sidebar not found yet. Try reloading the GHL page."
+        }), {
+          ok: false,
+          message: "Sidebar not found yet. Try reloading the GHL page."
+        }));
+        return;
+      }
+
+      result = applyCurrentState(state);
+      status = sidebarStatus(findGhlSidebar() || sidebar, { applied: true });
+      callback(Object.assign({}, result, status, {
+        ok: true,
+        message: result.skipped ? "CleanView is off; turn it on to apply." : "Applied to open GHL tab.",
+        applied: !result.skipped
+      }));
+    }, sidebarWaitTimeoutMs);
+  }
+
   function applyInitialStateWhenSidebarReady(state) {
     var elapsed = firstApplyStartedAt ? Date.now() - firstApplyStartedAt : 0;
 
@@ -1911,7 +1986,7 @@
 
     preloadGuardEnabled = true;
     installPreloadGuard();
-    if (findGhlSidebar() || elapsed > 1800) {
+    if (findGhlSidebar() || elapsed > sidebarWaitTimeoutMs) {
       applyCurrentState(state);
       return;
     }
@@ -2019,6 +2094,34 @@
       return false;
     }
 
+    if (message.type === "CLEANVIEW_DETECT_GHL_SIDEBAR") {
+      waitForGhlSidebar(function handleDetected(sidebar) {
+        respond(sendResponse, sidebarStatus(sidebar, sidebar ? {} : {
+          error: "No GHL sidebar found on this page."
+        }));
+      }, 5000);
+      return true;
+    }
+
+    if (message.type === "CLEANVIEW_GET_PAGE_STATUS") {
+      respond(sendResponse, sidebarStatus(findGhlSidebar()));
+      return false;
+    }
+
+    if (message.type === "CLEANVIEW_APPLY_ACTIVE_SETTINGS") {
+      storage.getState(function handleActiveSettings(state, error) {
+        if (error) {
+          respond(sendResponse, { ok: false, error: "Unable to load CleanView settings." });
+          return;
+        }
+
+        applyStateWhenSidebarReady(state, function handleApplied(result) {
+          respond(sendResponse, result);
+        });
+      });
+      return true;
+    }
+
     if (message.type === "applyPreset") {
       storage.updateState(function updatePreset(state) {
         state.activePresetId = message.presetId || "builtin:simple";
@@ -2042,7 +2145,9 @@
           return;
         }
 
-        respond(sendResponse, applyCurrentState(state));
+        applyStateWhenSidebarReady(state, function handleApplied(result) {
+          respond(sendResponse, result);
+        });
       });
       return true;
     }

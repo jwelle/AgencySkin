@@ -917,6 +917,7 @@ textarea {
 }
 
 .sidebar-style-preview {
+  aspect-ratio: 224 / 1156;
   border: 1px solid var(--as-border);
   border-radius: 16px;
   box-shadow: var(--as-shadow-md);
@@ -924,12 +925,13 @@ textarea {
   display: flex;
   flex-direction: column;
   isolation: isolate;
-  height: min(720px, calc(100vh - 120px));
-  min-height: 600px;
+  height: auto;
+  min-height: 0;
   overflow: hidden;
   position: relative;
   transition: background 160ms ease, color 160ms ease, opacity 160ms ease;
-  width: 100%;
+  margin: 0 auto;
+  width: min(100%, 170px);
 }
 
 .sidebar-style-preview:active {
