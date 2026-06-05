@@ -705,6 +705,7 @@ textarea {
 }
 
 .sidebar-style-preview-panel {
+  overflow: auto;
   justify-self: stretch;
 }
 
@@ -828,6 +829,10 @@ textarea {
   display: grid;
   gap: 0.25rem;
   justify-content: stretch;
+}
+
+.compact-header button {
+  justify-self: start;
 }
 
 .form-section-heading {

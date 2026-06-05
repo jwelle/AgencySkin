@@ -69,6 +69,7 @@
         lastAppliedAt: "",
         sessionKey: ""
       },
+      measuredLayout: null,
       favoriteAssetIds: [],
       stylePath: "preset",
       autoReadability: true,
@@ -163,6 +164,7 @@
     normalized.curatedShuffle.lastAppliedAssetIds = Array.isArray(normalized.curatedShuffle.lastAppliedAssetIds) ? normalized.curatedShuffle.lastAppliedAssetIds.slice(0, 10) : [];
     normalized.curatedShuffle.lastAppliedAt = normalized.curatedShuffle.lastAppliedAt || "";
     normalized.curatedShuffle.sessionKey = normalized.curatedShuffle.sessionKey || "";
+    normalized.measuredLayout = normalizeMeasuredLayout(normalized.measuredLayout);
     normalized.favoriteAssetIds = Array.isArray(normalized.favoriteAssetIds) ? normalized.favoriteAssetIds.filter(Boolean) : [];
     normalized.stylePath = allowedStylePaths.indexOf(normalized.stylePath) === -1 ? "preset" : normalized.stylePath;
     normalized.autoReadability = normalized.autoReadability !== false;
@@ -176,6 +178,48 @@
     normalized.logoSize = normalized.logoSize || "32px";
     normalized.headerAlignment = allowedHeaderAlignments.indexOf(normalized.headerAlignment) === -1 ? "center" : normalized.headerAlignment;
     return normalized;
+  }
+
+  function normalizeMeasuredLayout(layout) {
+    var sidebarWidth = 0;
+    var sidebarHeight = 0;
+    var imageSlotWidth = 0;
+    var imageSlotHeight = 0;
+
+    if (!layout || typeof layout !== "object" || Array.isArray(layout)) {
+      return null;
+    }
+
+    sidebarWidth = normalizePositiveDimension(layout.sidebarWidth);
+    sidebarHeight = normalizePositiveDimension(layout.sidebarHeight);
+    imageSlotWidth = normalizePositiveDimension(layout.imageSlotWidth);
+    imageSlotHeight = normalizePositiveDimension(layout.imageSlotHeight);
+
+    if (!sidebarWidth || !sidebarHeight || !imageSlotWidth || !imageSlotHeight) {
+      return null;
+    }
+
+    return {
+      sidebarWidth: sidebarWidth,
+      sidebarHeight: sidebarHeight,
+      imageSlotWidth: imageSlotWidth,
+      imageSlotHeight: imageSlotHeight,
+      imageSlotAspectRatio: roundDimension(imageSlotWidth / imageSlotHeight)
+    };
+  }
+
+  function normalizePositiveDimension(value) {
+    var numeric = Number(value);
+
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+      return 0;
+    }
+
+    return roundDimension(numeric);
+  }
+
+  function roundDimension(value) {
+    return Math.round(Number(value) * 1000) / 1000;
   }
 
   function normalizeUrl(url) {

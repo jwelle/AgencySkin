@@ -585,6 +585,72 @@
     return settings;
   }
 
+  function roundedDimension(value) {
+    return Math.round(Number(value) * 1000) / 1000;
+  }
+
+  function rectDimensions(rect) {
+    if (!rect || !Number.isFinite(rect.width) || !Number.isFinite(rect.height) || rect.width <= 0 || rect.height <= 0) {
+      return null;
+    }
+
+    return {
+      width: roundedDimension(rect.width),
+      height: roundedDimension(rect.height)
+    };
+  }
+
+  function measureGhlSidebarDimensions() {
+    var sidebar = findGhlSidebar();
+    var dimensions = sidebar ? rectDimensions(sidebar.getBoundingClientRect()) : null;
+
+    if (!sidebar || !dimensions) {
+      return null;
+    }
+
+    return {
+      sidebar: sidebar,
+      sidebarWidth: dimensions.width,
+      sidebarHeight: dimensions.height
+    };
+  }
+
+  function measureAgencySkinImageSlotDimensions(sidebar) {
+    var slot = sidebar ? sidebar.querySelector("[data-agencyskin-sidebar-bg-kind='wrapper']") : null;
+    var dimensions = slot ? rectDimensions(slot.getBoundingClientRect()) : null;
+
+    if (!dimensions && sidebar) {
+      dimensions = rectDimensions(sidebar.getBoundingClientRect());
+    }
+
+    if (!dimensions) {
+      return null;
+    }
+
+    return {
+      imageSlotWidth: dimensions.width,
+      imageSlotHeight: dimensions.height,
+      imageSlotAspectRatio: roundedDimension(dimensions.width / dimensions.height)
+    };
+  }
+
+  function measureSidebarPreviewLayout() {
+    var sidebarMeasurement = measureGhlSidebarDimensions();
+    var slotMeasurement = sidebarMeasurement ? measureAgencySkinImageSlotDimensions(sidebarMeasurement.sidebar) : null;
+
+    if (!sidebarMeasurement || !slotMeasurement) {
+      return null;
+    }
+
+    return {
+      sidebarWidth: sidebarMeasurement.sidebarWidth,
+      sidebarHeight: sidebarMeasurement.sidebarHeight,
+      imageSlotWidth: slotMeasurement.imageSlotWidth,
+      imageSlotHeight: slotMeasurement.imageSlotHeight,
+      imageSlotAspectRatio: slotMeasurement.imageSlotAspectRatio
+    };
+  }
+
   function getSidebarBackgroundValue(style) {
     if (style.backgroundType === "image" && styleValue(style.backgroundImageUrl)) {
       return "url(\"" + styleValue(style.backgroundImageUrl) + "\")";
@@ -1938,6 +2004,19 @@
         });
       });
       return true;
+    }
+
+    if (message.type === "measureSidebarPreview") {
+      var measuredLayout = measureSidebarPreviewLayout();
+
+      respond(sendResponse, measuredLayout ? {
+        ok: true,
+        measuredLayout: measuredLayout
+      } : {
+        ok: false,
+        error: "Could not measure the GoHighLevel sidebar on this page."
+      });
+      return false;
     }
 
     if (message.type === "applyPreset") {

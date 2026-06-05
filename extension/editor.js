@@ -53,6 +53,8 @@
   var sidebarStylePreviewOverlay = document.getElementById("sidebarStylePreviewOverlay");
   var sidebarStylePreviewHeaderText = document.getElementById("sidebarStylePreviewHeaderText");
   var sidebarStylePreviewLogo = document.getElementById("sidebarStylePreviewLogo");
+  var syncSidebarPreviewButton = document.getElementById("syncSidebarPreviewButton");
+  var sidebarMeasurementStatus = document.getElementById("sidebarMeasurementStatus");
   var curatedPresetGrid = document.getElementById("curatedPresetGrid");
   var curatedShuffleButton = document.getElementById("curatedShuffleButton");
   var autoReadabilityToggle = document.getElementById("autoReadabilityToggle");
@@ -943,6 +945,20 @@
     return Math.min(max, Math.max(min, numeric));
   }
 
+  function isPositiveDimension(value) {
+    var numeric = Number(value);
+    return Number.isFinite(numeric) && numeric > 0;
+  }
+
+  function hasMeasuredLayout(style) {
+    var layout = style && style.measuredLayout;
+    return Boolean(layout &&
+      isPositiveDimension(layout.sidebarWidth) &&
+      isPositiveDimension(layout.sidebarHeight) &&
+      isPositiveDimension(layout.imageSlotWidth) &&
+      isPositiveDimension(layout.imageSlotHeight));
+  }
+
   function getByPath(object, path, fallback) {
     var value = String(path || "").split(".").reduce(function readPath(current, part) {
       return current && current[part] !== undefined ? current[part] : undefined;
@@ -1768,6 +1784,7 @@
       mode: normalized.stylePath === "custom" ? "custom" : "preset",
       presetId: normalized.stylePath === "custom" ? null : normalized.activePresetId || normalized.preset || "default",
       custom: null,
+      measurements: normalized.measuredLayout ? Object.assign({}, normalized.measuredLayout) : null,
       global: {
         applyStyling: normalized.enabled === true,
         autoReadability: normalized.autoReadability !== false,
@@ -2049,6 +2066,16 @@
           blur: clampNumber(visual.blur, 0, 12, 0)
         });
       }
+    }
+
+    if (sidebarStyle.measurements && typeof sidebarStyle.measurements === "object" && !Array.isArray(sidebarStyle.measurements)) {
+      style.measuredLayout = {
+        sidebarWidth: clampNumber(sidebarStyle.measurements.sidebarWidth, 1, 10000, 0),
+        sidebarHeight: clampNumber(sidebarStyle.measurements.sidebarHeight, 1, 10000, 0),
+        imageSlotWidth: clampNumber(sidebarStyle.measurements.imageSlotWidth, 1, 10000, 0),
+        imageSlotHeight: clampNumber(sidebarStyle.measurements.imageSlotHeight, 1, 10000, 0),
+        imageSlotAspectRatio: clampNumber(sidebarStyle.measurements.imageSlotAspectRatio, 0.001, 10000, 0)
+      };
     }
 
     return applyGlobalSidebarStyleFromProfileJson(style, sidebarStyle.global, errors);
@@ -3432,20 +3459,120 @@
   }
 
   function updateImagePositionFromPointer(event) {
-    var rect = sidebarStylePreview.getBoundingClientRect();
+    var slotElement = sidebarStylePreviewBackground || sidebarStylePreview;
+    var rect = slotElement.getBoundingClientRect();
     var style = getCurrentWorkingSidebarStyle();
-    var x = clampNumber(((event.clientX - rect.left) / rect.width) * 100, 0, 100, 50);
-    var y = clampNumber(((event.clientY - rect.top) / rect.height) * 100, 0, 100, 50);
+    var x = 50;
+    var y = 50;
 
-    if (style.backgroundType !== "image") {
+    if (style.backgroundType !== "image" || !rect.width || !rect.height) {
       return;
     }
+
+    x = clampNumber(((event.clientX - rect.left) / rect.width) * 100, 0, 100, 50);
+    y = clampNumber(((event.clientY - rect.top) / rect.height) * 100, 0, 100, 50);
 
     style.imageSettings = Object.assign({}, style.imageSettings || {}, {
       positionX: Math.round(x),
       positionY: Math.round(y)
     });
     populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
+  }
+
+  function measuredLayoutSummary(layout) {
+    if (!layout) {
+      return "Not synced yet.";
+    }
+
+    return "Synced: sidebar " + Math.round(layout.sidebarWidth) + " x " + Math.round(layout.sidebarHeight) +
+      ", image slot " + Math.round(layout.imageSlotWidth) + " x " + Math.round(layout.imageSlotHeight) + ".";
+  }
+
+  function updateMeasuredLayoutStatus(style) {
+    if (!sidebarMeasurementStatus) {
+      return;
+    }
+
+    sidebarMeasurementStatus.textContent = hasMeasuredLayout(style) ? measuredLayoutSummary(style.measuredLayout) : "Not synced yet.";
+  }
+
+  function setLayerMeasuredDimensions(element, width, height) {
+    if (!element) {
+      return;
+    }
+
+    element.style.inset = "auto";
+    element.style.left = "0";
+    element.style.top = "0";
+    element.style.right = "auto";
+    element.style.bottom = "auto";
+    element.style.width = width + "px";
+    element.style.height = height + "px";
+    element.style.overflow = "hidden";
+  }
+
+  function resetLayerMeasuredDimensions(element) {
+    if (!element) {
+      return;
+    }
+
+    element.style.inset = "0";
+    element.style.left = "";
+    element.style.top = "";
+    element.style.right = "";
+    element.style.bottom = "";
+    element.style.width = "";
+    element.style.height = "";
+    element.style.overflow = "";
+  }
+
+  function applyMeasuredPreviewLayout(style) {
+    var layout = style && style.measuredLayout;
+
+    if (!hasMeasuredLayout(style)) {
+      sidebarStylePreview.style.width = "";
+      sidebarStylePreview.style.height = "";
+      sidebarStylePreview.style.minHeight = "";
+      sidebarStylePreview.style.maxHeight = "";
+      resetLayerMeasuredDimensions(sidebarStylePreviewBackground);
+      resetLayerMeasuredDimensions(sidebarStylePreviewOverlay);
+      return;
+    }
+
+    sidebarStylePreview.style.width = layout.sidebarWidth + "px";
+    sidebarStylePreview.style.height = layout.sidebarHeight + "px";
+    sidebarStylePreview.style.minHeight = "0";
+    sidebarStylePreview.style.maxHeight = "none";
+    setLayerMeasuredDimensions(sidebarStylePreviewBackground, layout.imageSlotWidth, layout.imageSlotHeight);
+    setLayerMeasuredDimensions(sidebarStylePreviewOverlay, layout.imageSlotWidth, layout.imageSlotHeight);
+  }
+
+  function syncSidebarPreviewToGhl() {
+    if (!isCustomPreset(selectedPreset())) {
+      setStatus("Create My Profile before syncing the preview.", true);
+      return;
+    }
+
+    if (syncSidebarPreviewButton) {
+      syncSidebarPreviewButton.disabled = true;
+    }
+    setStatus("Measuring the active GoHighLevel sidebar...");
+    sendToContentScript({ type: "measureSidebarPreview" }, function handleMeasured(result) {
+      var style = null;
+
+      if (syncSidebarPreviewButton) {
+        syncSidebarPreviewButton.disabled = !isCustomPreset(selectedPreset());
+      }
+      if (!result || !result.ok || !result.measuredLayout) {
+        setStatus(result && result.error ? result.error : "Unable to sync preview to GHL.", true);
+        return;
+      }
+
+      style = getCurrentWorkingSidebarStyle();
+      style.measuredLayout = result.measuredLayout;
+      populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
+      setStatus(measuredLayoutSummary(result.measuredLayout) + " Save this Profile to keep it.");
+    });
   }
 
   function renderLocationRules() {
@@ -3533,6 +3660,9 @@
     document.getElementById("addRenameButton").disabled = !isEditable;
     document.getElementById("addLinkButton").disabled = !isEditable;
     curatedShuffleButton.disabled = !isEditable;
+    if (syncSidebarPreviewButton) {
+      syncSidebarPreviewButton.disabled = !isEditable;
+    }
     document.getElementById("resetStyleButton").disabled = !isEditable;
     document.getElementById("savePresetButton").disabled = !isEditable;
   }
@@ -3663,6 +3793,7 @@
     sidebarStylePreview.style.backgroundPosition = "";
     sidebarStylePreview.style.backgroundRepeat = "";
     sidebarStylePreview.style.background = style.backgroundColor || "#ffffff";
+    applyMeasuredPreviewLayout(style);
     sidebarStylePreview.style.borderRadius = sidebarRadius;
     sidebarStylePreview.style.borderColor = style.borderVisible === false ? "transparent" : "var(--as-border)";
     sidebarStylePreview.style.boxShadow = shadowStrength > 0 ? "0 12px 32px rgba(15, 23, 42, " + shadowStrength + ")" : "none";
@@ -3705,6 +3836,7 @@
     sidebarStylePreview.style.color = textColor;
     sidebarStylePreview.style.padding = sidebarPadding;
     sidebarStylePreview.classList.toggle("is-disabled", style.enabled !== true);
+    updateMeasuredLayoutStatus(style);
 
     if (sidebarStylePreviewHeaderText) {
       sidebarStylePreviewHeaderText.textContent = headerLabel;
@@ -4487,6 +4619,10 @@
 
   if (curatedShuffleButton) {
     curatedShuffleButton.addEventListener("click", applyCuratedShuffle);
+  }
+
+  if (syncSidebarPreviewButton) {
+    syncSidebarPreviewButton.addEventListener("click", syncSidebarPreviewToGhl);
   }
 
   [curatedShuffleEnabled, curatedShufflePool, curatedShuffleFrequency, curatedShuffleAvoidRepeats].forEach(function bindShuffleControl(control) {
