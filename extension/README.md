@@ -32,25 +32,27 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 4. Choose an Active Profile.
 5. Confirm the selected Profile is saved and applies only to a validated GHL tab.
 6. Click `Open CleanView Panel`.
-7. Create a Profile from a Template or create a blank Profile.
-8. Use the Menu Items, Rename Labels, Quick Links, and Sidebar Style tabs.
-9. Click `Save` and confirm the status says `Saved.`.
-10. Uncheck `Show this Profile in popup`, save, and confirm the Profile is hidden from the popup dropdown.
-11. Recheck `Show this Profile in popup`, save, and confirm the Profile returns to the popup dropdown.
-12. Add a Quick Link with `LOCATION_ID` in the URL if needed.
-13. Enable a Sidebar Style preset, click `Apply Live to GHL`, and confirm the GHL sidebar updates.
-14. Confirm Sidebar Style uses a two-column guided editor with Global Sidebar Styling and a `Use Preset` / `Custom Configuration` selector on the left, plus sticky preview and Menu Colors on the right.
-15. Confirm `Use Preset` hides custom background controls, then switch to `Custom Configuration` and test Solid, Gradient, and Visual Image before clicking `Save`.
-16. Set Sidebar Branding to `Keep default`, `Hide default`, and `Replace with custom` to confirm the preview updates.
-17. Save/apply `Hide default` and confirm the native GHL logo/header is hidden without removing it.
-18. Save/apply `Replace with custom` and confirm the custom logo/header appears once.
-19. Switch back to Solid or Gradient and confirm the old image background is removed after saving/applying.
-20. Navigate inside GoHighLevel and confirm the sidebar state reapplies after rerenders without duplicate branding.
-21. Click `Detect GHL Sidebar` and confirm it reports `#sidebar-v2`.
-22. Toggle CleanView off and confirm the original sidebar remains visible.
-23. Use `More` to export the active Profile JSON.
-24. Copy or download the exported JSON, then use `Create Profile` to import it as a new Profile.
-25. Confirm invalid JSON and unsafe quick link URLs are rejected before import.
+7. Confirm the popup closes immediately after the side panel opens.
+8. Select a built-in template and confirm the primary button says `Save as New Profile`.
+9. Edit the template and save it as a new custom profile.
+10. Select a custom profile and confirm the primary button says `Save Changes` and the secondary button says `Save as Copy`.
+11. Use the Menu Items, Rename Labels, Quick Links, and Sidebar Style tabs.
+12. Uncheck `Show this Profile in popup`, save, and confirm the Profile is hidden from the popup dropdown.
+13. Recheck `Show this Profile in popup`, save, and confirm the Profile returns to the popup dropdown.
+14. Add a Quick Link with `LOCATION_ID` in the URL if needed.
+15. Enable a Sidebar Style preset, click `Apply Live to GHL`, and confirm the GHL sidebar updates.
+16. Confirm Sidebar Style uses a two-column guided editor with Global Sidebar Styling and a `Use Preset` / `Custom Configuration` selector on the left, plus sticky preview and Menu Colors on the right.
+17. Confirm `Use Preset` hides custom background controls, then switch to `Custom Configuration` and test Solid, Gradient, and Visual Image before saving.
+18. Set Sidebar Branding to `Keep default`, `Hide default`, and `Replace with custom` to confirm the preview updates.
+19. Save/apply `Hide default` and confirm the native GHL logo/header is hidden without removing it.
+20. Save/apply `Replace with custom` and confirm the custom logo/header appears once.
+21. Switch back to Solid or Gradient and confirm the old image background is removed after saving/applying.
+22. Navigate inside GoHighLevel and confirm the sidebar state reapplies after rerenders without duplicate branding.
+23. Click `Detect GHL Sidebar` and confirm it reports `#sidebar-v2`.
+24. Toggle CleanView off and confirm the original sidebar remains visible.
+25. Use `More` to export the active Profile JSON.
+26. Copy or download the exported JSON, then use `Create Profile` to import it as a new Profile.
+27. Confirm invalid JSON and unsafe quick link URLs are rejected before import.
 
 ## Templates
 

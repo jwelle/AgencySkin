@@ -165,18 +165,30 @@
     chrome.tabs.query({ active: true, currentWindow: true }, function handleTabs(tabs) {
       var tab = tabs && tabs[0];
       var options = tab && tab.windowId ? { windowId: tab.windowId } : {};
+      var opened = null;
 
       if (chrome.sidePanel && chrome.sidePanel.open) {
-        var opened = chrome.sidePanel.open(options);
-        if (opened && typeof opened.catch === "function") {
-          opened.catch(function fallbackToOptions() {
-            chrome.runtime.openOptionsPage();
-          });
+        try {
+          opened = chrome.sidePanel.open(options);
+        } catch (_error) {
+          setStatus("Could not open CleanView Panel. Try again.", true);
+          return;
         }
+
+        if (opened && typeof opened.then === "function") {
+          opened.then(function handleOpened() {
+            window.close();
+          }).catch(function handleOpenError() {
+            setStatus("Could not open CleanView Panel. Try again.", true);
+          });
+          return;
+        }
+
+        setStatus("Could not open CleanView Panel. Try again.", true);
         return;
       }
 
-      chrome.runtime.openOptionsPage();
+      setStatus("CleanView Panel is not available in this browser.", true);
     });
   }
 

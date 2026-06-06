@@ -26,21 +26,21 @@
         <div class="onboarding-choice-grid">
           <section class="onboarding-choice">
             <h3>Start From Template</h3>
-            <p class="help-text">Choose a prebuilt starting point, then create an editable Profile from it.</p>
+            <p class="help-text">Choose a prebuilt starting point, customize it in the editor, then save it as a new profile.</p>
             <label class="field" for="onboardingTemplateSelect">
               Template
               <select id="onboardingTemplateSelect"></select>
             </label>
-            <button id="onboardingCreateFromTemplateButton" type="button">Create My Profile</button>
+            <button id="onboardingCreateFromTemplateButton" type="button">Start from Template</button>
           </section>
           <section class="onboarding-choice">
-            <h3>Create Blank Profile</h3>
-            <p class="help-text">Start with default CleanView settings and configure only what you need.</p>
+            <h3>Start Blank</h3>
+            <p class="help-text">Open a blank draft, configure only what you need, then save it as a new profile.</p>
             <label class="field" for="blankProfileName">
               Profile Name
               <input id="blankProfileName" type="text" value="My CleanView">
             </label>
-            <button id="onboardingCreateBlankButton" class="secondary" type="button">Create Blank Profile</button>
+            <button id="onboardingCreateBlankButton" class="secondary" type="button">Start Blank</button>
           </section>
           <section class="onboarding-choice">
             <h3>Import Profile JSON</h3>
@@ -68,8 +68,8 @@
             </label>
           </div>
           <div class="button-row compact" hidden>
-            <button id="duplicatePresetButton" class="secondary" type="button">Create My Profile</button>
-            <button id="createPresetButton" type="button">Create Blank Profile</button>
+            <button id="duplicatePresetButton" class="secondary" type="button">Save as Copy</button>
+            <button id="createPresetButton" type="button">Start Blank</button>
             <button id="deletePresetButton" class="danger" type="button">Delete Profile</button>
           </div>
         </div>
@@ -101,8 +101,8 @@
 
         <p id="builtInNotice" class="help-text"></p>
         <div id="templateNotice" class="template-notice" hidden>
-          <p>This is a Template. Templates are starting points. Create your own Profile to customize it.</p>
-          <button id="createProfileFromTemplateButton" type="button">Create My Profile</button>
+          <p>This is a read-only template draft. Customize it here, then save it as a new profile.</p>
+          <button id="createProfileFromTemplateButton" type="button">Save as New Profile</button>
         </div>
       </section>
 
@@ -248,6 +248,7 @@
               </section>
               <div class="sidebar-style-actions">
                 <button id="savePresetButton" type="button">Save</button>
+                <button id="saveAsCopyButton" class="secondary" type="button" hidden>Save as Copy</button>
                 <button id="resetStyleButton" class="secondary" type="button">Reset Style</button>
               </div>
             </aside>
@@ -338,16 +339,16 @@
                   Profile Name
                   <input id="createBlankProfileName" type="text" value="My CleanView">
                 </label>
-                <button id="createBlankProfileModalButton" type="button">Create Profile</button>
+                <button id="createBlankProfileModalButton" type="button">Start Blank</button>
               </section>
               <section class="create-profile-option">
                 <h3>Start From Template</h3>
-                <p class="help-text">Choose a prebuilt Template and create your own editable version.</p>
+                <p class="help-text">Choose a prebuilt template and open it as a draft in the editor.</p>
                 <label class="field" for="createTemplateSelect">
                   Template
                   <select id="createTemplateSelect"></select>
                 </label>
-                <button id="createFromTemplateModalButton" type="button">Create My Profile</button>
+                <button id="createFromTemplateModalButton" type="button">Start from Template</button>
               </section>
               <section class="create-profile-option">
                 <h3>Import Profile JSON</h3>

@@ -9,6 +9,8 @@
 - Phase 1 Profile JSON import/export was added to the CleanView Profile Builder.
 - CleanView daily configuration now runs in the Chrome side panel, with the popup reduced to a launcher and quick controls.
 - Save now persists local settings separately from `Apply Live to GHL`, which only targets validated open GHL tabs.
+- Built-in templates now open as editable drafts that save as new custom profiles, while custom profiles save in place and support `Save as Copy`.
+- The popup now closes immediately after successfully opening the CleanView side panel.
 - Advanced options now provide backup/restore/reset and sidebar diagnostics instead of the daily editor.
 - Repository documentation now identifies the AgencySkin CleanView Chrome extension as the current shipping product.
 - The earlier client/server/live site theme builder docs were moved into `docs/legacy-theme-builder.md`.
@@ -30,6 +32,8 @@
 - `extension/advanced.js`
 - `extension/manifest.json`
 - `extension/popup.html`
+- `extension/popup.js`
+- `extension/README.md`
 - `extension/sidebarBackgrounds.js`
 - `extension/storage.js`
 - `extension/assets/backgrounds/*.webp`
@@ -55,9 +59,11 @@
 13. Confirm the side panel opens while GHL remains the active page and Sidebar Style is the first tab.
 14. Apply curated sidebar preset cards and confirm the local preview updates without needing a live GHL measurement.
 15. Confirm the Sidebar Style tab uses a guided `Use Preset` / `Custom Configuration` editor.
-16. Save a custom Profile, then click `Apply Live to GHL` on a supported GoHighLevel page.
-17. Click `Detect GHL Sidebar` and confirm `#sidebar-v2` is reported when present.
-18. Export a Profile JSON file from `More`, then import it as a new editable Profile through `Create Profile`.
+16. Select a built-in template and confirm the primary action shows `Save as New Profile`.
+17. Select a custom profile and confirm the primary action shows `Save Changes` with a secondary `Save as Copy`.
+18. Confirm the popup closes immediately after `Open CleanView Panel` opens the side panel.
+19. Click `Detect GHL Sidebar` and confirm `#sidebar-v2` is reported when present.
+20. Export a Profile JSON file from `More`, then import it as a new editable Profile through `Create Profile`.
 
 ## Known Limitations
 
