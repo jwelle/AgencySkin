@@ -4,8 +4,6 @@
   var presetSelect = document.getElementById("presetSelect");
   var enabledToggle = document.getElementById("enabledToggle");
   var panelButton = document.getElementById("panelButton");
-  var applyButton = document.getElementById("applyButton");
-  var advancedButton = document.getElementById("advancedButton");
   var statusMessage = document.getElementById("statusMessage");
   var currentState = null;
 
@@ -192,16 +190,8 @@
     });
   }
 
-  function openAdvanced() {
-    chrome.runtime.openOptionsPage();
-  }
-
   presetSelect.addEventListener("change", saveActivePreset);
   enabledToggle.addEventListener("change", setEnabled);
   panelButton.addEventListener("click", openPanel);
-  applyButton.addEventListener("click", function applyFromPopup() {
-    applyCurrentSettings();
-  });
-  advancedButton.addEventListener("click", openAdvanced);
   refreshState();
 })();

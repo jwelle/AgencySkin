@@ -93,9 +93,10 @@
   var sidebarImageAssets = namespace.sidebarImageAssets || [];
   var curatedSidebarStylePresets = namespace.curatedSidebarStylePresets || [];
   var sidebarBackgroundTypes = [
-    { value: "solid", label: "Solid" },
+    { value: "none", label: "None" },
+    { value: "solid", label: "Color" },
     { value: "gradient", label: "Gradient" },
-    { value: "image", label: "Visual Image" }
+    { value: "image", label: "Image" }
   ];
 
   function configureLocationDefaultsUi() {
@@ -1209,12 +1210,15 @@
     style.hoverBackgroundColor = asset.hoverBackgroundColor || style.hoverBackgroundColor;
 
     if (asset.type === "image") {
+      style.enabled = true;
+      style.backgroundImageFit = "cover";
+      style.backgroundImagePosition = "center center";
       style.customImageDataUrl = "";
       style.backgroundImageUrl = "";
       style.imageSettings = Object.assign({}, style.imageSettings || {}, {
-        positionX: asset.focalPointX || 50,
-        positionY: asset.focalPointY || 50,
-        scale: asset.defaultScale || 1,
+        positionX: 50,
+        positionY: 50,
+        scale: 1,
         blur: asset.recommendedBlur || 0,
         overlayOpacity: asset.recommendedOverlayOpacity || 0.55
       });
@@ -1262,12 +1266,15 @@
     nextStyle.hoverBackgroundColor = asset.hoverBackgroundColor || nextStyle.hoverBackgroundColor;
 
     if (asset.type === "image") {
+      nextStyle.enabled = true;
+      nextStyle.backgroundImageFit = "cover";
+      nextStyle.backgroundImagePosition = "center center";
       nextStyle.customImageDataUrl = "";
       nextStyle.backgroundImageUrl = "";
       nextStyle.imageSettings = Object.assign({}, nextStyle.imageSettings || {}, {
-        positionX: asset.focalPointX || 50,
-        positionY: asset.focalPointY || 50,
-        scale: asset.defaultScale || 1,
+        positionX: 50,
+        positionY: 50,
+        scale: 1,
         blur: asset.recommendedBlur || 0,
         overlayOpacity: asset.recommendedOverlayOpacity || 0.55
       });
@@ -2749,6 +2756,9 @@
   }
 
   function getEditorBackgroundType(style) {
+    if (style && style.enabled === false) {
+      return "none";
+    }
     return style && style.backgroundType === "pattern" ? "image" : (style && style.backgroundType) || "solid";
   }
 
@@ -3038,17 +3048,22 @@
         var height = Math.max(1, Math.round(image.height * resizeScale));
         var context = canvas.getContext("2d");
         var nextStyle = collectSidebarStyleFromForm();
+        var preserveCustomPosition = nextStyle.backgroundType === "image" &&
+          (getByPath(nextStyle, "imageSettings.positionX", 50) !== 50 || getByPath(nextStyle, "imageSettings.positionY", 50) !== 50);
 
         canvas.width = width;
         canvas.height = height;
         context.drawImage(image, 0, 0, width, height);
+        nextStyle.enabled = true;
         nextStyle.backgroundType = "image";
+        nextStyle.backgroundImageFit = "cover";
+        nextStyle.backgroundImagePosition = "center center";
         nextStyle.backgroundAssetId = "";
         nextStyle.backgroundImageUrl = "";
         nextStyle.customImageDataUrl = canvas.toDataURL("image/webp", 0.78);
         nextStyle.imageSettings = Object.assign({}, nextStyle.imageSettings || {}, {
-          positionX: 50,
-          positionY: 50,
+          positionX: preserveCustomPosition ? getByPath(nextStyle, "imageSettings.positionX", 50) : 50,
+          positionY: preserveCustomPosition ? getByPath(nextStyle, "imageSettings.positionY", 50) : 50,
           scale: 1,
           opacity: 0.85,
           blur: 0,
@@ -3163,7 +3178,9 @@
       ensureCustomStyleOption(options && options.optionLabel ? options.optionLabel : "Custom Draft");
     }
 
-    sidebarStyleEnabled.checked = normalizedStyle.enabled === true;
+    if (sidebarStyleEnabled) {
+      sidebarStyleEnabled.checked = normalizedStyle.enabled === true;
+    }
     sidebarStylePreset.value = presetValue;
     if (sidebarStylePath) {
       sidebarStylePath.value = normalizedStyle.stylePath || "preset";
@@ -3789,11 +3806,15 @@
   function collectSidebarStyleFromForm() {
     var style = storage.normalizeSidebarStyle(draftSidebarStyle || sidebarStylePresets[sidebarStylePreset.value] || {});
     var previousBackgroundType = style.backgroundType || "solid";
-    style.enabled = sidebarStyleEnabled.checked;
+    var selectedBackgroundType = sidebarBackgroundType ? sidebarBackgroundType.value || "solid" : getEditorBackgroundType(style);
+    style.enabled = sidebarStyleEnabled ? sidebarStyleEnabled.checked : style.enabled === true;
     style.preset = sidebarStylePreset.value || "default";
     style.stylePath = sidebarStylePath ? sidebarStylePath.value || "preset" : style.stylePath || "preset";
     if (style.stylePath === "custom") {
-      style.backgroundType = previousBackgroundType === "pattern" && sidebarBackgroundType.value === "image" ? "pattern" : sidebarBackgroundType.value || "solid";
+      style.enabled = selectedBackgroundType !== "none";
+      if (selectedBackgroundType !== "none") {
+        style.backgroundType = previousBackgroundType === "pattern" && selectedBackgroundType === "image" ? "pattern" : selectedBackgroundType || "solid";
+      }
     }
     style.autoReadability = autoReadabilityToggle ? autoReadabilityToggle.checked : true;
     style.curatedShuffle = collectCuratedShuffleFromForm(style);
@@ -4743,6 +4764,12 @@
   sidebarBackgroundType.addEventListener("change", function changeBackgroundType() {
     var style = getCurrentWorkingSidebarStyle();
     style.stylePath = "custom";
+    if (sidebarBackgroundType.value === "none") {
+      style.enabled = false;
+      populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
+      return;
+    }
+    style.enabled = true;
     if (sidebarBackgroundType.value === "pattern" && !getAssetById(style.backgroundAssetId)) {
       style.backgroundAssetId = sidebarPatternAssets[0] ? sidebarPatternAssets[0].id : "";
       populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
