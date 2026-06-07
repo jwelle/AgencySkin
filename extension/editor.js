@@ -11,9 +11,35 @@
   var activeLocationId = null;
   var draftSidebarStyle = null;
   var draggedMenuGroupKey = "";
+  var onboardingMode = "";
+  var selectedStarterViewId = "";
+  var starterApplyMessage = "";
 
   var presetSelect = document.getElementById("presetSelect");
   var firstTimeProfileOnboarding = document.getElementById("firstTimeProfileOnboarding");
+  var starterChooserPanel = document.getElementById("starterChooserPanel");
+  var starterPreviewPanel = document.getElementById("starterPreviewPanel");
+  var starterSuccessPanel = document.getElementById("starterSuccessPanel");
+  var starterViewGrid = document.getElementById("starterViewGrid");
+  var starterPreviewTitle = document.getElementById("starterPreviewTitle");
+  var starterPreviewDescription = document.getElementById("starterPreviewDescription");
+  var starterPreviewShownList = document.getElementById("starterPreviewShownList");
+  var starterPreviewHiddenList = document.getElementById("starterPreviewHiddenList");
+  var starterPreviewBackButton = document.getElementById("starterPreviewBackButton");
+  var useStarterViewButton = document.getElementById("useStarterViewButton");
+  var starterSuccessTitle = document.getElementById("starterSuccessTitle");
+  var starterSuccessMessage = document.getElementById("starterSuccessMessage");
+  var starterSuccessShownList = document.getElementById("starterSuccessShownList");
+  var starterSuccessHiddenList = document.getElementById("starterSuccessHiddenList");
+  var customizeStarterViewButton = document.getElementById("customizeStarterViewButton");
+  var doneStarterViewButton = document.getElementById("doneStarterViewButton");
+  var activeViewOverviewPanel = document.getElementById("activeViewOverviewPanel");
+  var activeViewName = document.getElementById("activeViewName");
+  var activeViewStatus = document.getElementById("activeViewStatus");
+  var changeStarterViewButton = document.getElementById("changeStarterViewButton");
+  var customizeActiveViewButton = document.getElementById("customizeActiveViewButton");
+  var overviewApplyLiveButton = document.getElementById("overviewApplyLiveButton");
+  var overviewResetPageButton = document.getElementById("overviewResetPageButton");
   var profileManagementPanel = document.getElementById("profileManagementPanel");
   var builderPanel = document.getElementById("builderPanel");
   var onboardingTemplateSelect = document.getElementById("onboardingTemplateSelect");
@@ -21,6 +47,7 @@
   var blankProfileName = document.getElementById("blankProfileName");
   var onboardingCreateBlankButton = document.getElementById("onboardingCreateBlankButton");
   var onboardingImportProfileButton = document.getElementById("onboardingImportProfileButton");
+  var startFromViewButton = document.getElementById("startFromViewButton");
   var createProfileButton = document.getElementById("createProfileButton");
   var moreProfileActionsSelect = document.getElementById("moreProfileActionsSelect");
   var defaultPresetSelect = document.getElementById("defaultPresetSelect");
@@ -97,6 +124,61 @@
     { value: "solid", label: "Color" },
     { value: "gradient", label: "Gradient" },
     { value: "image", label: "Image" }
+  ];
+  var starterViews = [
+    {
+      id: "sales",
+      name: "Sales View",
+      cardTitle: "Sales",
+      description: "Keep inbox, pipeline, calendar, contacts, payments, and reporting close at hand.",
+      visibleItems: ["dashboard", "conversations", "calendars", "contacts", "opportunities", "payments", "reporting", "settings"],
+      labelOverrides: {
+        conversations: "Inbox",
+        opportunities: "Pipeline"
+      }
+    },
+    {
+      id: "marketing",
+      name: "Marketing View",
+      cardTitle: "Marketing",
+      description: "Focus the sidebar on campaigns, workflows, sites, media, reputation, and reports.",
+      visibleItems: ["dashboard", "marketing", "automation", "sites", "media", "reputation", "reporting", "contacts", "settings"],
+      labelOverrides: {
+        automation: "Workflows"
+      }
+    },
+    {
+      id: "ai-operator",
+      name: "AI Operator View",
+      cardTitle: "AI Operator",
+      description: "Prioritize AI tools, workflows, inbox review, contacts, and reporting.",
+      visibleItems: ["ask_ai", "ai_studio", "ai_agents", "automation", "conversations", "contacts", "reporting", "settings"],
+      labelOverrides: {
+        automation: "Workflows",
+        conversations: "Inbox"
+      }
+    },
+    {
+      id: "contact-center",
+      name: "Contact Center View",
+      cardTitle: "Contact Center",
+      description: "Streamline around inbox, appointments, contacts, reputation, and reporting.",
+      visibleItems: ["dashboard", "conversations", "calendars", "contacts", "reputation", "reporting", "settings"],
+      labelOverrides: {
+        conversations: "Inbox",
+        calendars: "Appointments"
+      }
+    },
+    {
+      id: "simple",
+      name: "Simple View",
+      cardTitle: "Start Simple",
+      description: "Start with a quiet sidebar for common day-to-day work.",
+      visibleItems: ["dashboard", "conversations", "calendars", "contacts", "opportunities", "reporting", "settings"],
+      labelOverrides: {
+        conversations: "Inbox"
+      }
+    }
   ];
 
   function configureLocationDefaultsUi() {
@@ -494,13 +576,187 @@
     });
   }
 
+  function hasEditableProfiles(nextState) {
+    return editableProfileIds(nextState || state).length > 0;
+  }
+
+  function getStarterViewById(starterId) {
+    var selectedStarter = null;
+
+    starterViews.some(function findStarter(starter) {
+      if (starter.id === starterId) {
+        selectedStarter = starter;
+        return true;
+      }
+      return false;
+    });
+
+    return selectedStarter;
+  }
+
+  function starterVisibleKeys(starter) {
+    return normalizeMenuKeyList(starter && starter.visibleItems || []);
+  }
+
+  function starterHiddenKeys(starter) {
+    var visibleSet = new Set(starterVisibleKeys(starter));
+
+    return allMenuKeys.filter(function keepHiddenStarterItem(key) {
+      return !visibleSet.has(key);
+    });
+  }
+
+  function fallbackMenuLabel(key) {
+    return String(key || "")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, function uppercaseFirstLetter(letter) {
+        return letter.toUpperCase();
+      });
+  }
+
+  function starterMenuLabel(key, starter) {
+    var overrides = starter && starter.labelOverrides || {};
+    var entry = registry[key];
+
+    return overrides[key] || (entry && entry.label) || fallbackMenuLabel(key);
+  }
+
+  function renderStarterItemList(container, keys, starter, emptyText) {
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = "";
+    if (!keys.length) {
+      var empty = document.createElement("p");
+      empty.className = "help-text";
+      empty.textContent = emptyText;
+      container.appendChild(empty);
+      return;
+    }
+
+    keys.forEach(function renderStarterItem(key) {
+      var item = document.createElement("span");
+      item.className = "starter-item-chip";
+      item.textContent = starterMenuLabel(key, starter);
+      container.appendChild(item);
+    });
+  }
+
+  function renderStarterChooser() {
+    if (!starterViewGrid) {
+      return;
+    }
+
+    starterViewGrid.innerHTML = "";
+    starterViews.forEach(function renderStarterCard(starter) {
+      var card = document.createElement("button");
+      var title = document.createElement("span");
+      var description = document.createElement("span");
+      var count = document.createElement("span");
+
+      card.type = "button";
+      card.className = "starter-view-card";
+      card.dataset.starterViewId = starter.id;
+      title.className = "starter-card-title";
+      title.textContent = starter.cardTitle || starter.name;
+      description.className = "starter-card-description";
+      description.textContent = starter.description;
+      count.className = "starter-card-count";
+      count.textContent = starterVisibleKeys(starter).length + " shown / " + starterHiddenKeys(starter).length + " hidden";
+
+      card.appendChild(title);
+      card.appendChild(description);
+      card.appendChild(count);
+      starterViewGrid.appendChild(card);
+    });
+  }
+
+  function renderStarterPreview(starter) {
+    if (!starter) {
+      return;
+    }
+
+    if (starterPreviewTitle) {
+      starterPreviewTitle.textContent = starter.name;
+    }
+    if (starterPreviewDescription) {
+      starterPreviewDescription.textContent = starter.description;
+    }
+    renderStarterItemList(starterPreviewShownList, starterVisibleKeys(starter), starter, "No native items will be shown.");
+    renderStarterItemList(starterPreviewHiddenList, starterHiddenKeys(starter), starter, "No native items will be hidden.");
+  }
+
+  function renderStarterSuccess(starter) {
+    if (!starter) {
+      return;
+    }
+
+    if (starterSuccessTitle) {
+      starterSuccessTitle.textContent = starter.name + " is active";
+    }
+    if (starterSuccessMessage) {
+      starterSuccessMessage.textContent = starterApplyMessage || "Your CleanView profile is saved and ready.";
+    }
+    renderStarterItemList(starterSuccessShownList, starterVisibleKeys(starter), starter, "No native items are shown.");
+    renderStarterItemList(starterSuccessHiddenList, starterHiddenKeys(starter), starter, "No native items are hidden.");
+  }
+
+  function renderOnboardingPanels() {
+    var starter = getStarterViewById(selectedStarterViewId) || starterViews[0];
+
+    if (starterChooserPanel) {
+      starterChooserPanel.hidden = onboardingMode !== "chooser";
+    }
+    if (starterPreviewPanel) {
+      starterPreviewPanel.hidden = onboardingMode !== "preview";
+    }
+    if (starterSuccessPanel) {
+      starterSuccessPanel.hidden = onboardingMode !== "success";
+    }
+
+    renderStarterChooser();
+    if (onboardingMode === "preview") {
+      renderStarterPreview(starter);
+    } else if (onboardingMode === "success") {
+      renderStarterSuccess(starter);
+    }
+  }
+
+  function renderActiveViewOverview() {
+    var preset = selectedPreset();
+    var viewName = preset ? preset.name || preset.label || "CleanView" : "Active View";
+    var enabledText = state && state.enabled === false ? "CleanView is off." : "CleanView is on.";
+
+    if (activeViewName) {
+      activeViewName.textContent = viewName;
+    }
+    if (activeViewStatus) {
+      activeViewStatus.textContent = enabledText + " Apply Live to GHL when you want to refresh the open page.";
+    }
+  }
+
+  function setOnboardingMode(mode, starterId) {
+    onboardingMode = mode || "";
+    if (starterId) {
+      selectedStarterViewId = starterId;
+    }
+    render();
+  }
+
   function renderBuilderVisibility() {
     if (selectedPresetId && !storage.getPresetById(state, selectedPresetId)) {
       selectedPresetId = resolveInitialProfileId(state);
     }
-    var showOnboarding = editableProfileIds(state).length === 0 && !selectedPresetId;
+    var showOnboarding = Boolean(onboardingMode) || !hasEditableProfiles(state);
+    if (showOnboarding && !onboardingMode) {
+      onboardingMode = "chooser";
+    }
     if (firstTimeProfileOnboarding) {
       firstTimeProfileOnboarding.hidden = !showOnboarding;
+    }
+    if (activeViewOverviewPanel) {
+      activeViewOverviewPanel.hidden = showOnboarding || !selectedPresetId;
     }
     if (profileManagementPanel) {
       profileManagementPanel.hidden = showOnboarding;
@@ -509,7 +765,9 @@
       builderPanel.hidden = showOnboarding;
     }
     if (showOnboarding) {
-      renderOnboardingTemplateSelect();
+      renderOnboardingPanels();
+    } else {
+      renderActiveViewOverview();
     }
     return showOnboarding;
   }
@@ -3665,9 +3923,15 @@
     if (applyLiveButton) {
       applyLiveButton.disabled = true;
     }
+    if (overviewApplyLiveButton) {
+      overviewApplyLiveButton.disabled = true;
+    }
     sendToContentScript({ type: "CLEANVIEW_APPLY_ACTIVE_SETTINGS" }, function handleApplied(result) {
       if (applyLiveButton) {
         applyLiveButton.disabled = false;
+      }
+      if (overviewApplyLiveButton) {
+        overviewApplyLiveButton.disabled = false;
       }
       if (!result || !result.ok) {
         setStatus(result && (result.message || result.error) ? result.message || result.error : "Unable to apply live to GHL.", true);
@@ -3684,6 +3948,22 @@
     }
 
     persistSelectedView("Saved.", false, applyLiveToGhl);
+  }
+
+  function resetCurrentGhlPage() {
+    if (overviewResetPageButton) {
+      overviewResetPageButton.disabled = true;
+    }
+    sendToContentScript({ type: "resetPage" }, function handleReset(result) {
+      if (overviewResetPageButton) {
+        overviewResetPageButton.disabled = false;
+      }
+      if (!result || !result.ok) {
+        setStatus(result && (result.message || result.error) ? result.message || result.error : "Unable to reset the GHL page.", true);
+        return;
+      }
+      setStatus(result.message || "GHL page reset.");
+    });
   }
 
   function renderLocationRules() {
@@ -4168,6 +4448,7 @@
       }
       state = nextState;
       selectedPresetId = resolveInitialProfileId(state);
+      onboardingMode = hasEditableProfiles(state) ? "" : "chooser";
       render();
       refreshActiveLocation();
     });
@@ -4198,6 +4479,95 @@
       menuGroups: [],
       sidebarStyle: namespace.defaultSidebarStyle
     }), "Profile created.", false);
+  }
+
+  function findReusableStarterProfile(nextState, starter) {
+    var activePreset = storage.getPresetById(nextState, nextState.activePresetId);
+    var metadata = activePreset && activePreset.profileMetadata;
+
+    if (isEditableProfile(activePreset) && metadata && metadata.onboardingStarterViewId === starter.id) {
+      return activePreset;
+    }
+
+    return null;
+  }
+
+  function buildStarterProfile(starter, existingProfile) {
+    var metadata = Object.assign({}, existingProfile && existingProfile.profileMetadata || {}, {
+      onboardingStarterViewId: starter.id,
+      onboardingStarterViewName: starter.name,
+      createdFromFirstRun: true
+    });
+
+    return storage.normalizePreset({
+      id: existingProfile && existingProfile.id || namespace.createId("custom"),
+      name: starter.name,
+      description: starter.description,
+      source: "custom",
+      visibleItems: starterVisibleKeys(starter),
+      labelOverrides: Object.assign({}, starter.labelOverrides || {}),
+      customLinks: existingProfile && Array.isArray(existingProfile.customLinks) ? existingProfile.customLinks.slice() : [],
+      menuGroups: [],
+      sidebarStyle: Object.assign({}, namespace.defaultSidebarStyle || {}),
+      profileMetadata: metadata,
+      showInPopup: existingProfile ? existingProfile.showInPopup !== false : true,
+      archived: false,
+      updatedAt: namespace.nowIso()
+    });
+  }
+
+  function applyStarterViewAfterSave(starter) {
+    sendToContentScript({ type: "CLEANVIEW_APPLY_ACTIVE_SETTINGS" }, function handleStarterApplied(result) {
+      if (useStarterViewButton) {
+        useStarterViewButton.disabled = false;
+      }
+
+      if (!result || !result.ok) {
+        starterApplyMessage = result && (result.message || result.error) ? result.message || result.error : "Saved. Open a GHL page to apply this view live.";
+        setStatus(starterApplyMessage, true);
+      } else {
+        starterApplyMessage = result.message || "Applied to open GHL tab.";
+        setStatus(starterApplyMessage);
+      }
+
+      setOnboardingMode("success", starter.id);
+    });
+  }
+
+  function saveStarterView(starter) {
+    if (!starter) {
+      setStatus("Choose a starter view first.", true);
+      return;
+    }
+
+    if (useStarterViewButton) {
+      useStarterViewButton.disabled = true;
+    }
+
+    storage.updateState(function updateStarterProfile(nextState) {
+      var existingProfile = findReusableStarterProfile(nextState, starter);
+      var profile = buildStarterProfile(starter, existingProfile);
+
+      nextState.presets[profile.id] = profile;
+      nextState.activePresetId = profile.id;
+      nextState.lastEditedProfileId = profile.id;
+      if (nextState.presetPreferences) {
+        delete nextState.presetPreferences[profile.id];
+      }
+    }, function handleStarterSaved(nextState, error) {
+      if (error) {
+        if (useStarterViewButton) {
+          useStarterViewButton.disabled = false;
+        }
+        setStatus("Unable to save starter view.", true);
+        return;
+      }
+
+      state = nextState;
+      selectedPresetId = nextState.activePresetId;
+      starterApplyMessage = "Starter view saved.";
+      applyStarterViewAfterSave(starter);
+    });
   }
 
   function importPendingProfile() {
@@ -4319,6 +4689,75 @@
     createProfileFromTemplateButton.addEventListener("click", function createFromSelectedTemplate() {
       persistSelectedView("New profile saved.", false);
     });
+  }
+
+  if (starterViewGrid) {
+    starterViewGrid.addEventListener("click", function chooseStarterView(event) {
+      var card = event.target.closest("[data-starter-view-id]");
+
+      if (!card) {
+        return;
+      }
+
+      setOnboardingMode("preview", card.dataset.starterViewId);
+    });
+  }
+
+  if (starterPreviewBackButton) {
+    starterPreviewBackButton.addEventListener("click", function returnToStarterChooser() {
+      setOnboardingMode("chooser");
+    });
+  }
+
+  if (useStarterViewButton) {
+    useStarterViewButton.addEventListener("click", function useStarterView() {
+      saveStarterView(getStarterViewById(selectedStarterViewId));
+    });
+  }
+
+  if (customizeStarterViewButton) {
+    customizeStarterViewButton.addEventListener("click", function customizeStarterView() {
+      onboardingMode = "";
+      activeTab = "menu";
+      render();
+      setStatus("Customize this view, then save or apply live when ready.");
+    });
+  }
+
+  if (doneStarterViewButton) {
+    doneStarterViewButton.addEventListener("click", function finishStarterView() {
+      onboardingMode = "";
+      render();
+      setStatus("Starter view is ready.");
+    });
+  }
+
+  if (startFromViewButton) {
+    startFromViewButton.addEventListener("click", function openStarterChooserFromProfiles() {
+      setOnboardingMode("chooser");
+    });
+  }
+
+  if (changeStarterViewButton) {
+    changeStarterViewButton.addEventListener("click", function openStarterChooserFromOverview() {
+      setOnboardingMode("chooser");
+    });
+  }
+
+  if (customizeActiveViewButton) {
+    customizeActiveViewButton.addEventListener("click", function focusActiveViewEditor() {
+      activeTab = "menu";
+      renderTabState();
+      setStatus("Customize the active view below.");
+    });
+  }
+
+  if (overviewApplyLiveButton) {
+    overviewApplyLiveButton.addEventListener("click", applyLiveToGhl);
+  }
+
+  if (overviewResetPageButton) {
+    overviewResetPageButton.addEventListener("click", resetCurrentGhlPage);
   }
 
   if (onboardingCreateFromTemplateButton) {

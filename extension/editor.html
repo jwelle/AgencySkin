@@ -17,36 +17,75 @@
       </header>
 
       <section id="firstTimeProfileOnboarding" class="panel onboarding-panel" hidden>
-        <div class="panel-header">
-          <div>
-            <h2>Create your first Profile</h2>
-            <p>A Profile saves sidebar style, menu items, renamed labels, and quick links for your browser.</p>
+        <div id="starterChooserPanel" class="starter-onboarding-step" data-onboarding-step="chooser">
+          <div class="panel-header">
+            <div>
+              <h2>Welcome to CleanView</h2>
+              <p>Choose a starter view and CleanView will simplify your GHL sidebar right away.</p>
+            </div>
+          </div>
+          <div id="starterViewGrid" class="starter-view-grid" aria-label="CleanView starter views"></div>
+        </div>
+
+        <div id="starterPreviewPanel" class="starter-onboarding-step" data-onboarding-step="preview" hidden>
+          <div class="panel-header">
+            <div>
+              <h2 id="starterPreviewTitle">Preview View</h2>
+              <p id="starterPreviewDescription"></p>
+            </div>
+          </div>
+          <div class="starter-preview-layout">
+            <section class="starter-preview-list-card">
+              <h3>Shown Items</h3>
+              <div id="starterPreviewShownList" class="starter-item-list"></div>
+            </section>
+            <section class="starter-preview-list-card">
+              <h3>Hidden Items</h3>
+              <div id="starterPreviewHiddenList" class="starter-item-list"></div>
+            </section>
+          </div>
+          <div class="button-row">
+            <button id="starterPreviewBackButton" class="secondary" type="button">Back</button>
+            <button id="useStarterViewButton" type="button">Use This View</button>
           </div>
         </div>
-        <div class="onboarding-choice-grid">
-          <section class="onboarding-choice">
-            <h3>Start From Template</h3>
-            <p class="help-text">Choose a prebuilt starting point, customize it in the editor, then save it as a new profile.</p>
-            <label class="field" for="onboardingTemplateSelect">
-              Template
-              <select id="onboardingTemplateSelect"></select>
-            </label>
-            <button id="onboardingCreateFromTemplateButton" type="button">Start from Template</button>
-          </section>
-          <section class="onboarding-choice">
-            <h3>Start Blank</h3>
-            <p class="help-text">Open a blank draft, configure only what you need, then save it as a new profile.</p>
-            <label class="field" for="blankProfileName">
-              Profile Name
-              <input id="blankProfileName" type="text" value="My CleanView">
-            </label>
-            <button id="onboardingCreateBlankButton" class="secondary" type="button">Start Blank</button>
-          </section>
-          <section class="onboarding-choice">
-            <h3>Import Profile JSON</h3>
-            <p class="help-text">Paste or upload a CleanView Profile shared by your team.</p>
-            <button id="onboardingImportProfileButton" type="button">Import Profile JSON</button>
-          </section>
+
+        <div id="starterSuccessPanel" class="starter-onboarding-step" data-onboarding-step="success" hidden>
+          <div class="panel-header">
+            <div>
+              <h2 id="starterSuccessTitle">View is active</h2>
+              <p id="starterSuccessMessage">Your CleanView profile is saved and ready.</p>
+            </div>
+          </div>
+          <div class="starter-preview-layout">
+            <section class="starter-preview-list-card">
+              <h3>Shown Items</h3>
+              <div id="starterSuccessShownList" class="starter-item-list"></div>
+            </section>
+            <section class="starter-preview-list-card">
+              <h3>Hidden Items</h3>
+              <div id="starterSuccessHiddenList" class="starter-item-list"></div>
+            </section>
+          </div>
+          <div class="button-row">
+            <button id="customizeStarterViewButton" class="secondary" type="button">Customize This View</button>
+            <button id="doneStarterViewButton" type="button">Done</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="activeViewOverviewPanel" class="panel active-view-overview" hidden>
+        <div class="panel-header">
+          <div>
+            <h2 id="activeViewName">Active View</h2>
+            <p id="activeViewStatus">CleanView is ready.</p>
+          </div>
+          <div class="button-row compact overview-actions">
+            <button id="changeStarterViewButton" class="secondary" type="button">Change View</button>
+            <button id="customizeActiveViewButton" class="secondary" type="button">Customize View</button>
+            <button id="overviewApplyLiveButton" type="button">Apply Live to GHL</button>
+            <button id="overviewResetPageButton" class="secondary" type="button">Reset Page</button>
+          </div>
         </div>
       </section>
 
@@ -54,6 +93,7 @@
         <div class="panel-header">
           <h2>My Profiles</h2>
           <div class="profile-header-actions">
+            <button id="startFromViewButton" class="secondary" type="button">Start from a View</button>
             <button id="createProfileButton" type="button">Create Profile</button>
             <label class="field profile-actions-field" for="moreProfileActionsSelect">
               More

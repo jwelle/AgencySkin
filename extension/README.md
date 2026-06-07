@@ -8,6 +8,7 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 
 - Switch between sidebar Profiles instantly.
 - Create personal CleanView Profiles.
+- Choose a first-run starter view when no custom Profiles exist.
 - Create editable Profiles from Templates.
 - Hide registered GoHighLevel sidebar menu items.
 - Rename registered GoHighLevel sidebar labels for your browser.
@@ -33,27 +34,32 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 5. Confirm the selected Profile is saved and applies only to a validated GHL tab.
 6. Click `Customize CleanView`.
 7. Confirm the popup closes immediately after the side panel opens.
-8. Select a built-in template and confirm the primary button says `Save as New Profile`.
-9. Edit the template and save it as a new custom profile.
-10. Select a custom profile and confirm the primary button says `Save Changes` and the secondary button says `Save as Copy`.
-11. Use the Menu Items, Rename Labels, Quick Links, and Sidebar Style tabs.
-12. Uncheck `Show this Profile in popup`, save, and confirm the Profile is hidden from the popup dropdown.
-13. Recheck `Show this Profile in popup`, save, and confirm the Profile returns to the popup dropdown.
-14. Add a Quick Link with `LOCATION_ID` in the URL if needed.
-15. Enable a Sidebar Style preset, click `Apply Live to GHL`, and confirm the GHL sidebar updates.
-16. Upload a sidebar image and confirm it appears in preview immediately without needing a separate styling checkbox.
-17. Confirm Sidebar Style uses a two-column guided editor with `Use Preset` / `Custom Configuration` on the left, plus sticky preview and Menu Colors on the right.
-18. Confirm `Use Preset` hides custom background controls, then switch to `Custom Configuration` and test None, Color, Gradient, and Image before saving.
-19. Set Sidebar Branding to `Keep default`, `Hide default`, and `Replace with custom` to confirm the preview updates.
-20. Save/apply `Hide default` and confirm the native GHL logo/header is hidden without removing it.
-21. Save/apply `Replace with custom` and confirm the custom logo/header appears once.
-22. Switch back to Color or Gradient and confirm the old image background is removed after saving/applying.
-23. Navigate inside GoHighLevel and confirm the sidebar state reapplies after rerenders without duplicate branding.
-24. Click `Detect GHL Sidebar` and confirm it reports `#sidebar-v2`.
-25. Toggle CleanView off and confirm the original sidebar remains visible.
-26. Use `More` to export the active Profile JSON.
-27. Copy or download the exported JSON, then use `Create Profile` to import it as a new Profile.
-28. Confirm invalid JSON and unsafe quick link URLs are rejected before import.
+8. With no custom Profiles, confirm the side panel shows `Welcome to CleanView` and the five starter views.
+9. Choose each starter view and confirm the preview shows shown and hidden menu items.
+10. Click `Use This View` and confirm a custom Profile becomes active and applies live when a GHL tab is available.
+11. Click `Customize This View` or `Done` and confirm the normal editor appears.
+12. Confirm existing custom Profiles skip first-run onboarding.
+13. Select a built-in template and confirm the primary button says `Save as New Profile`.
+14. Edit the template and save it as a new custom profile.
+15. Select a custom profile and confirm the primary button says `Save Changes` and the secondary button says `Save as Copy`.
+16. Use the Menu Items, Rename Labels, Quick Links, and Sidebar Style tabs.
+17. Uncheck `Show this Profile in popup`, save, and confirm the Profile is hidden from the popup dropdown.
+18. Recheck `Show this Profile in popup`, save, and confirm the Profile returns to the popup dropdown.
+19. Add a Quick Link with `LOCATION_ID` in the URL if needed.
+20. Enable a Sidebar Style preset, click `Apply Live to GHL`, and confirm the GHL sidebar updates.
+21. Upload a sidebar image and confirm it appears in preview immediately without needing a separate styling checkbox.
+22. Confirm Sidebar Style uses a two-column guided editor with `Use Preset` / `Custom Configuration` on the left, plus sticky preview and Menu Colors on the right.
+23. Confirm `Use Preset` hides custom background controls, then switch to `Custom Configuration` and test None, Color, Gradient, and Image before saving.
+24. Set Sidebar Branding to `Keep default`, `Hide default`, and `Replace with custom` to confirm the preview updates.
+25. Save/apply `Hide default` and confirm the native GHL logo/header is hidden without removing it.
+26. Save/apply `Replace with custom` and confirm the custom logo/header appears once.
+27. Switch back to Color or Gradient and confirm the old image background is removed after saving/applying.
+28. Navigate inside GoHighLevel and confirm the sidebar state reapplies after rerenders without duplicate branding.
+29. Click `Detect GHL Sidebar` and confirm it reports `#sidebar-v2`.
+30. Toggle CleanView off and confirm the original sidebar remains visible.
+31. Use `More` to export the active Profile JSON.
+32. Copy or download the exported JSON, then use `Create Profile` to import it as a new Profile.
+33. Confirm invalid JSON and unsafe quick link URLs are rejected before import.
 
 ## Templates
 
@@ -104,7 +110,7 @@ CleanView Location Rules are feature-flagged off for the current MVP. Existing s
 
 ## Live Apply and Diagnostics
 
-Use `Apply Live to GHL` from the side panel or popup to apply saved settings to a validated GoHighLevel tab.
+Use `Apply Live to GHL` from the side panel to apply saved settings to a validated GoHighLevel tab.
 
 Use `Detect GHL Sidebar` to confirm CleanView can reach `#sidebar-v2`. Turn off `Enable CleanView` to stop automatic reapplication.
 

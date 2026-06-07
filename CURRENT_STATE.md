@@ -10,6 +10,9 @@
 - CleanView daily configuration now runs in the Chrome side panel, with the popup reduced to a launcher and quick controls.
 - Save now persists local settings separately from `Apply Live to GHL`, which only targets validated open GHL tabs.
 - Built-in templates now open as editable drafts that save as new custom profiles, while custom profiles save in place and support `Save as Copy`.
+- Fresh CleanView users now see a side-panel first-run starter flow with Sales, Marketing, AI Operator, Contact Center, and Simple starter views.
+- Starter views save as normal custom Profiles, store starter metadata in `profileMetadata`, and apply through the existing live side-panel path.
+- Existing custom Profile users skip first-run onboarding and can reopen the starter chooser with `Start from a View` / `Change View`.
 - The popup now closes immediately after successfully opening the CleanView side panel.
 - The popup now uses a single `Customize CleanView` launcher button and no longer duplicates side-panel apply/admin actions.
 - Sidebar image presets and uploads now default to `cover`, and image uploads automatically enable image styling in preview.
@@ -66,6 +69,9 @@
 18. Confirm the popup closes immediately after `Customize CleanView` opens the side panel.
 19. Click `Detect GHL Sidebar` and confirm `#sidebar-v2` is reported when present.
 20. Export a Profile JSON file from `More`, then import it as a new editable Profile through `Create Profile`.
+21. Clear or simulate an empty custom Profile state, open the side panel, choose each first-run starter view, and confirm the preview/success summaries show expected shown and hidden items.
+22. Confirm `Use This View` creates or reuses a starter-created custom Profile, makes it active, and applies live when a supported GHL tab is available.
+23. Confirm existing custom Profile states skip first-run onboarding and keep normal editor access.
 
 ## Known Limitations
 
