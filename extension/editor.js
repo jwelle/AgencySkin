@@ -14,8 +14,10 @@
   var onboardingMode = "";
   var selectedStarterViewId = "";
   var starterApplyMessage = "";
+  var starterFlowSource = "first_run";
   var isDirty = false;
   var lastSavedDraftSnapshot = "";
+  var reloadGhlTabTargetId = null;
   var styleAccordionState = {
     stylePath: true,
     presets: true,
@@ -37,6 +39,7 @@
   var starterPreviewDescription = document.getElementById("starterPreviewDescription");
   var starterPreviewShownList = document.getElementById("starterPreviewShownList");
   var starterPreviewHiddenList = document.getElementById("starterPreviewHiddenList");
+  var starterChooserBackButton = document.getElementById("starterChooserBackButton");
   var starterPreviewBackButton = document.getElementById("starterPreviewBackButton");
   var useStarterViewButton = document.getElementById("useStarterViewButton");
   var starterSuccessTitle = document.getElementById("starterSuccessTitle");
@@ -76,6 +79,7 @@
   var linkEditor = document.getElementById("linkEditor");
   var locationRules = document.getElementById("locationRules");
   var statusMessage = document.getElementById("statusMessage");
+  var reloadGhlTabButton = document.getElementById("reloadGhlTabButton");
   var currentLocationLabel = document.getElementById("currentLocationLabel");
   var sidebarStyleEnabled = document.getElementById("sidebarStyleEnabled");
   var sidebarStylePreset = document.getElementById("sidebarStylePreset");
@@ -343,9 +347,19 @@
     { key: "badgeColor", label: "Badge Color", type: "color", group: "menu" }
   ];
 
-  function setStatus(message, isError) {
+  function setReloadGhlActionState(tabId, visible) {
+    reloadGhlTabTargetId = visible && tabId ? tabId : null;
+    if (reloadGhlTabButton) {
+      reloadGhlTabButton.hidden = !visible || !tabId;
+    }
+  }
+
+  function setStatus(message, isError, options) {
+    var statusOptions = options || {};
+
     statusMessage.textContent = message;
     statusMessage.className = isError ? "status error" : "status";
+    setReloadGhlActionState(statusOptions.reloadTabId, statusOptions.showReloadGhlAction === true);
   }
 
   function allPresets() {
@@ -544,10 +558,16 @@
 
       chrome.tabs.sendMessage(tab.id, Object.assign({ source: namespace.messageSource }, message), function handleResponse(response) {
         if (chrome.runtime.lastError) {
-          callback({ ok: false, error: "Content script not reachable. Reload the GHL page and try again." });
+          callback({
+            ok: false,
+            error: "Content script not reachable. Reload the GHL page and try again.",
+            contentScriptUnreachable: true,
+            targetTabId: tab.id,
+            lastErrorMessage: chrome.runtime.lastError.message || ""
+          });
           return;
         }
-        callback(response || { ok: false, error: "No response from page." });
+        callback(Object.assign({ targetTabId: tab.id }, response || { ok: false, error: "No response from page." }));
       });
     });
   }
@@ -722,6 +742,14 @@
     renderStarterItemList(starterSuccessHiddenList, starterHiddenKeys(starter), starter, "No native items are hidden.");
   }
 
+  function renderStarterChooserBackButton() {
+    if (!starterChooserBackButton) {
+      return;
+    }
+
+    starterChooserBackButton.hidden = starterFlowSource !== "profiles";
+  }
+
   function renderOnboardingPanels() {
     var starter = getStarterViewById(selectedStarterViewId) || starterViews[0];
 
@@ -735,6 +763,7 @@
       starterSuccessPanel.hidden = onboardingMode !== "success";
     }
 
+    renderStarterChooserBackButton();
     renderStarterChooser();
     if (onboardingMode === "preview") {
       renderStarterPreview(starter);
@@ -760,11 +789,27 @@
     onboardingMode = mode || "";
     if (onboardingMode) {
       clearDirtyState();
+      if (!starterFlowSource) {
+        starterFlowSource = hasEditableProfiles(state) ? "profiles" : "first_run";
+      }
     }
     if (starterId) {
       selectedStarterViewId = starterId;
     }
     render();
+  }
+
+  function openProfilesView(statusText) {
+    onboardingMode = "";
+    starterFlowSource = "profiles";
+    render();
+    if (presetSelect) {
+      presetSelect.scrollIntoView({ block: "nearest" });
+      presetSelect.focus();
+    }
+    if (statusText) {
+      setStatus(statusText);
+    }
   }
 
   function renderBuilderVisibility() {
@@ -774,6 +819,7 @@
     var showOnboarding = Boolean(onboardingMode) || !hasEditableProfiles(state);
     if (showOnboarding && !onboardingMode) {
       onboardingMode = "chooser";
+      starterFlowSource = "first_run";
     }
     if (firstTimeProfileOnboarding) {
       firstTimeProfileOnboarding.hidden = !showOnboarding;
@@ -4002,6 +4048,9 @@
 
   function applyLiveToGhl(options) {
     var applyOptions = options || {};
+    var unreachableMessage = applyOptions.afterSave ?
+      "Changes saved, but CleanView could not reach the GHL page yet. Reload the tab, then click Apply Live to GHL." :
+      "CleanView could not reach the GHL page yet. Reload the tab, then click Apply Live to GHL.";
 
     if (applyLiveButton) {
       applyLiveButton.disabled = true;
@@ -4017,6 +4066,13 @@
         overviewApplyLiveButton.disabled = false;
       }
       if (!result || !result.ok) {
+        if (result && result.contentScriptUnreachable) {
+          setStatus(unreachableMessage, true, {
+            showReloadGhlAction: true,
+            reloadTabId: result.targetTabId
+          });
+          return;
+        }
         if (applyOptions.afterSave) {
           var applyMessage = result && (result.message || result.error) ? result.message || result.error : "";
           if (/Open a GHL page|Focus the GHL tab/i.test(applyMessage)) {
@@ -4060,6 +4116,33 @@
         return;
       }
       setStatus(result.message || "GHL page reset.");
+    });
+  }
+
+  function reloadCurrentGhlTab() {
+    if (!reloadGhlTabTargetId) {
+      setStatus("No GHL tab is ready to reload right now.", true);
+      return;
+    }
+
+    if (reloadGhlTabButton) {
+      reloadGhlTabButton.disabled = true;
+    }
+
+    chrome.tabs.reload(reloadGhlTabTargetId, function handleReloaded() {
+      if (reloadGhlTabButton) {
+        reloadGhlTabButton.disabled = false;
+      }
+
+      if (chrome.runtime.lastError) {
+        setStatus("Unable to reload the GHL tab. Try refreshing it manually.", true, {
+          showReloadGhlAction: true,
+          reloadTabId: reloadGhlTabTargetId
+        });
+        return;
+      }
+
+      setStatus("GHL tab reloading. Wait for the page to finish loading, then click Apply Live to GHL again.");
     });
   }
 
@@ -4700,6 +4783,7 @@
       state = nextState;
       selectedPresetId = resolveInitialProfileId(state);
       onboardingMode = hasEditableProfiles(state) ? "" : "chooser";
+      starterFlowSource = hasEditableProfiles(state) ? "profiles" : "first_run";
       render();
       resetDirtyStateFromRenderedDraft();
       refreshActiveLocation();
@@ -4775,6 +4859,15 @@
       }
 
       if (!result || !result.ok) {
+        if (result && result.contentScriptUnreachable) {
+          starterApplyMessage = "View saved, but CleanView could not reach the GHL page yet. Reload the tab, then click Apply Live to GHL.";
+          setStatus(starterApplyMessage, true, {
+            showReloadGhlAction: true,
+            reloadTabId: result.targetTabId
+          });
+          setOnboardingMode("success", starter.id);
+          return;
+        }
         starterApplyMessage = result && (result.message || result.error) ? result.message || result.error : "Saved. Open a GHL page to apply this view live.";
         setStatus(starterApplyMessage, true);
       } else {
@@ -4995,6 +5088,12 @@
     });
   }
 
+  if (starterChooserBackButton) {
+    starterChooserBackButton.addEventListener("click", function returnToProfilesFromStarterChooser() {
+      openProfilesView("Choose an existing profile or start from template.");
+    });
+  }
+
   if (useStarterViewButton) {
     useStarterViewButton.addEventListener("click", function useStarterView() {
       saveStarterView(getStarterViewById(selectedStarterViewId));
@@ -5020,13 +5119,14 @@
 
   if (startFromViewButton) {
     startFromViewButton.addEventListener("click", function openStarterChooserFromProfiles() {
+      starterFlowSource = "profiles";
       setOnboardingMode("chooser");
     });
   }
 
   if (changeStarterViewButton) {
     changeStarterViewButton.addEventListener("click", function openStarterChooserFromOverview() {
-      setOnboardingMode("chooser");
+      openProfilesView("Choose an existing profile or start from template.");
     });
   }
 
@@ -5044,6 +5144,10 @@
 
   if (overviewResetPageButton) {
     overviewResetPageButton.addEventListener("click", resetCurrentGhlPage);
+  }
+
+  if (reloadGhlTabButton) {
+    reloadGhlTabButton.addEventListener("click", reloadCurrentGhlTab);
   }
 
   if (onboardingCreateFromTemplateButton) {

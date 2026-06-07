@@ -55,6 +55,14 @@ select {
   justify-content: space-between;
 }
 
+.topbar-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
 .eyebrow {
   color: var(--as-muted);
   font-size: 0.75rem;
@@ -1181,6 +1189,10 @@ textarea {
 
   .two-columns {
     grid-template-columns: 1fr;
+  }
+
+  .topbar-actions {
+    justify-content: flex-start;
   }
 
   .menu-builder-layout {

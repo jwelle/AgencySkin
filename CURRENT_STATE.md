@@ -12,9 +12,10 @@
 - Built-in templates now open as editable drafts that save as new custom profiles, while custom profiles save in place and support `Save as Copy`.
 - Fresh CleanView users now see a side-panel first-run starter flow with Sales, Marketing, AI Operator, Contact Center, and Simple starter views.
 - Starter views save as normal custom Profiles, store starter metadata in `profileMetadata`, and apply through the existing live side-panel path.
-- Existing custom Profile users skip first-run onboarding and can reopen the starter chooser with `Start from a View` / `Change View`.
+- Existing custom Profile users skip first-run onboarding, use `Change View` to return to `My Profiles`, and can reopen starter cards from `Start from Template`.
 - The side-panel editor now shows a sticky bottom save bar for unsaved changes, with Revert, Save Changes, and Save & Apply actions.
 - Sidebar Style controls are now grouped into collapsible sections for Style Path, Presets, Background, Logo, Menu Text, Spacing, and Advanced.
+- The side panel now surfaces a `Reload GHL Tab` recovery action when `Apply Live to GHL` cannot reach the GHL content script.
 - The popup now closes immediately after successfully opening the CleanView side panel.
 - The popup now uses a single `Customize CleanView` launcher button and no longer duplicates side-panel apply/admin actions.
 - Sidebar image presets and uploads now default to `cover`, and image uploads automatically enable image styling in preview.
@@ -74,9 +75,12 @@
 21. Clear or simulate an empty custom Profile state, open the side panel, choose each first-run starter view, and confirm the preview/success summaries show expected shown and hidden items.
 22. Confirm `Use This View` creates or reuses a starter-created custom Profile, makes it active, and applies live when a supported GHL tab is available.
 23. Confirm existing custom Profile states skip first-run onboarding and keep normal editor access.
-24. Change a side-panel editor field and confirm the sticky save bar appears, remains visible while scrolling, and clears after Save Changes or Revert.
-25. Click Save & Apply with and without a supported GHL tab available and confirm saved changes plus the correct apply or apply-later message.
-26. Confirm Sidebar Style accordions default open to Style Path and Presets, then auto-open Background for Custom Configuration and Logo for active branding.
+24. Confirm `Change View` from the active overview returns existing users to `My Profiles`, not starter cards.
+25. Confirm `Start from Template` opens starter cards from `My Profiles`, preview back returns to the cards, and chooser back returns to `My Profiles`.
+26. Reproduce a content-script-not-reachable case and confirm `Reload GHL Tab` appears, then reload guidance shows after clicking it.
+27. Change a side-panel editor field and confirm the sticky save bar appears, remains visible while scrolling, and clears after Save Changes or Revert.
+28. Click Save & Apply with and without a supported GHL tab available and confirm saved changes plus the correct apply or apply-later message.
+29. Confirm Sidebar Style accordions default open to Style Path and Presets, then auto-open Background for Custom Configuration and Logo for active branding.
 
 ## Known Limitations
 

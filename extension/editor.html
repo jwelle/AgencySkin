@@ -13,7 +13,10 @@
           <p class="eyebrow">AgencySkin</p>
           <h1>CleanView Panel</h1>
         </div>
-        <p id="statusMessage" class="status" role="status"></p>
+        <div class="topbar-actions">
+          <p id="statusMessage" class="status" role="status"></p>
+          <button id="reloadGhlTabButton" class="secondary" type="button" hidden>Reload GHL Tab</button>
+        </div>
       </header>
 
       <section id="firstTimeProfileOnboarding" class="panel onboarding-panel" hidden>
@@ -22,6 +25,9 @@
             <div>
               <h2>Welcome to CleanView</h2>
               <p>Choose a starter view and CleanView will simplify your GHL sidebar right away.</p>
+            </div>
+            <div class="button-row compact">
+              <button id="starterChooserBackButton" class="secondary" type="button" hidden>Back to My Profiles</button>
             </div>
           </div>
           <div id="starterViewGrid" class="starter-view-grid" aria-label="CleanView starter views"></div>
@@ -93,7 +99,7 @@
         <div class="panel-header">
           <h2>My Profiles</h2>
           <div class="profile-header-actions">
-            <button id="startFromViewButton" class="secondary" type="button">Start from a View</button>
+            <button id="startFromViewButton" class="secondary" type="button">Start from Template</button>
             <button id="createProfileButton" type="button">Create Profile</button>
             <label class="field profile-actions-field" for="moreProfileActionsSelect">
               More
