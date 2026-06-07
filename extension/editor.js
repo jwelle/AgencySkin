@@ -14,6 +14,18 @@
   var onboardingMode = "";
   var selectedStarterViewId = "";
   var starterApplyMessage = "";
+  var isDirty = false;
+  var lastSavedDraftSnapshot = "";
+  var styleAccordionState = {
+    stylePath: true,
+    presets: true,
+    background: false,
+    logo: false,
+    menuText: false,
+    spacing: false,
+    advanced: false
+  };
+  var suppressDirtyTracking = false;
 
   var presetSelect = document.getElementById("presetSelect");
   var firstTimeProfileOnboarding = document.getElementById("firstTimeProfileOnboarding");
@@ -71,8 +83,15 @@
   var sidebarBackgroundType = document.getElementById("sidebarBackgroundType");
   var sidebarStyleEditor = document.getElementById("sidebarStyleEditor");
   var globalSidebarStyleEditor = document.getElementById("globalSidebarStyleEditor");
+  var spacingStyleEditor = document.getElementById("spacingStyleEditor");
+  var advancedStyleEditor = document.getElementById("advancedStyleEditor");
   var presetAdjustmentEditor = document.getElementById("presetAdjustmentEditor");
   var menuColorEditor = document.getElementById("menuColorEditor");
+  var stickySaveBar = document.getElementById("stickySaveBar");
+  var stickySaveStatus = document.getElementById("stickySaveStatus");
+  var stickyRevertButton = document.getElementById("stickyRevertButton");
+  var stickySaveButton = document.getElementById("stickySaveButton");
+  var stickySaveApplyButton = document.getElementById("stickySaveApplyButton");
   var presetStylePanel = document.getElementById("presetStylePanel");
   var customStylePanel = document.getElementById("customStylePanel");
   var sidebarStylePreview = document.getElementById("sidebarStylePreview");
@@ -472,6 +491,7 @@
     if (presetName && nameOverride) {
       presetName.value = String(nameOverride || "").trim() || presetName.value;
     }
+    resetDirtyStateFromRenderedDraft();
   }
 
   function getActiveTab(callback) {
@@ -738,6 +758,9 @@
 
   function setOnboardingMode(mode, starterId) {
     onboardingMode = mode || "";
+    if (onboardingMode) {
+      clearDirtyState();
+    }
     if (starterId) {
       selectedStarterViewId = starterId;
     }
@@ -765,6 +788,9 @@
       builderPanel.hidden = showOnboarding;
     }
     if (showOnboarding) {
+      if (stickySaveBar) {
+        stickySaveBar.hidden = true;
+      }
       renderOnboardingPanels();
     } else {
       renderActiveViewOverview();
@@ -806,8 +832,9 @@
     document.getElementById("deletePresetButton").disabled = !isEditable;
     builtInNotice.textContent = editableNoticeText(preset);
     document.getElementById("savePresetButton").textContent = primarySaveLabel(preset);
+    document.getElementById("savePresetButton").hidden = true;
     if (saveAsCopyButton) {
-      saveAsCopyButton.hidden = !isEditable;
+      saveAsCopyButton.hidden = true;
       saveAsCopyButton.disabled = !isEditable;
     }
     if (templateNotice) {
@@ -1108,6 +1135,7 @@
       removeMenuKeyFromAllGroups(key);
       setMenuKeyVisibleInEditor(key, false);
       refreshMenuGroupOptions();
+      scheduleDirtyCheck();
       return;
     }
 
@@ -1115,6 +1143,7 @@
     removeMenuKeyFromAllGroups(key);
     if (!groupId || groupId === "ungrouped") {
       refreshMenuGroupOptions();
+      scheduleDirtyCheck();
       return;
     }
 
@@ -1123,6 +1152,7 @@
     });
     if (!targetCard) {
       refreshMenuGroupOptions();
+      scheduleDirtyCheck();
       return;
     }
 
@@ -1135,6 +1165,7 @@
     items.splice(nextIndex, 0, key);
     setMenuGroupItems(targetCard, items);
     refreshMenuGroupOptions();
+    scheduleDirtyCheck();
   }
 
   function appendMenuGroupCard(group) {
@@ -3329,6 +3360,7 @@
         });
         populateSidebarStyleForm(nextStyle, { presetValue: "custom", optionLabel: "Custom Image Draft" });
         setStatus("Custom image loaded. " + saveHintText());
+        scheduleDirtyCheck();
       };
       image.onerror = function handleImageError() {
         setStatus("Unable to read that image.", true);
@@ -3379,6 +3411,7 @@
         nextStyle.sidebarBrandingMode = "replace";
         populateSidebarStyleForm(nextStyle, { presetValue: "custom", optionLabel: "Custom Logo Draft" });
         setStatus("Logo loaded. " + saveHintText());
+        scheduleDirtyCheck();
       };
       image.onerror = function handleLogoImageError() {
         setStatus("Unable to read that logo.", true);
@@ -3407,7 +3440,7 @@
   }
 
   function getSidebarStyleFieldContainers() {
-    return [globalSidebarStyleEditor, presetAdjustmentEditor, sidebarStyleEditor, menuColorEditor].filter(Boolean);
+    return [globalSidebarStyleEditor, spacingStyleEditor, advancedStyleEditor, presetAdjustmentEditor, sidebarStyleEditor, menuColorEditor].filter(Boolean);
   }
 
   function syncStylePathState(style) {
@@ -3478,6 +3511,7 @@
     });
     syncStylePathState(normalizedStyle);
     syncSidebarModeState();
+    renderStyleAccordionState(normalizedStyle);
     updateSidebarStylePreview();
   }
 
@@ -3611,11 +3645,52 @@
     }
   }
 
+  function isLogoStyleField(field) {
+    return ["sidebarBrandingMode", "customLogoDataUrl", "logoUrl", "headerLabel", "logoSize", "brandAccentColor", "headerAlignment"].indexOf(field.key) !== -1;
+  }
+
+  function isSpacingStyleField(field) {
+    return ["borderRadius", "sidebarRadius", "buttonRadius", "itemSpacing", "sidebarPadding"].indexOf(field.key) !== -1;
+  }
+
+  function isAdvancedStyleField(field) {
+    return ["shadowStrength", "borderVisible"].indexOf(field.key) !== -1;
+  }
+
+  function hasActiveLogoSettings(style) {
+    return style.sidebarBrandingMode && style.sidebarBrandingMode !== "keep" ||
+      Boolean(style.customLogoDataUrl || style.logoUrl || style.headerLabel || style.brandAccentColor);
+  }
+
+  function renderStyleAccordionState(style) {
+    var normalizedStyle = storage.normalizeSidebarStyle(style || {});
+
+    document.querySelectorAll("[data-style-accordion]").forEach(function updateAccordion(details) {
+      var key = details.dataset.styleAccordion;
+      var shouldOpen = styleAccordionState[key] === true;
+
+      if (key === "background" && normalizedStyle.stylePath === "custom") {
+        shouldOpen = true;
+      }
+      if (key === "logo" && hasActiveLogoSettings(normalizedStyle)) {
+        shouldOpen = true;
+      }
+
+      details.open = shouldOpen;
+    });
+  }
+
   function renderSidebarStyle() {
     var preset = selectedPreset();
     var style = storage.normalizeSidebarStyle(preset.sidebarStyle);
-    var globalFields = sidebarStyleFields.filter(function keepGlobalField(field) {
-      return field.group === "global";
+    var logoFields = sidebarStyleFields.filter(function keepLogoField(field) {
+      return field.group === "global" && isLogoStyleField(field);
+    });
+    var spacingFields = sidebarStyleFields.filter(function keepSpacingField(field) {
+      return field.group === "global" && isSpacingStyleField(field);
+    });
+    var advancedFields = sidebarStyleFields.filter(function keepAdvancedField(field) {
+      return field.group === "global" && isAdvancedStyleField(field);
     });
     var presetAdjustmentFields = sidebarStyleFields.filter(function keepPresetAdjustmentField(field) {
       return field.group === "preset-adjustment";
@@ -3629,11 +3704,14 @@
 
     renderSidebarBackgroundTypeOptions(getEditorBackgroundType(style));
     renderCuratedPresetCards(style);
-    renderSidebarStyleFields(globalSidebarStyleEditor, style, globalFields);
+    renderSidebarStyleFields(globalSidebarStyleEditor, style, logoFields);
+    renderSidebarStyleFields(spacingStyleEditor, style, spacingFields);
+    renderSidebarStyleFields(advancedStyleEditor, style, advancedFields);
     renderSidebarStyleFields(presetAdjustmentEditor, style, presetAdjustmentFields);
     renderSidebarStyleFields(sidebarStyleEditor, style, customFields);
     renderSidebarStyleFields(menuColorEditor, style, menuFields);
     populateSidebarStyleForm(style, { presetValue: style.preset || "default" });
+    renderStyleAccordionState(style);
   }
 
   function getCuratedPresetPreview(preset) {
@@ -3710,6 +3788,7 @@
       optionLabel: "Custom Draft - " + preset.label
     });
     setStatus(preset.label + " applied. " + saveHintText());
+    scheduleDirtyCheck();
   }
 
   function toggleFavoritePreset(presetId) {
@@ -3730,6 +3809,7 @@
     style.favoriteAssetIds = Array.from(favoriteSet);
     populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
     setStatus((favoriteSet.has(presetId) ? "Favorited " : "Removed favorite ") + preset.label + ".");
+    scheduleDirtyCheck();
   }
 
   function getCandidateTypesForShuffle(style, shuffle) {
@@ -3827,6 +3907,7 @@
       optionLabel: "Custom Draft - " + selected.label
     });
     setStatus("Curated Rotation picked " + selected.label + ". " + saveHintText());
+    scheduleDirtyCheck();
   }
 
   function updateImagePositionFromPointer(event) {
@@ -3919,7 +4000,9 @@
     });
   }
 
-  function applyLiveToGhl() {
+  function applyLiveToGhl(options) {
+    var applyOptions = options || {};
+
     if (applyLiveButton) {
       applyLiveButton.disabled = true;
     }
@@ -3934,10 +4017,19 @@
         overviewApplyLiveButton.disabled = false;
       }
       if (!result || !result.ok) {
+        if (applyOptions.afterSave) {
+          var applyMessage = result && (result.message || result.error) ? result.message || result.error : "";
+          if (/Open a GHL page|Focus the GHL tab/i.test(applyMessage)) {
+            setStatus("Changes saved, but no active GoHighLevel tab was found. Open GHL and click Apply Live to GHL.", true);
+          } else {
+            setStatus("Changes saved, but CleanView could not apply them yet. Refresh your GHL tab and try Apply Live to GHL.", true);
+          }
+          return;
+        }
         setStatus(result && (result.message || result.error) ? result.message || result.error : "Unable to apply live to GHL.", true);
         return;
       }
-      setStatus(result.message || "Applied to open GHL tab.");
+      setStatus(applyOptions.successMessage || result.message || "Applied to open GHL tab.");
     });
   }
 
@@ -3947,7 +4039,12 @@
       return;
     }
 
-    persistSelectedView("Saved.", false, applyLiveToGhl);
+    persistSelectedView("Changes saved.", false, function applySavedView() {
+      applyLiveToGhl({
+        afterSave: true,
+        successMessage: "Changes saved and applied."
+      });
+    });
   }
 
   function resetCurrentGhlPage() {
@@ -4006,6 +4103,10 @@
   }
 
   function setContainerControlsDisabled(container, disabled) {
+    if (!container) {
+      return;
+    }
+
     container.querySelectorAll("input, select, button").forEach(function updateControl(control) {
       control.disabled = disabled;
     });
@@ -4022,7 +4123,10 @@
     setContainerControlsDisabled(renameEditor, !canEdit);
     setContainerControlsDisabled(linkEditor, !canEdit);
     setContainerControlsDisabled(globalSidebarStyleEditor, !canEdit);
+    setContainerControlsDisabled(spacingStyleEditor, !canEdit);
+    setContainerControlsDisabled(advancedStyleEditor, !canEdit);
     setContainerControlsDisabled(sidebarStyleEditor, !canEdit);
+    setContainerControlsDisabled(menuColorEditor, !canEdit);
     setContainerControlsDisabled(curatedPresetGrid, !canEdit);
     setContainerControlsDisabled(curatedShuffleCustomPool, !canEdit);
     sidebarStyleEnabled.disabled = !canEdit;
@@ -4055,13 +4159,22 @@
     if (applyLiveButton) {
       applyLiveButton.disabled = !canEdit;
     }
+    if (stickySaveButton) {
+      stickySaveButton.disabled = !canEdit;
+    }
+    if (stickySaveApplyButton) {
+      stickySaveApplyButton.disabled = !canEdit;
+    }
+    if (stickyRevertButton) {
+      stickyRevertButton.disabled = !canEdit;
+    }
     if (detectGhlSidebarButton) {
       detectGhlSidebarButton.disabled = false;
     }
     document.getElementById("resetStyleButton").disabled = !canEdit;
     document.getElementById("savePresetButton").disabled = !canEdit;
     if (saveAsCopyButton) {
-      saveAsCopyButton.hidden = !isEditable;
+      saveAsCopyButton.hidden = true;
       saveAsCopyButton.disabled = !isEditable;
     }
   }
@@ -4081,6 +4194,7 @@
     renderSidebarStyle();
     renderLocationRules();
     syncPresetEditability();
+    renderStickySaveBar();
   }
 
   function collectSidebarStyleFromForm() {
@@ -4357,10 +4471,146 @@
     return storage.normalizePreset(preset);
   }
 
+  function sortComparableValue(value) {
+    if (Array.isArray(value)) {
+      return value.map(sortComparableValue);
+    }
+
+    if (value && typeof value === "object") {
+      return Object.keys(value).sort().reduce(function sortObjectKeys(sorted, key) {
+        sorted[key] = sortComparableValue(value[key]);
+        return sorted;
+      }, {});
+    }
+
+    return value;
+  }
+
+  function comparableDraftPayload(preset) {
+    return sortComparableValue({
+      name: preset.name || "",
+      description: preset.description || "",
+      showInPopup: preset.showInPopup !== false,
+      visibleItems: preset.visibleItems || [],
+      labelOverrides: preset.labelOverrides || {},
+      customLinks: (preset.customLinks || []).map(function comparableLink(link) {
+        return {
+          label: link.label || "",
+          url: link.url || "",
+          placement: link.placement || "bottom",
+          openMode: link.openMode || "new_tab",
+          enabled: link.enabled !== false
+        };
+      }),
+      menuGroups: (preset.menuGroups || []).map(function comparableMenuGroup(group) {
+        return {
+          label: group.label || "",
+          items: group.items || [],
+          collapsed: group.collapsed === true
+        };
+      }),
+      sidebarStyle: preset.sidebarStyle || {}
+    });
+  }
+
+  function getCurrentDraftSnapshot() {
+    if (!state || !selectedPresetId || !canEditSelectedPreset(selectedPreset())) {
+      return "";
+    }
+
+    try {
+      return JSON.stringify(comparableDraftPayload(collectPresetFromForm()));
+    } catch (_error) {
+      return "";
+    }
+  }
+
+  function clearDirtyState() {
+    isDirty = false;
+    lastSavedDraftSnapshot = "";
+    renderStickySaveBar();
+  }
+
+  function resetDirtyStateFromRenderedDraft() {
+    lastSavedDraftSnapshot = getCurrentDraftSnapshot();
+    isDirty = false;
+    renderStickySaveBar();
+  }
+
+  function updateDirtyStateFromRenderedDraft() {
+    var currentSnapshot = "";
+
+    if (suppressDirtyTracking || !lastSavedDraftSnapshot) {
+      renderStickySaveBar();
+      return;
+    }
+
+    currentSnapshot = getCurrentDraftSnapshot();
+    isDirty = Boolean(currentSnapshot && currentSnapshot !== lastSavedDraftSnapshot);
+    renderStickySaveBar();
+  }
+
+  function scheduleDirtyCheck() {
+    if (suppressDirtyTracking) {
+      return;
+    }
+
+    window.setTimeout(updateDirtyStateFromRenderedDraft, 0);
+  }
+
+  function isStickySaveEligible() {
+    return ["style", "menu", "rename", "links"].indexOf(activeTab) !== -1 &&
+      !onboardingMode &&
+      canEditSelectedPreset(selectedPreset());
+  }
+
+  function renderStickySaveBar() {
+    var canEdit = canEditSelectedPreset(selectedPreset());
+
+    if (!stickySaveBar) {
+      return;
+    }
+
+    stickySaveBar.hidden = !isDirty || !isStickySaveEligible();
+    if (stickySaveStatus) {
+      stickySaveStatus.textContent = "Unsaved changes";
+    }
+    if (stickySaveButton) {
+      stickySaveButton.textContent = primarySaveLabel(selectedPreset());
+      stickySaveButton.disabled = !canEdit;
+    }
+    if (stickySaveApplyButton) {
+      stickySaveApplyButton.disabled = !canEdit;
+    }
+    if (stickyRevertButton) {
+      stickyRevertButton.disabled = !canEdit;
+    }
+  }
+
+  function saveCurrentDraftFromSticky() {
+    persistSelectedView(isCustomPreset(selectedPreset()) ? "Changes saved." : "New profile saved.", false);
+  }
+
+  function saveAndApplyCurrentDraftFromSticky() {
+    persistSelectedView("Changes saved.", false, function applySavedDraft() {
+      applyLiveToGhl({
+        afterSave: true,
+        successMessage: "Changes saved and applied."
+      });
+    });
+  }
+
+  function revertCurrentDraft() {
+    render();
+    resetDirtyStateFromRenderedDraft();
+    setStatus("Changes reverted.");
+  }
+
   function reapplySavedPresetIfActive(presetId, message, reapplyIfActive, nextState, afterSave) {
     if (!reapplyIfActive || presetId !== nextState.activePresetId) {
       setStatus(message);
       render();
+      resetDirtyStateFromRenderedDraft();
       if (afterSave) {
         afterSave(nextState);
       }
@@ -4374,6 +4624,7 @@
         setStatus(result.ok ? message + " Applied Live to GHL." : message);
       }
       render();
+      resetDirtyStateFromRenderedDraft();
       if (afterSave) {
         afterSave(nextState);
       }
@@ -4450,6 +4701,7 @@
       selectedPresetId = resolveInitialProfileId(state);
       onboardingMode = hasEditableProfiles(state) ? "" : "chooser";
       render();
+      resetDirtyStateFromRenderedDraft();
       refreshActiveLocation();
     });
   }
@@ -4591,6 +4843,12 @@
         return;
       }
       document.getElementById("duplicatePresetButton").click();
+    } else if (action === "save-copy") {
+      if (!isEditableProfile(selectedPreset())) {
+        setStatus("Save this template as a new profile before making a copy.", true);
+        return;
+      }
+      document.getElementById("saveAsCopyButton").click();
     } else if (action === "rename") {
       if (!isEditableProfile(selectedPreset())) {
         setStatus("Save this template as a new profile before renaming it.", true);
@@ -4608,10 +4866,26 @@
     }
   }
 
+  [profileManagementPanel, builderPanel].forEach(function bindDirtyContainer(container) {
+    if (!container) {
+      return;
+    }
+
+    container.addEventListener("input", scheduleDirtyCheck);
+    container.addEventListener("change", scheduleDirtyCheck);
+  });
+
+  document.querySelectorAll("[data-style-accordion]").forEach(function bindStyleAccordion(details) {
+    details.addEventListener("toggle", function rememberStyleAccordionState() {
+      styleAccordionState[details.dataset.styleAccordion] = details.open;
+    });
+  });
+
   document.querySelectorAll("[data-tab-button]").forEach(function bindTab(button) {
     button.addEventListener("click", function switchTab() {
       activeTab = button.dataset.tabButton;
       renderTabState();
+      renderStickySaveBar();
     });
   });
 
@@ -4632,6 +4906,18 @@
   document.getElementById("savePresetButton").addEventListener("click", function savePreset() {
     persistSelectedView(isCustomPreset(selectedPreset()) ? "Changes saved." : "New profile saved.", false);
   });
+
+  if (stickyRevertButton) {
+    stickyRevertButton.addEventListener("click", revertCurrentDraft);
+  }
+
+  if (stickySaveButton) {
+    stickySaveButton.addEventListener("click", saveCurrentDraftFromSticky);
+  }
+
+  if (stickySaveApplyButton) {
+    stickySaveApplyButton.addEventListener("click", saveAndApplyCurrentDraftFromSticky);
+  }
 
   if (saveAsCopyButton) {
     saveAsCopyButton.addEventListener("click", function saveAsCopy() {
@@ -4841,18 +5127,21 @@
     setMenuCheckboxes(true);
     refreshMenuGroupOptions();
     setStatus("All native menu items moved into Your Sidebar.");
+    scheduleDirtyCheck();
   });
 
   document.getElementById("deselectAllMenusButton").addEventListener("click", function deselectAllMenus() {
     setMenuCheckboxes(false);
     refreshMenuGroupOptions();
     setStatus("All native menu items moved back to Available Items.");
+    scheduleDirtyCheck();
   });
 
   document.getElementById("resetMenuDefaultsButton").addEventListener("click", function resetMenuDefaults() {
     resetMenuCheckboxesToPresetDefault();
     refreshMenuGroupOptions();
     setStatus("Menu Builder reset to the selected Profile default.");
+    scheduleDirtyCheck();
   });
 
   document.getElementById("deletePresetButton").addEventListener("click", function deletePreset() {
@@ -4893,6 +5182,7 @@
 
   document.getElementById("addRenameButton").addEventListener("click", function addRename() {
     appendRenameRow(allMenuKeys[0], "");
+    scheduleDirtyCheck();
   });
 
   if (addMenuGroupButton) {
@@ -4909,6 +5199,7 @@
         collapsed: false
       });
       refreshMenuGroupOptions();
+      scheduleDirtyCheck();
     });
   }
 
@@ -4948,12 +5239,14 @@
     row.appendChild(createFieldLabel("Enabled", enabledInput));
     row.appendChild(removeButton);
     linkEditor.appendChild(row);
+    scheduleDirtyCheck();
   });
 
   document.getElementById("resetStyleButton").addEventListener("click", function resetStyle() {
     sidebarStylePreset.value = "default";
     applySidebarPresetToForm("default");
     setStatus("Sidebar style reset.");
+    scheduleDirtyCheck();
   });
 
   if (enableLocationViewDefaults) {
@@ -4989,6 +5282,7 @@
       }, function handleSelected(nextState) {
         state = nextState || state;
         render();
+        resetDirtyStateFromRenderedDraft();
       });
     }
     console.log("[AgencySkin CleanView] Profile selected:", {
@@ -4996,6 +5290,7 @@
       name: selectedPreset() && (selectedPreset().name || selectedPreset().label)
     });
     render();
+    resetDirtyStateFromRenderedDraft();
   });
 
   defaultPresetSelect.addEventListener("change", function updateDefaultPreset() {
@@ -5015,6 +5310,7 @@
   renameEditor.addEventListener("click", function handleRenameClick(event) {
     if (event.target.dataset.removeRename) {
       event.target.closest("[data-rename-row='true']").remove();
+      scheduleDirtyCheck();
     }
   });
 
@@ -5028,6 +5324,7 @@
     if (event.target.dataset.deleteMenuGroup && card) {
       card.remove();
       refreshMenuGroupOptions();
+      scheduleDirtyCheck();
       return;
     }
 
@@ -5035,6 +5332,7 @@
       removeMenuKeyFromAllGroups(event.target.dataset.addMenuItem);
       setMenuKeyVisibleInEditor(event.target.dataset.addMenuItem, true);
       refreshMenuGroupOptions();
+      scheduleDirtyCheck();
       return;
     }
 
@@ -5048,6 +5346,7 @@
         return key !== event.target.dataset.removeGroupItem;
       }));
       refreshMenuGroupOptions();
+      scheduleDirtyCheck();
     }
   }
 
@@ -5132,6 +5431,7 @@
   linkEditor.addEventListener("click", function handleLinkClick(event) {
     if (event.target.dataset.removeLinkId) {
       event.target.closest(".link-row").remove();
+      scheduleDirtyCheck();
     }
   });
 
@@ -5158,6 +5458,7 @@
       style.customImageDataUrl = "";
       populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
       setStatus("Custom image removed. " + saveHintText());
+      scheduleDirtyCheck();
     }
     if (event.target.dataset.resetImagePosition) {
       var resetStyle = getCurrentWorkingSidebarStyle();
@@ -5168,6 +5469,7 @@
       });
       populateSidebarStyleForm(resetStyle, { presetValue: "custom", optionLabel: "Custom Draft" });
       setStatus("Image position reset. " + saveHintText());
+      scheduleDirtyCheck();
     }
   });
 
@@ -5178,6 +5480,7 @@
         style.customLogoDataUrl = "";
         populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
         setStatus("Logo removed. " + saveHintText());
+        scheduleDirtyCheck();
       }
     });
   }
@@ -5268,6 +5571,7 @@
     sidebarStylePreview.addEventListener("pointerup", function stopImageDrag(event) {
       if (sidebarStylePreview.hasPointerCapture(event.pointerId)) {
         sidebarStylePreview.releasePointerCapture(event.pointerId);
+        scheduleDirtyCheck();
       }
     });
   }

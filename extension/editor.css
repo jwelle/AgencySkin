@@ -767,6 +767,35 @@ textarea {
   padding-top: 1rem;
 }
 
+.sticky-save-bar {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-md);
+  bottom: 0.75rem;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+  display: flex;
+  gap: 0.85rem;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  position: sticky;
+  z-index: 20;
+}
+
+.sticky-save-status {
+  color: var(--as-text);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.sticky-save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
 .sidebar-style-layout {
   align-items: start;
   display: grid;
@@ -789,6 +818,43 @@ textarea {
   display: grid;
   gap: 0.85rem;
   padding: 0.85rem;
+}
+
+.style-accordion {
+  align-content: start;
+}
+
+.style-accordion-summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 0.85rem;
+  justify-content: space-between;
+  list-style: none;
+}
+
+.style-accordion-summary::-webkit-details-marker {
+  display: none;
+}
+
+.style-accordion-summary::after {
+  color: var(--as-muted);
+  content: "+";
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.style-accordion[open] > .style-accordion-summary::after {
+  content: "-";
+}
+
+.style-accordion[open] {
+  gap: 0.85rem;
+}
+
+.single-control-header {
+  grid-template-columns: minmax(220px, 1fr);
 }
 
 .sidebar-style-preview-panel {
@@ -1139,6 +1205,16 @@ textarea {
   }
 
   .button-row.compact {
+    justify-content: flex-start;
+  }
+
+  .sticky-save-bar {
+    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .sticky-save-actions {
     justify-content: flex-start;
   }
 
