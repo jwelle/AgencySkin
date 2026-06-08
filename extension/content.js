@@ -1361,6 +1361,66 @@
     }) || null;
   }
 
+  function applyMenuOrder(visibleItems, visibleSet, menuGroups) {
+    var sidebar = findGhlSidebar();
+    var orderedKeys = [];
+    var seen = {};
+    var elements = [];
+    var parent = null;
+    var firstCurrentElement = null;
+    var insertionPoint = null;
+
+    if (!sidebar || !Array.isArray(visibleItems) || !visibleItems.length || Array.isArray(menuGroups) && menuGroups.length) {
+      return 0;
+    }
+
+    visibleItems.concat(allMenuKeys).forEach(function collectOrderedKey(key) {
+      if (allMenuKeys.indexOf(key) !== -1 && visibleSet.has(key) && !seen[key]) {
+        seen[key] = true;
+        orderedKeys.push(key);
+      }
+    });
+
+    orderedKeys.forEach(function collectOrderedElement(key) {
+      var element = getVisibleMenuElement(key, sidebar);
+
+      if (!element || !element.parentNode) {
+        return;
+      }
+      if (!parent) {
+        parent = element.parentNode;
+      }
+      if (element.parentNode === parent) {
+        elements.push(element);
+      }
+    });
+
+    if (!parent || elements.length < 2) {
+      return 0;
+    }
+
+    firstCurrentElement = Array.prototype.slice.call(parent.children).find(function findFirstMenuChild(child) {
+      return elements.indexOf(child) !== -1;
+    });
+
+    elements.forEach(function rememberOrderedElement(element) {
+      rememberMenuGroupOriginalPosition(element);
+    });
+
+    if (firstCurrentElement && firstCurrentElement !== elements[0]) {
+      parent.insertBefore(elements[0], firstCurrentElement);
+    }
+    insertionPoint = elements[0];
+    elements.slice(1).forEach(function moveOrderedElement(element) {
+      if (element.parentNode === parent && insertionPoint.nextSibling !== element) {
+        parent.insertBefore(element, insertionPoint.nextSibling);
+      }
+      insertionPoint = element;
+    });
+
+    return elements.length;
+  }
+
   function normalMenuKeys() {
     return allMenuKeys.filter(function excludeSettings(key) {
       return key !== "settings";
@@ -1917,6 +1977,7 @@
     });
 
     changedCount += applyMenuGroups(preset.menuGroups || [], visibleSet);
+    changedCount += applyMenuOrder(preset.visibleItems || [], visibleSet, preset.menuGroups || []);
     changedCount += injectCustomLinks(preset.customLinks || []);
     changedCount += applySidebarStyle(preset.sidebarStyle || {});
     currentPreset = preset;

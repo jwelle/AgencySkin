@@ -28,7 +28,7 @@
           <div class="panel-header">
             <div>
               <h2>Welcome to CleanView</h2>
-              <p>Choose a starter view and CleanView will simplify your GHL sidebar right away.</p>
+              <p>Choose a starter. You can adjust it before saving.</p>
             </div>
             <div class="button-row compact">
               <button id="starterChooserBackButton" class="secondary" type="button" hidden>Back to My Profiles</button>
@@ -46,19 +46,53 @@
               <p id="starterPreviewMeta" class="starter-context-meta" hidden></p>
             </div>
           </div>
-          <div class="starter-preview-layout">
+          <section class="starter-preview-list-card">
+            <h3>Customize your menu.</h3>
+            <div class="starter-menu-layout">
+              <section class="menu-builder-column">
+                <div class="menu-builder-column-header">
+                  <h4>Hidden Items</h4>
+                  <p>Drag items here to hide them.</p>
+                </div>
+                <div id="starterPreviewHiddenList" class="starter-onboarding-menu-list menu-builder-drop-zone" data-starter-menu-drop-zone="hidden"></div>
+              </section>
+              <section class="menu-builder-column menu-builder-sidebar">
+                <div class="menu-builder-column-header">
+                  <h4>Visible Items</h4>
+                  <p>Drag to reorder your sidebar.</p>
+                </div>
+                <div id="starterPreviewShownList" class="starter-onboarding-menu-list menu-builder-drop-zone" data-starter-menu-drop-zone="visible"></div>
+              </section>
+            </div>
+          </section>
+          <div class="starter-preview-layout starter-color-layout">
             <section class="starter-preview-list-card">
-              <h3>Shown Items</h3>
-              <div id="starterPreviewShownList" class="starter-item-list"></div>
+              <h3>Choose a sidebar color.</h3>
+              <div id="starterColorPresetList" class="starter-color-preset-list" aria-label="Sidebar color presets"></div>
+              <label class="field starter-custom-color-field" for="starterCustomColorPicker">
+                Custom
+                <div class="starter-custom-color-row">
+                  <input id="starterCustomColorPicker" class="starter-custom-color-picker" type="color" value="#123a5c">
+                  <input id="starterCustomColorValue" type="text" value="#123a5c" inputmode="text" spellcheck="false" autocomplete="off">
+                </div>
+              </label>
+              <label class="field" for="starterTextColorMode">
+                Menu text color
+                <select id="starterTextColorMode">
+                  <option value="auto">Auto</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </label>
             </section>
             <section class="starter-preview-list-card">
-              <h3>Hidden Items</h3>
-              <div id="starterPreviewHiddenList" class="starter-item-list"></div>
+              <h3>Preview Status</h3>
+              <p id="starterPreviewDraftStatus" class="help-text">Your starter preview updates live and has not been saved yet.</p>
             </section>
           </div>
           <div class="button-row">
             <button id="starterPreviewBackButton" class="secondary" type="button">Back</button>
-            <button id="useStarterViewButton" type="button">Use This View</button>
+            <button id="useStarterViewButton" type="button">Create My View</button>
           </div>
         </div>
 

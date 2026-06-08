@@ -37,9 +37,9 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 6. Click `Customize CleanView`.
 7. Confirm the popup closes immediately after the side panel opens.
 8. With no custom Profiles, confirm the side panel shows `Welcome to CleanView` and the five starter views.
-9. Choose each starter view and confirm the preview shows shown and hidden menu items.
-10. Click `Use This View` and confirm a custom Profile becomes active and applies live when a GHL tab is available.
-11. Click `Customize This View` or `Done` and confirm the normal editor appears.
+9. Choose each starter view and confirm the temporary preview applies live without creating a Profile.
+10. Adjust menu visibility/order and sidebar color, then confirm the live preview updates without saving.
+11. Click `Create My View` and confirm a custom Profile becomes active and the normal app experience appears.
 12. Confirm existing custom Profiles skip first-run onboarding.
 13. Click `Change View` from the active overview and confirm it returns to `My Profiles`, not starter cards.
 14. Click `Start from Template`, confirm starter cards appear, preview a starter, click `Back`, and confirm it returns to the starter cards.

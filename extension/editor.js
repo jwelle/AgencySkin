@@ -11,8 +11,10 @@
   var activeLocationId = null;
   var draftSidebarStyle = null;
   var draggedMenuGroupKey = "";
+  var draggedStarterMenuKey = "";
   var onboardingMode = "";
   var selectedStarterViewId = "";
+  var onboardingDraftPreset = null;
   var starterApplyMessage = "";
   var starterFlowSource = "first_run";
   var isDirty = false;
@@ -41,6 +43,11 @@
   var starterPreviewMeta = document.getElementById("starterPreviewMeta");
   var starterPreviewShownList = document.getElementById("starterPreviewShownList");
   var starterPreviewHiddenList = document.getElementById("starterPreviewHiddenList");
+  var starterPreviewDraftStatus = document.getElementById("starterPreviewDraftStatus");
+  var starterColorPresetList = document.getElementById("starterColorPresetList");
+  var starterCustomColorPicker = document.getElementById("starterCustomColorPicker");
+  var starterCustomColorValue = document.getElementById("starterCustomColorValue");
+  var starterTextColorMode = document.getElementById("starterTextColorMode");
   var starterChooserBackButton = document.getElementById("starterChooserBackButton");
   var starterPreviewBackButton = document.getElementById("starterPreviewBackButton");
   var useStarterViewButton = document.getElementById("useStarterViewButton");
@@ -153,6 +160,15 @@
     { value: "solid", label: "Color" },
     { value: "gradient", label: "Gradient" },
     { value: "image", label: "Image" }
+  ];
+  var starterSidebarColorPresets = [
+    { id: "dark", label: "Dark", color: "#111827" },
+    { id: "charcoal", label: "Charcoal", color: "#233044" },
+    { id: "blue", label: "Blue", color: "#123a5c" },
+    { id: "green", label: "Green", color: "#14532d" },
+    { id: "purple", label: "Purple", color: "#3b1d5a" },
+    { id: "light", label: "Light", color: "#f8fafc" },
+    { id: "custom", label: "Custom", color: "" }
   ];
   var starterViews = [
     {
@@ -861,6 +877,311 @@
     });
   }
 
+  function starterDraftVisibleKeys() {
+    return normalizeMenuKeyList(onboardingDraftPreset && onboardingDraftPreset.visibleItems || []);
+  }
+
+  function starterDraftHiddenKeys() {
+    var visibleSet = new Set(starterDraftVisibleKeys());
+
+    return allMenuKeys.filter(function keepHiddenStarterDraftItem(key) {
+      return !visibleSet.has(key);
+    });
+  }
+
+  function starterDraftColor(starter) {
+    var style = storage.normalizeSidebarStyle(onboardingDraftPreset && onboardingDraftPreset.sidebarStyle || starter && starter.sidebarStyle || {});
+
+    return normalizeHexColor(style.backgroundColor || starter && starter.sidebarStyle && starter.sidebarStyle.backgroundColor || starter && starter.accentColor || "#123a5c", "#123a5c");
+  }
+
+  function normalizeStarterTextColorMode(value) {
+    return ["auto", "light", "dark"].indexOf(String(value || "").toLowerCase()) !== -1 ? String(value || "").toLowerCase() : "auto";
+  }
+
+  function starterDraftTextColorMode() {
+    return normalizeStarterTextColorMode(onboardingDraftPreset && onboardingDraftPreset.profileMetadata && onboardingDraftPreset.profileMetadata.onboardingMenuTextColorMode);
+  }
+
+  function parseHexColorChannels(color) {
+    var normalized = normalizeHexColor(color, "#000000").replace("#", "");
+
+    return {
+      red: parseInt(normalized.slice(0, 2), 16),
+      green: parseInt(normalized.slice(2, 4), 16),
+      blue: parseInt(normalized.slice(4, 6), 16)
+    };
+  }
+
+  function relativeLuminanceChannel(channel) {
+    var normalized = channel / 255;
+
+    return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
+  }
+
+  function isLightStarterColor(color) {
+    var channels = parseHexColorChannels(color);
+    var luminance = 0.2126 * relativeLuminanceChannel(channels.red) + 0.7152 * relativeLuminanceChannel(channels.green) + 0.0722 * relativeLuminanceChannel(channels.blue);
+
+    return luminance >= 0.62;
+  }
+
+  function resolveStarterMenuTextColor(backgroundColor, textMode) {
+    var normalizedMode = normalizeStarterTextColorMode(textMode);
+
+    if (normalizedMode === "light") {
+      return "#f8fafc";
+    }
+    if (normalizedMode === "dark") {
+      return "#0f172a";
+    }
+
+    return isLightStarterColor(backgroundColor) ? "#0f172a" : "#f8fafc";
+  }
+
+  function starterColorPresetForColor(color) {
+    var normalizedColor = normalizeHexColor(color, "#123a5c");
+
+    return starterSidebarColorPresets.find(function findMatchingStarterColorPreset(preset) {
+      return preset.color && normalizeHexColor(preset.color, "") === normalizedColor;
+    }) || starterSidebarColorPresets.find(function findCustomStarterColorPreset(preset) {
+      return preset.id === "custom";
+    }) || null;
+  }
+
+  function buildStarterDraft(starter, draftOverrides) {
+    var sourceStyle = Object.assign({}, namespace.defaultSidebarStyle || {}, starter && starter.sidebarStyle || {}, draftOverrides && draftOverrides.sidebarStyle || {});
+    var sidebarStyle = storage.normalizeSidebarStyle(Object.assign(sourceStyle, {
+      enabled: true,
+      stylePath: "custom",
+      backgroundType: "solid",
+      backgroundAssetId: "",
+      customImageDataUrl: "",
+      gradientStartColor: "",
+      gradientEndColor: "",
+      backgroundImageUrl: "",
+      curatedShuffle: Object.assign({}, sourceStyle.curatedShuffle || {}, { enabled: false })
+    }));
+    var visibleItems = normalizeMenuKeyList(draftOverrides && draftOverrides.visibleItems || starter && starter.visibleItems || []);
+    var metadata = Object.assign({}, draftOverrides && draftOverrides.profileMetadata || {}, {
+      onboardingStarterViewId: starter.id,
+      onboardingStarterViewName: starter.name,
+      createdFromFirstRun: true,
+      sourceTemplateId: starter.sourceTemplateId || starter.id,
+      accentColor: starter.accentColor || "",
+      accentBorder: starter.accentBorder || starter.accentColor || "",
+      iconId: starter.iconId || "",
+      bestFor: starter.bestFor || "",
+      keepsLine: starter.keepsLine || "",
+      sidebarBackgroundColor: sidebarStyle.backgroundColor || ""
+    });
+    var normalizedBackgroundColor = normalizeHexColor(sidebarStyle.backgroundColor || starter && starter.sidebarStyle && starter.sidebarStyle.backgroundColor || starter && starter.accentColor || "#123a5c", "#123a5c");
+    var textColorMode = normalizeStarterTextColorMode(metadata.onboardingMenuTextColorMode);
+    var menuTextColor = resolveStarterMenuTextColor(normalizedBackgroundColor, textColorMode);
+
+    sidebarStyle.backgroundColor = normalizedBackgroundColor;
+    sidebarStyle.textColor = menuTextColor;
+    sidebarStyle.iconColor = menuTextColor;
+    metadata.sidebarBackgroundColor = normalizedBackgroundColor;
+    metadata.onboardingMenuTextColorMode = textColorMode;
+    metadata.onboardingMenuTextColor = menuTextColor;
+
+    return storage.normalizePreset({
+      id: draftOverrides && draftOverrides.id || namespace.createId("custom"),
+      name: starter.name,
+      description: starter.description,
+      source: "custom",
+      visibleItems: visibleItems,
+      labelOverrides: Object.assign({}, starter.labelOverrides || {}),
+      customLinks: [],
+      menuGroups: [],
+      sidebarStyle: sidebarStyle,
+      profileMetadata: metadata,
+      showInPopup: true,
+      archived: false,
+      updatedAt: namespace.nowIso()
+    });
+  }
+
+  function ensureOnboardingDraft(starter) {
+    if (!starter) {
+      return null;
+    }
+
+    if (!onboardingDraftPreset || !onboardingDraftPreset.profileMetadata || onboardingDraftPreset.profileMetadata.onboardingStarterViewId !== starter.id) {
+      onboardingDraftPreset = buildStarterDraft(starter);
+    }
+
+    return onboardingDraftPreset;
+  }
+
+  function setStarterDraftVisibleKeys(items) {
+    var starter = getStarterViewById(selectedStarterViewId);
+
+    if (!starter) {
+      return;
+    }
+
+    onboardingDraftPreset = buildStarterDraft(starter, Object.assign({}, onboardingDraftPreset || {}, {
+      visibleItems: normalizeMenuKeyList(items),
+      sidebarStyle: onboardingDraftPreset && onboardingDraftPreset.sidebarStyle
+    }));
+  }
+
+  function updateStarterDraftColor(color) {
+    var starter = getStarterViewById(selectedStarterViewId);
+    var normalizedColor = normalizeHexColor(color, starterDraftColor(starter));
+    var nextStyle = storage.normalizeSidebarStyle(Object.assign({}, onboardingDraftPreset && onboardingDraftPreset.sidebarStyle || starter && starter.sidebarStyle || {}, {
+      enabled: true,
+      stylePath: "custom",
+      backgroundType: "solid",
+      backgroundColor: normalizedColor,
+      backgroundAssetId: "",
+      customImageDataUrl: "",
+      gradientStartColor: "",
+      gradientEndColor: "",
+      backgroundImageUrl: ""
+    }));
+
+    if (!starter) {
+      return;
+    }
+
+    onboardingDraftPreset = buildStarterDraft(starter, Object.assign({}, onboardingDraftPreset || {}, {
+      sidebarStyle: nextStyle,
+      visibleItems: starterDraftVisibleKeys()
+    }));
+  }
+
+  function updateStarterDraftTextColorMode(mode) {
+    var starter = getStarterViewById(selectedStarterViewId);
+    var normalizedMode = normalizeStarterTextColorMode(mode);
+
+    if (!starter) {
+      return;
+    }
+
+    onboardingDraftPreset = buildStarterDraft(starter, Object.assign({}, onboardingDraftPreset || {}, {
+      sidebarStyle: Object.assign({}, onboardingDraftPreset && onboardingDraftPreset.sidebarStyle || starter.sidebarStyle || {}),
+      visibleItems: starterDraftVisibleKeys(),
+      profileMetadata: Object.assign({}, onboardingDraftPreset && onboardingDraftPreset.profileMetadata || {}, {
+        onboardingMenuTextColorMode: normalizedMode
+      })
+    }));
+  }
+
+  function applyOnboardingDraftPreview() {
+    var starter = getStarterViewById(selectedStarterViewId);
+    var draft = ensureOnboardingDraft(starter);
+
+    if (!starter || !draft) {
+      return;
+    }
+
+    sendToContentScript({ type: "previewPreset", preset: draft }, function handlePreviewApplied(result) {
+      if (!result || !result.ok) {
+        if (starterPreviewDraftStatus) {
+          starterPreviewDraftStatus.textContent = "Preview ready in CleanView. Open or focus a GHL tab to see it live.";
+        }
+        setStatus(result && result.contentScriptUnreachable ? "Preview could not reach the GHL page yet. Reload the tab and choose the starter again." : "Preview ready. Open or focus a GHL tab to see it live.", true, result && result.contentScriptUnreachable ? {
+          showReloadGhlAction: true,
+          reloadTabId: result.targetTabId
+        } : undefined);
+        return;
+      }
+
+      if (starterPreviewDraftStatus) {
+        starterPreviewDraftStatus.textContent = "Previewing " + starter.name + ". This has not been saved yet.";
+      }
+      setStatus("Previewing " + starter.name + ". This has not been saved yet.");
+    });
+  }
+
+  function renderStarterMenuChip(key, isVisible) {
+    var starter = getStarterViewById(selectedStarterViewId);
+    var chip = document.createElement("div");
+    var label = document.createElement("span");
+    var button = document.createElement("button");
+
+    chip.className = "menu-group-chip starter-menu-chip";
+    chip.draggable = true;
+    chip.tabIndex = 0;
+    chip.dataset.starterMenuKey = key;
+    label.textContent = starterMenuLabel(key, starter);
+    button.type = "button";
+    button.className = "menu-group-chip-remove";
+    button.textContent = isVisible ? "Hide" : "Show";
+    button.dataset.starterMenuToggle = key;
+    button.dataset.starterMenuVisible = isVisible ? "false" : "true";
+    chip.appendChild(label);
+    chip.appendChild(button);
+    return chip;
+  }
+
+  function renderStarterMenuCustomizer(starter) {
+    var visibleKeys = starterDraftVisibleKeys();
+    var hiddenKeys = starterDraftHiddenKeys();
+
+    if (starterPreviewShownList) {
+      starterPreviewShownList.innerHTML = "";
+      visibleKeys.forEach(function renderVisibleStarterItem(key) {
+        starterPreviewShownList.appendChild(renderStarterMenuChip(key, true));
+      });
+    }
+
+    if (starterPreviewHiddenList) {
+      starterPreviewHiddenList.innerHTML = "";
+      hiddenKeys.forEach(function renderHiddenStarterItem(key) {
+        starterPreviewHiddenList.appendChild(renderStarterMenuChip(key, false));
+      });
+    }
+
+    if (starterPreviewDraftStatus) {
+      starterPreviewDraftStatus.textContent = "Previewing " + starter.name + ". This has not been saved yet.";
+    }
+  }
+
+  function renderStarterColorGrid(starter) {
+    var currentColor = starterDraftColor(starter);
+    var activePreset = starterColorPresetForColor(currentColor);
+    var currentTextMode = starterDraftTextColorMode();
+
+    if (starterColorPresetList) {
+      starterColorPresetList.innerHTML = "";
+      starterSidebarColorPresets.forEach(function renderColorPreset(preset) {
+      var swatch = document.createElement("button");
+      var swatchDot = document.createElement("span");
+      var label = document.createElement("span");
+      var presetColor = preset.color ? normalizeHexColor(preset.color, currentColor) : currentColor;
+
+      swatch.type = "button";
+      swatch.className = "starter-color-option";
+      if (activePreset && preset.id === activePreset.id) {
+        swatch.className += " is-selected";
+      }
+      swatch.dataset.starterColorPreset = preset.id;
+      swatch.dataset.starterColor = presetColor;
+      swatchDot.className = "starter-color-option-swatch";
+      swatchDot.style.setProperty("--starter-swatch-color", presetColor);
+      label.className = "starter-color-option-label";
+      label.textContent = preset.label;
+      swatch.appendChild(swatchDot);
+      swatch.appendChild(label);
+      starterColorPresetList.appendChild(swatch);
+      });
+    }
+
+    if (starterCustomColorPicker) {
+      starterCustomColorPicker.value = currentColor;
+    }
+    if (starterCustomColorValue) {
+      starterCustomColorValue.value = currentColor;
+    }
+    if (starterTextColorMode) {
+      starterTextColorMode.value = currentTextMode;
+    }
+  }
+
   function renderStarterChooser() {
     if (!starterViewGrid) {
       return;
@@ -919,15 +1240,16 @@
       return;
     }
 
+    ensureOnboardingDraft(starter);
     if (starterPreviewTitle) {
       starterPreviewTitle.textContent = starter.name;
     }
     if (starterPreviewDescription) {
-      starterPreviewDescription.textContent = starter.description;
+      starterPreviewDescription.textContent = "Previewing " + starter.name + ". This has not been saved yet.";
     }
     renderStarterBadge(starterPreviewBadge, starterPreviewPanel, starter, starterPreviewMeta, starter.keepsLine || starter.bestFor);
-    renderStarterItemList(starterPreviewShownList, starterVisibleKeys(starter), starter, "No native items will be shown.");
-    renderStarterItemList(starterPreviewHiddenList, starterHiddenKeys(starter), starter, "No native items will be hidden.");
+    renderStarterMenuCustomizer(starter);
+    renderStarterColorGrid(starter);
   }
 
   function renderStarterSuccess(starter) {
@@ -1006,6 +1328,9 @@
       }
     }
     if (starterId) {
+      if (starterId !== selectedStarterViewId) {
+        onboardingDraftPreset = null;
+      }
       selectedStarterViewId = starterId;
     }
     render();
@@ -1147,20 +1472,16 @@
 
   function normalizeMenuKeyList(items) {
     var seen = {};
+    var normalizedItems = [];
 
     (items || []).forEach(function markMenuKey(key) {
-      if (allMenuKeys.indexOf(key) !== -1) {
+      if (allMenuKeys.indexOf(key) !== -1 && !seen[key]) {
         seen[key] = true;
+        normalizedItems.push(key);
       }
     });
 
-    return allMenuKeys.filter(function keepMenuKey(key) {
-      if (!seen[key]) {
-        return false;
-      }
-      seen[key] = true;
-      return true;
-    });
+    return normalizedItems;
   }
 
   function setVisibleMenuKeysInEditor(items) {
@@ -5058,8 +5379,13 @@
     return null;
   }
 
-  function buildStarterProfile(starter, existingProfile) {
-    var metadata = Object.assign({}, existingProfile && existingProfile.profileMetadata || {}, {
+  function buildStarterProfile(starter, existingProfile, draftPreset) {
+    var draft = draftPreset || {};
+    var draftStyle = draft.sidebarStyle || {};
+    var draftMetadata = draft.profileMetadata || {};
+    var draftVisibleItems = Array.isArray(draft.visibleItems) && draft.visibleItems.length ? draft.visibleItems : starterVisibleKeys(starter);
+    var starterSidebarStyle = storage.normalizeSidebarStyle(Object.assign({}, namespace.defaultSidebarStyle || {}, starter && starter.sidebarStyle || {}, draftStyle));
+    var metadata = Object.assign({}, existingProfile && existingProfile.profileMetadata || {}, draftMetadata, {
       onboardingStarterViewId: starter.id,
       onboardingStarterViewName: starter.name,
       createdFromFirstRun: true,
@@ -5069,16 +5395,17 @@
       iconId: starter.iconId || "",
       bestFor: starter.bestFor || "",
       keepsLine: starter.keepsLine || "",
-      sidebarBackgroundColor: starter.sidebarStyle && starter.sidebarStyle.backgroundColor || ""
+      sidebarBackgroundColor: starterSidebarStyle.backgroundColor || "",
+      onboardingMenuTextColorMode: normalizeStarterTextColorMode(draftMetadata.onboardingMenuTextColorMode),
+      onboardingMenuTextColor: starterSidebarStyle.textColor || ""
     });
-    var starterSidebarStyle = storage.normalizeSidebarStyle(Object.assign({}, namespace.defaultSidebarStyle || {}, starter && starter.sidebarStyle || {}));
 
     return storage.normalizePreset({
       id: existingProfile && existingProfile.id || namespace.createId("custom"),
       name: starter.name,
       description: starter.description,
       source: "custom",
-      visibleItems: starterVisibleKeys(starter),
+      visibleItems: normalizeMenuKeyList(draftVisibleItems),
       labelOverrides: Object.assign({}, starter.labelOverrides || {}),
       customLinks: existingProfile && Array.isArray(existingProfile.customLinks) ? existingProfile.customLinks.slice() : [],
       menuGroups: [],
@@ -5096,24 +5423,27 @@
         useStarterViewButton.disabled = false;
       }
 
+      onboardingMode = "";
       if (!result || !result.ok) {
         if (result && result.contentScriptUnreachable) {
           starterApplyMessage = "View saved, but CleanView could not reach the GHL page yet. Reload the tab, then click Apply Live to GHL.";
+          render();
           setStatus(starterApplyMessage, true, {
             showReloadGhlAction: true,
             reloadTabId: result.targetTabId
           });
-          setOnboardingMode("success", starter.id);
           return;
         }
         starterApplyMessage = result && (result.message || result.error) ? result.message || result.error : "Saved. Open a GHL page to apply this view live.";
+        render();
         setStatus(starterApplyMessage, true);
-      } else {
-        starterApplyMessage = result.message || "Applied to open GHL tab.";
-        setStatus(starterApplyMessage);
+        return;
       }
 
-      setOnboardingMode("success", starter.id);
+      starterApplyMessage = result.message || "Applied to open GHL tab.";
+      render();
+      setStatus("View created and set active.");
+      resetDirtyStateFromRenderedDraft();
     });
   }
 
@@ -5128,8 +5458,7 @@
     }
 
     storage.updateState(function updateStarterProfile(nextState) {
-      var existingProfile = findReusableStarterProfile(nextState, starter);
-      var profile = buildStarterProfile(starter, existingProfile);
+      var profile = buildStarterProfile(starter, null, ensureOnboardingDraft(starter));
 
       nextState.presets[profile.id] = profile;
       nextState.activePresetId = profile.id;
@@ -5148,7 +5477,7 @@
 
       state = nextState;
       selectedPresetId = nextState.activePresetId;
-      starterApplyMessage = "Starter view saved.";
+      starterApplyMessage = "View created.";
       applyStarterViewAfterSave(starter);
     });
   }
@@ -5317,6 +5646,7 @@
       }
 
       setOnboardingMode("preview", card.dataset.starterViewId);
+      applyOnboardingDraftPreview();
     });
   }
 
@@ -5335,6 +5665,205 @@
   if (useStarterViewButton) {
     useStarterViewButton.addEventListener("click", function useStarterView() {
       saveStarterView(getStarterViewById(selectedStarterViewId));
+    });
+  }
+
+  function getStarterMenuDropZone(target) {
+    return target && target.closest ? target.closest("[data-starter-menu-drop-zone]") : null;
+  }
+
+  function getStarterMenuInsertIndex(event, dropZone) {
+    var chip = event.target && event.target.closest ? event.target.closest("[data-starter-menu-key]") : null;
+    var chips = dropZone ? Array.prototype.slice.call(dropZone.querySelectorAll("[data-starter-menu-key]")) : [];
+    var index = chips.indexOf(chip);
+    var rect = chip && chip.getBoundingClientRect ? chip.getBoundingClientRect() : null;
+    var afterMidpoint = rect && (event.clientY > rect.top + rect.height / 2 || event.clientX > rect.left + rect.width / 2);
+
+    if (!chip || index === -1) {
+      return chips.length;
+    }
+
+    return afterMidpoint ? index + 1 : index;
+  }
+
+  function clearStarterMenuDropState() {
+    [starterPreviewShownList, starterPreviewHiddenList].forEach(function clearStarterZone(zone) {
+      if (!zone) {
+        return;
+      }
+      zone.classList.remove("is-drop-target");
+      zone.querySelectorAll(".is-dragging").forEach(function clearDragged(chip) {
+        chip.classList.remove("is-dragging");
+      });
+    });
+  }
+
+  function updateStarterMenuVisibility(key, shouldShow, insertIndex) {
+    var currentVisibleKeys = starterDraftVisibleKeys();
+    var currentIndex = currentVisibleKeys.indexOf(key);
+    var visibleKeys = currentVisibleKeys.filter(function keepOtherStarterKey(itemKey) {
+      return itemKey !== key;
+    });
+    var nextIndex = Number(insertIndex);
+
+    if (shouldShow && allMenuKeys.indexOf(key) !== -1) {
+      if (Number.isNaN(nextIndex) || nextIndex < 0 || nextIndex > visibleKeys.length) {
+        nextIndex = visibleKeys.length;
+      } else if (currentIndex !== -1 && currentIndex < nextIndex) {
+        nextIndex -= 1;
+      }
+      visibleKeys.splice(nextIndex, 0, key);
+    }
+
+    setStarterDraftVisibleKeys(visibleKeys);
+    renderStarterPreview(getStarterViewById(selectedStarterViewId));
+    applyOnboardingDraftPreview();
+  }
+
+  function attachStarterMenuEvents(container) {
+    if (!container) {
+      return;
+    }
+
+    container.addEventListener("click", function handleStarterMenuClick(event) {
+      var key = event.target.dataset.starterMenuToggle;
+
+      if (!key) {
+        return;
+      }
+
+      updateStarterMenuVisibility(key, event.target.dataset.starterMenuVisible === "true");
+    });
+
+    container.addEventListener("dragstart", function handleStarterMenuDragStart(event) {
+      var chip = event.target.closest("[data-starter-menu-key]");
+
+      if (!chip) {
+        return;
+      }
+
+      draggedStarterMenuKey = chip.dataset.starterMenuKey;
+      chip.classList.add("is-dragging");
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", draggedStarterMenuKey);
+      }
+    });
+
+    container.addEventListener("dragover", function handleStarterMenuDragOver(event) {
+      var dropZone = getStarterMenuDropZone(event.target);
+
+      if (!dropZone || !draggedStarterMenuKey) {
+        return;
+      }
+
+      event.preventDefault();
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = "move";
+      }
+      clearStarterMenuDropState();
+      dropZone.classList.add("is-drop-target");
+    });
+
+    container.addEventListener("dragleave", function handleStarterMenuDragLeave(event) {
+      var dropZone = getStarterMenuDropZone(event.target);
+
+      if (dropZone && event.relatedTarget && dropZone.contains(event.relatedTarget)) {
+        return;
+      }
+      if (dropZone) {
+        dropZone.classList.remove("is-drop-target");
+      }
+    });
+
+    container.addEventListener("drop", function handleStarterMenuDrop(event) {
+      var dropZone = getStarterMenuDropZone(event.target);
+      var draggedKey = draggedStarterMenuKey;
+      var shouldShow = dropZone && dropZone.dataset.starterMenuDropZone === "visible";
+      var insertIndex = shouldShow ? getStarterMenuInsertIndex(event, dropZone) : undefined;
+
+      if (event.dataTransfer) {
+        draggedKey = event.dataTransfer.getData("text/plain") || draggedKey;
+      }
+      if (!dropZone || !draggedKey) {
+        clearStarterMenuDropState();
+        draggedStarterMenuKey = "";
+        return;
+      }
+
+      event.preventDefault();
+      updateStarterMenuVisibility(draggedKey, shouldShow, insertIndex);
+      clearStarterMenuDropState();
+      draggedStarterMenuKey = "";
+    });
+
+    container.addEventListener("dragend", function handleStarterMenuDragEnd() {
+      clearStarterMenuDropState();
+      draggedStarterMenuKey = "";
+    });
+  }
+
+  attachStarterMenuEvents(starterPreviewShownList);
+  attachStarterMenuEvents(starterPreviewHiddenList);
+
+  function refreshStarterColorStepPreview() {
+    renderStarterPreview(getStarterViewById(selectedStarterViewId));
+    applyOnboardingDraftPreview();
+  }
+
+  if (starterColorPresetList) {
+    starterColorPresetList.addEventListener("click", function chooseStarterColorPreset(event) {
+      var swatch = event.target.closest("[data-starter-color-preset]");
+      var presetId = swatch && swatch.dataset.starterColorPreset;
+
+      if (!swatch) {
+        return;
+      }
+
+      if (presetId === "custom") {
+        if (starterCustomColorPicker) {
+          starterCustomColorPicker.focus();
+          starterCustomColorPicker.click();
+        }
+        return;
+      }
+
+      updateStarterDraftColor(swatch.dataset.starterColor);
+      refreshStarterColorStepPreview();
+    });
+  }
+
+  if (starterCustomColorPicker) {
+    starterCustomColorPicker.addEventListener("input", function chooseStarterCustomColor() {
+      if (starterCustomColorValue) {
+        starterCustomColorValue.value = starterCustomColorPicker.value;
+      }
+      updateStarterDraftColor(starterCustomColorPicker.value);
+      refreshStarterColorStepPreview();
+    });
+  }
+
+  if (starterCustomColorValue) {
+    starterCustomColorValue.addEventListener("input", function editStarterCustomColorValue() {
+      var normalizedValue = normalizeHexColor(starterCustomColorValue.value, "");
+
+      if (!isValidHexColor(starterCustomColorValue.value)) {
+        return;
+      }
+
+      starterCustomColorValue.value = normalizedValue;
+      if (starterCustomColorPicker) {
+        starterCustomColorPicker.value = normalizedValue;
+      }
+      updateStarterDraftColor(normalizedValue);
+      refreshStarterColorStepPreview();
+    });
+  }
+
+  if (starterTextColorMode) {
+    starterTextColorMode.addEventListener("change", function chooseStarterTextColorMode() {
+      updateStarterDraftTextColorMode(starterTextColorMode.value);
+      refreshStarterColorStepPreview();
     });
   }
 
