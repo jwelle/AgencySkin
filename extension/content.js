@@ -7,6 +7,7 @@
   var reapplyTimer = null;
   var currentState = null;
   var currentPreset = null;
+  var activePreviewPreset = null;
   var styleBlockId = "agencyskin-cleanview-sidebar-style";
   var preloadGuardStyleId = "agencyskin-cleanview-preload-guard";
   var preloadGuardTimer = null;
@@ -1993,6 +1994,7 @@
 
   function applyCurrentState(state) {
     currentState = state;
+    activePreviewPreset = null;
 
     return withObserverPaused(function applyWithObserverPaused() {
       if (!state.enabled) {
@@ -2077,6 +2079,12 @@
   function scheduleReapply() {
     window.clearTimeout(reapplyTimer);
     reapplyTimer = window.setTimeout(function reapplyCurrentState() {
+      if (activePreviewPreset) {
+        withObserverPaused(function reapplyPreviewPreset() {
+          applyPresetObject(activePreviewPreset);
+        });
+        return;
+      }
       if (currentState && currentState.enabled) {
         withObserverPaused(function reapplyWithObserverPaused() {
           applyPresetObject(resolvePreset(currentState));
@@ -2254,7 +2262,8 @@
 
     if (message.type === "previewPreset") {
       respond(sendResponse, withObserverPaused(function previewWithObserverPaused() {
-        return applyPresetObject(message.preset || storage.getPresetById(currentState, "builtin:simple"));
+        activePreviewPreset = message.preset || storage.getPresetById(currentState, "builtin:simple");
+        return applyPresetObject(activePreviewPreset);
       }));
       return false;
     }

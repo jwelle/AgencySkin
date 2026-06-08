@@ -15,6 +15,7 @@
   var onboardingMode = "";
   var selectedStarterViewId = "";
   var onboardingDraftPreset = null;
+  var postCreationMenuOnlyMode = false;
   var starterApplyMessage = "";
   var starterFlowSource = "first_run";
   var isDirty = false;
@@ -43,21 +44,24 @@
   var starterPreviewMeta = document.getElementById("starterPreviewMeta");
   var starterPreviewShownList = document.getElementById("starterPreviewShownList");
   var starterPreviewHiddenList = document.getElementById("starterPreviewHiddenList");
-  var starterPreviewDraftStatus = document.getElementById("starterPreviewDraftStatus");
+  var starterPreviewHelper = document.getElementById("starterPreviewHelper");
   var starterColorPresetList = document.getElementById("starterColorPresetList");
   var starterCustomColorPicker = document.getElementById("starterCustomColorPicker");
   var starterCustomColorValue = document.getElementById("starterCustomColorValue");
   var starterTextColorMode = document.getElementById("starterTextColorMode");
+  var starterViewNameInput = document.getElementById("starterViewNameInput");
   var starterChooserBackButton = document.getElementById("starterChooserBackButton");
   var starterPreviewBackButton = document.getElementById("starterPreviewBackButton");
   var useStarterViewButton = document.getElementById("useStarterViewButton");
   var starterSuccessTitle = document.getElementById("starterSuccessTitle");
   var starterSuccessMessage = document.getElementById("starterSuccessMessage");
+  var starterSuccessProfileName = document.getElementById("starterSuccessProfileName");
   var starterSuccessBadge = document.getElementById("starterSuccessBadge");
   var starterSuccessMeta = document.getElementById("starterSuccessMeta");
-  var starterSuccessShownList = document.getElementById("starterSuccessShownList");
-  var starterSuccessHiddenList = document.getElementById("starterSuccessHiddenList");
-  var customizeStarterViewButton = document.getElementById("customizeStarterViewButton");
+  var starterSuccessWhatHappened = document.getElementById("starterSuccessWhatHappened");
+  var starterSuccessSkipped = document.getElementById("starterSuccessSkipped");
+  var editStarterMenuButton = document.getElementById("editStarterMenuButton");
+  var openStarterFullEditorButton = document.getElementById("openStarterFullEditorButton");
   var doneStarterViewButton = document.getElementById("doneStarterViewButton");
   var activeViewOverviewPanel = document.getElementById("activeViewOverviewPanel");
   var activeViewBadge = document.getElementById("activeViewBadge");
@@ -87,12 +91,16 @@
   var createProfileFromTemplateButton = document.getElementById("createProfileFromTemplateButton");
   var menuEditor = document.getElementById("menuEditor");
   var menuGroupEditor = document.getElementById("menuGroupEditor");
+  var menuBuilderDescription = document.getElementById("menuBuilderDescription");
   var addMenuGroupButton = document.getElementById("addMenuGroupButton");
   var renameEditor = document.getElementById("renameEditor");
   var linkEditor = document.getElementById("linkEditor");
   var locationRules = document.getElementById("locationRules");
   var statusMessage = document.getElementById("statusMessage");
   var reloadGhlTabButton = document.getElementById("reloadGhlTabButton");
+  var postCreationMenuActions = document.getElementById("postCreationMenuActions");
+  var backToStarterSummaryButton = document.getElementById("backToStarterSummaryButton");
+  var doneEditingStarterMenuButton = document.getElementById("doneEditingStarterMenuButton");
   var currentLocationLabel = document.getElementById("currentLocationLabel");
   var sidebarStyleEnabled = document.getElementById("sidebarStyleEnabled");
   var sidebarStylePreset = document.getElementById("sidebarStylePreset");
@@ -895,6 +903,18 @@
     return normalizeHexColor(style.backgroundColor || starter && starter.sidebarStyle && starter.sidebarStyle.backgroundColor || starter && starter.accentColor || "#123a5c", "#123a5c");
   }
 
+  function defaultStarterProfileName(starter) {
+    return String(starter && starter.name || "My CleanView").trim() || "My CleanView";
+  }
+
+  function resolvedStarterProfileName(starter, value) {
+    return String(value || "").trim() || defaultStarterProfileName(starter);
+  }
+
+  function starterDraftName(starter) {
+    return resolvedStarterProfileName(starter, onboardingDraftPreset && onboardingDraftPreset.name);
+  }
+
   function normalizeStarterTextColorMode(value) {
     return ["auto", "light", "dark"].indexOf(String(value || "").toLowerCase()) !== -1 ? String(value || "").toLowerCase() : "auto";
   }
@@ -949,6 +969,51 @@
     }) || null;
   }
 
+  function starterColorLabel(color) {
+    var normalizedColor = normalizeHexColor(color, "#123a5c");
+    var preset = starterColorPresetForColor(normalizedColor);
+
+    if (!preset || preset.id === "custom") {
+      return normalizedColor || "Custom";
+    }
+
+    return preset.label || normalizedColor;
+  }
+
+  function starterTextColorModeLabel(value) {
+    var normalizedMode = normalizeStarterTextColorMode(value);
+
+    if (normalizedMode === "light") {
+      return "Light";
+    }
+    if (normalizedMode === "dark") {
+      return "Dark";
+    }
+
+    return "Auto";
+  }
+
+  function buildStarterSuccessSummaryRows(rows) {
+    var fragment = document.createDocumentFragment();
+
+    rows.forEach(function renderStarterSummaryRow(row) {
+      var wrapper = document.createElement("div");
+      var label = document.createElement("span");
+      var value = document.createElement("span");
+
+      wrapper.className = "starter-summary-row";
+      label.className = "starter-summary-label";
+      value.className = "starter-summary-value";
+      label.textContent = row.label;
+      value.textContent = row.value;
+      wrapper.appendChild(label);
+      wrapper.appendChild(value);
+      fragment.appendChild(wrapper);
+    });
+
+    return fragment;
+  }
+
   function buildStarterDraft(starter, draftOverrides) {
     var sourceStyle = Object.assign({}, namespace.defaultSidebarStyle || {}, starter && starter.sidebarStyle || {}, draftOverrides && draftOverrides.sidebarStyle || {});
     var sidebarStyle = storage.normalizeSidebarStyle(Object.assign(sourceStyle, {
@@ -988,7 +1053,7 @@
 
     return storage.normalizePreset({
       id: draftOverrides && draftOverrides.id || namespace.createId("custom"),
-      name: starter.name,
+      name: resolvedStarterProfileName(starter, draftOverrides && draftOverrides.name || starter && starter.name || "My CleanView"),
       description: starter.description,
       source: "custom",
       visibleItems: visibleItems,
@@ -1023,8 +1088,25 @@
     }
 
     onboardingDraftPreset = buildStarterDraft(starter, Object.assign({}, onboardingDraftPreset || {}, {
+      name: starterDraftName(starter),
       visibleItems: normalizeMenuKeyList(items),
       sidebarStyle: onboardingDraftPreset && onboardingDraftPreset.sidebarStyle
+    }));
+  }
+
+  function updateStarterDraftName(name) {
+    var starter = getStarterViewById(selectedStarterViewId);
+    var nextName = resolvedStarterProfileName(starter, name);
+
+    if (!starter) {
+      return;
+    }
+
+    onboardingDraftPreset = buildStarterDraft(starter, Object.assign({}, onboardingDraftPreset || {}, {
+      name: nextName,
+      sidebarStyle: onboardingDraftPreset && onboardingDraftPreset.sidebarStyle,
+      visibleItems: starterDraftVisibleKeys(),
+      profileMetadata: onboardingDraftPreset && onboardingDraftPreset.profileMetadata
     }));
   }
 
@@ -1048,6 +1130,7 @@
     }
 
     onboardingDraftPreset = buildStarterDraft(starter, Object.assign({}, onboardingDraftPreset || {}, {
+      name: starterDraftName(starter),
       sidebarStyle: nextStyle,
       visibleItems: starterDraftVisibleKeys()
     }));
@@ -1062,6 +1145,7 @@
     }
 
     onboardingDraftPreset = buildStarterDraft(starter, Object.assign({}, onboardingDraftPreset || {}, {
+      name: starterDraftName(starter),
       sidebarStyle: Object.assign({}, onboardingDraftPreset && onboardingDraftPreset.sidebarStyle || starter.sidebarStyle || {}),
       visibleItems: starterDraftVisibleKeys(),
       profileMetadata: Object.assign({}, onboardingDraftPreset && onboardingDraftPreset.profileMetadata || {}, {
@@ -1080,18 +1164,18 @@
 
     sendToContentScript({ type: "previewPreset", preset: draft }, function handlePreviewApplied(result) {
       if (!result || !result.ok) {
-        if (starterPreviewDraftStatus) {
-          starterPreviewDraftStatus.textContent = "Preview ready in CleanView. Open or focus a GHL tab to see it live.";
+        if (starterPreviewHelper) {
+          starterPreviewHelper.textContent = "Previewing " + (starter && starter.name || "Starter") + ". This has not been saved yet.";
         }
-        setStatus(result && result.contentScriptUnreachable ? "Preview could not reach the GHL page yet. Reload the tab and choose the starter again." : "Preview ready. Open or focus a GHL tab to see it live.", true, result && result.contentScriptUnreachable ? {
+        setStatus(result && result.contentScriptUnreachable ? "Preview is queued while GHL finishes loading. Reload the tab if it does not appear." : "Previewing " + (starter && starter.name || "Starter") + ". This has not been saved yet.", result && result.contentScriptUnreachable, result && result.contentScriptUnreachable ? {
           showReloadGhlAction: true,
           reloadTabId: result.targetTabId
         } : undefined);
         return;
       }
 
-      if (starterPreviewDraftStatus) {
-        starterPreviewDraftStatus.textContent = "Previewing " + starter.name + ". This has not been saved yet.";
+      if (starterPreviewHelper) {
+        starterPreviewHelper.textContent = "Previewing " + starter.name + ". This has not been saved yet.";
       }
       setStatus("Previewing " + starter.name + ". This has not been saved yet.");
     });
@@ -1136,8 +1220,8 @@
       });
     }
 
-    if (starterPreviewDraftStatus) {
-      starterPreviewDraftStatus.textContent = "Previewing " + starter.name + ". This has not been saved yet.";
+    if (starterPreviewHelper) {
+      starterPreviewHelper.textContent = "Previewing " + starter.name + ". This has not been saved yet.";
     }
   }
 
@@ -1198,12 +1282,15 @@
       var meta = document.createElement("span");
       var keeps = document.createElement("span");
       var count = document.createElement("span");
+      var selectedBadge = document.createElement("span");
+      var isSelected = starter.id === selectedStarterViewId;
 
       card.type = "button";
       card.className = "starter-view-card";
-      if (starter.id === selectedStarterViewId) {
+      if (isSelected) {
         card.className += " is-selected";
       }
+      card.setAttribute("aria-pressed", isSelected ? "true" : "false");
       card.dataset.starterViewId = starter.id;
       card.style.setProperty("--starter-accent", starter.accentColor || "#2563eb");
       card.style.setProperty("--starter-accent-soft", starter.accentSoft || "#dbeafe");
@@ -1222,11 +1309,15 @@
       keeps.textContent = starter.keepsLine || "";
       count.className = "starter-card-count";
       count.textContent = starterVisibleKeys(starter).length + " shown / " + starterHiddenKeys(starter).length + " hidden";
+      selectedBadge.className = "starter-card-selected-badge";
+      selectedBadge.textContent = "Selected";
+      selectedBadge.hidden = !isSelected;
 
       copy.appendChild(title);
       copy.appendChild(meta);
       hero.appendChild(icon);
       hero.appendChild(copy);
+      card.appendChild(selectedBadge);
       card.appendChild(hero);
       card.appendChild(description);
       card.appendChild(keeps);
@@ -1245,27 +1336,63 @@
       starterPreviewTitle.textContent = starter.name;
     }
     if (starterPreviewDescription) {
-      starterPreviewDescription.textContent = "Previewing " + starter.name + ". This has not been saved yet.";
+      starterPreviewDescription.textContent = starter.description;
     }
     renderStarterBadge(starterPreviewBadge, starterPreviewPanel, starter, starterPreviewMeta, starter.keepsLine || starter.bestFor);
     renderStarterMenuCustomizer(starter);
     renderStarterColorGrid(starter);
+    if (starterViewNameInput) {
+      starterViewNameInput.value = starterDraftName(starter);
+    }
   }
 
   function renderStarterSuccess(starter) {
-    if (!starter) {
+    var preset = selectedPreset();
+    var metadata = preset && preset.profileMetadata || {};
+    var profileName = preset && (preset.name || preset.label) || "My CleanView";
+    var visibleCount = preset && Array.isArray(preset.visibleItems) ? preset.visibleItems.length : starter ? starterVisibleKeys(starter).length : 0;
+    var hiddenCount = Math.max(0, allMenuKeys.length - visibleCount);
+    var sidebarColor = starterColorLabel(metadata.sidebarBackgroundColor || preset && preset.sidebarStyle && preset.sidebarStyle.backgroundColor || "");
+    var textColorMode = starterTextColorModeLabel(metadata.onboardingMenuTextColorMode);
+    var starterName = metadata.onboardingStarterViewName || starter && starter.name || "Starter";
+
+    if (!preset) {
       return;
     }
 
     if (starterSuccessTitle) {
-      starterSuccessTitle.textContent = starter.name + " is active";
+      starterSuccessTitle.textContent = "Your CleanView is ready";
     }
     if (starterSuccessMessage) {
-      starterSuccessMessage.textContent = starterApplyMessage || "Your CleanView profile is saved and ready.";
+      starterSuccessMessage.textContent = "Your GHL sidebar has been simplified and saved as:";
     }
-    renderStarterBadge(starterSuccessBadge, starterSuccessPanel, starter, starterSuccessMeta, starter.bestFor);
-    renderStarterItemList(starterSuccessShownList, starterVisibleKeys(starter), starter, "No native items are shown.");
-    renderStarterItemList(starterSuccessHiddenList, starterHiddenKeys(starter), starter, "No native items are hidden.");
+    if (starterSuccessProfileName) {
+      starterSuccessProfileName.textContent = '"' + profileName + '"';
+    }
+    renderStarterBadge(starterSuccessBadge, starterSuccessPanel, starter, starterSuccessMeta, starterApplyMessage || "Quick setup is complete. You can add more later.");
+
+    if (starterSuccessWhatHappened) {
+      starterSuccessWhatHappened.innerHTML = "";
+      starterSuccessWhatHappened.appendChild(buildStarterSuccessSummaryRows([
+        { label: "Starter used", value: starterName },
+        { label: "Menu items shown", value: String(visibleCount) },
+        { label: "Menu items hidden", value: String(hiddenCount) },
+        { label: "Sidebar color", value: sidebarColor || "Custom" },
+        { label: "Menu text color", value: textColorMode || "Auto" }
+      ]));
+    }
+
+    if (starterSuccessSkipped) {
+      starterSuccessSkipped.innerHTML = "";
+      starterSuccessSkipped.appendChild(buildStarterSuccessSummaryRows([
+        { label: "Logo", value: "Not added" },
+        { label: "Menu groups", value: "Not added" },
+        { label: "Style gradient", value: "Not added" },
+        { label: "Image upload", value: "Not added" },
+        { label: "Quick links", value: "0 configured" },
+        { label: "Deep links", value: "0 configured" }
+      ]));
+    }
   }
 
   function renderStarterChooserBackButton() {
@@ -1321,6 +1448,7 @@
 
   function setOnboardingMode(mode, starterId) {
     onboardingMode = mode || "";
+    postCreationMenuOnlyMode = false;
     if (onboardingMode) {
       clearDirtyState();
       if (!starterFlowSource) {
@@ -1338,6 +1466,7 @@
 
   function openProfilesView(statusText) {
     onboardingMode = "";
+    postCreationMenuOnlyMode = false;
     starterFlowSource = "profiles";
     render();
     if (presetSelect) {
@@ -1362,13 +1491,16 @@
       firstTimeProfileOnboarding.hidden = !showOnboarding;
     }
     if (activeViewOverviewPanel) {
-      activeViewOverviewPanel.hidden = showOnboarding || !selectedPresetId;
+      activeViewOverviewPanel.hidden = showOnboarding || !selectedPresetId || postCreationMenuOnlyMode;
     }
     if (profileManagementPanel) {
-      profileManagementPanel.hidden = showOnboarding;
+      profileManagementPanel.hidden = showOnboarding || postCreationMenuOnlyMode;
     }
     if (builderPanel) {
-      builderPanel.hidden = showOnboarding;
+      builderPanel.hidden = showOnboarding ? true : false;
+    }
+    if (postCreationMenuActions) {
+      postCreationMenuActions.hidden = showOnboarding || !postCreationMenuOnlyMode;
     }
     if (showOnboarding) {
       if (stickySaveBar) {
@@ -1388,10 +1520,18 @@
 
   function renderTabState() {
     document.querySelectorAll("[data-tab-button]").forEach(function renderButton(button) {
+      var shouldHideForMenuOnly = postCreationMenuOnlyMode && button.dataset.tabButton !== "menu";
+      var shouldHideForLocationDefaults = button.dataset.locationDefaultsUi !== undefined && !enableLocationViewDefaults;
+
+      button.hidden = shouldHideForMenuOnly || shouldHideForLocationDefaults;
       button.classList.toggle("active", button.dataset.tabButton === activeTab);
     });
     document.querySelectorAll("[data-tab-panel]").forEach(function renderPanel(panel) {
+      var shouldHideForMenuOnly = postCreationMenuOnlyMode && panel.dataset.tabPanel !== "menu";
+      var shouldHideForLocationDefaults = panel.dataset.locationDefaultsUi !== undefined && !enableLocationViewDefaults;
+
       panel.classList.toggle("active", panel.dataset.tabPanel === activeTab);
+      panel.hidden = shouldHideForMenuOnly || shouldHideForLocationDefaults;
     });
   }
 
@@ -1425,6 +1565,17 @@
     }
     if (templateButton) {
       templateButton.hidden = !isTemplatePreset(preset);
+    }
+  }
+
+  function renderPostCreationMenuOnlyState() {
+    if (menuBuilderDescription) {
+      menuBuilderDescription.textContent = postCreationMenuOnlyMode ?
+        "Choose which GoHighLevel menu items appear in your sidebar and drag them into the order you want." :
+        "Choose which GoHighLevel menu items appear in your sidebar, then organize them into simple groups. Quick Links stay separate.";
+    }
+    if (addMenuGroupButton) {
+      addMenuGroupButton.hidden = postCreationMenuOnlyMode;
     }
   }
 
@@ -4819,6 +4970,7 @@
     renderPresetSelects();
     renderTabState();
     renderHeader();
+    renderPostCreationMenuOnlyState();
     renderMenuGroupEditor();
     renderMenuEditor();
     renderRenameEditor();
@@ -5334,6 +5486,7 @@
       state = nextState;
       selectedPresetId = resolveInitialProfileId(state);
       onboardingMode = hasEditableProfiles(state) ? "" : "chooser";
+      postCreationMenuOnlyMode = false;
       starterFlowSource = hasEditableProfiles(state) ? "profiles" : "first_run";
       render();
       resetDirtyStateFromRenderedDraft();
@@ -5383,6 +5536,7 @@
     var draft = draftPreset || {};
     var draftStyle = draft.sidebarStyle || {};
     var draftMetadata = draft.profileMetadata || {};
+    var draftName = resolvedStarterProfileName(starter, draft.name);
     var draftVisibleItems = Array.isArray(draft.visibleItems) && draft.visibleItems.length ? draft.visibleItems : starterVisibleKeys(starter);
     var starterSidebarStyle = storage.normalizeSidebarStyle(Object.assign({}, namespace.defaultSidebarStyle || {}, starter && starter.sidebarStyle || {}, draftStyle));
     var metadata = Object.assign({}, existingProfile && existingProfile.profileMetadata || {}, draftMetadata, {
@@ -5402,7 +5556,7 @@
 
     return storage.normalizePreset({
       id: existingProfile && existingProfile.id || namespace.createId("custom"),
-      name: starter.name,
+      name: draftName,
       description: starter.description,
       source: "custom",
       visibleItems: normalizeMenuKeyList(draftVisibleItems),
@@ -5417,17 +5571,50 @@
     });
   }
 
+  function openCreatedStarterMenuEditor() {
+    onboardingMode = "";
+    postCreationMenuOnlyMode = true;
+    activeTab = "menu";
+    render();
+    setStatus("Editing your menu.");
+    resetDirtyStateFromRenderedDraft();
+  }
+
+  function returnToStarterSuccessSummary() {
+    postCreationMenuOnlyMode = false;
+    setOnboardingMode("success", selectedStarterViewId);
+    setStatus("Your CleanView is ready.");
+    resetDirtyStateFromRenderedDraft();
+  }
+
+  function openCreatedStarterFullEditor() {
+    onboardingMode = "";
+    postCreationMenuOnlyMode = false;
+    activeTab = "style";
+    render();
+    setStatus("Full editor ready.");
+    resetDirtyStateFromRenderedDraft();
+  }
+
+  function finishStarterSuccessFlow() {
+    onboardingMode = "";
+    postCreationMenuOnlyMode = false;
+    render();
+    setStatus("Your CleanView is active.");
+    resetDirtyStateFromRenderedDraft();
+  }
+
   function applyStarterViewAfterSave(starter) {
     sendToContentScript({ type: "CLEANVIEW_APPLY_ACTIVE_SETTINGS" }, function handleStarterApplied(result) {
       if (useStarterViewButton) {
         useStarterViewButton.disabled = false;
       }
 
-      onboardingMode = "";
+      postCreationMenuOnlyMode = false;
       if (!result || !result.ok) {
         if (result && result.contentScriptUnreachable) {
           starterApplyMessage = "View saved, but CleanView could not reach the GHL page yet. Reload the tab, then click Apply Live to GHL.";
-          render();
+          setOnboardingMode("success", starter.id);
           setStatus(starterApplyMessage, true, {
             showReloadGhlAction: true,
             reloadTabId: result.targetTabId
@@ -5435,23 +5622,27 @@
           return;
         }
         starterApplyMessage = result && (result.message || result.error) ? result.message || result.error : "Saved. Open a GHL page to apply this view live.";
-        render();
+        setOnboardingMode("success", starter.id);
         setStatus(starterApplyMessage, true);
         return;
       }
 
       starterApplyMessage = result.message || "Applied to open GHL tab.";
-      render();
+      setOnboardingMode("success", starter.id);
       setStatus("View created and set active.");
       resetDirtyStateFromRenderedDraft();
     });
   }
 
   function saveStarterView(starter) {
+    var starterNameValue = starterViewNameInput ? starterViewNameInput.value : "";
+
     if (!starter) {
       setStatus("Choose a starter view first.", true);
       return;
     }
+
+    updateStarterDraftName(starterNameValue);
 
     if (useStarterViewButton) {
       useStarterViewButton.disabled = true;
@@ -5867,20 +6058,39 @@
     });
   }
 
-  if (customizeStarterViewButton) {
-    customizeStarterViewButton.addEventListener("click", function customizeStarterView() {
-      onboardingMode = "";
-      activeTab = "menu";
-      render();
-      setStatus("Customize this view, then save or apply live when ready.");
+  if (starterViewNameInput) {
+    starterViewNameInput.addEventListener("input", function updateStarterViewName() {
+      updateStarterDraftName(starterViewNameInput.value);
+    });
+  }
+
+  if (editStarterMenuButton) {
+    editStarterMenuButton.addEventListener("click", function editStarterMenu() {
+      openCreatedStarterMenuEditor();
+    });
+  }
+
+  if (openStarterFullEditorButton) {
+    openStarterFullEditorButton.addEventListener("click", function openStarterFullEditor() {
+      openCreatedStarterFullEditor();
     });
   }
 
   if (doneStarterViewButton) {
     doneStarterViewButton.addEventListener("click", function finishStarterView() {
-      onboardingMode = "";
-      render();
-      setStatus("Starter view is ready.");
+      finishStarterSuccessFlow();
+    });
+  }
+
+  if (backToStarterSummaryButton) {
+    backToStarterSummaryButton.addEventListener("click", function backToStarterSummary() {
+      returnToStarterSuccessSummary();
+    });
+  }
+
+  if (doneEditingStarterMenuButton) {
+    doneEditingStarterMenuButton.addEventListener("click", function doneEditingStarterMenu() {
+      finishStarterSuccessFlow();
     });
   }
 

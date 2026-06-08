@@ -37,16 +37,18 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 6. Click `Customize CleanView`.
 7. Confirm the popup closes immediately after the side panel opens.
 8. With no custom Profiles, confirm the side panel shows `Welcome to CleanView` and the five starter views.
-9. Choose each starter view and confirm the temporary preview applies live without creating a Profile.
-10. Adjust menu visibility/order and sidebar color, then confirm the live preview updates without saving.
-11. Click `Create My View` and confirm a custom Profile becomes active and the normal app experience appears.
-12. Confirm existing custom Profiles skip first-run onboarding.
-13. Click `Change View` from the active overview and confirm it returns to `My Profiles`, not starter cards.
-14. Click `Start from Template`, confirm starter cards appear, preview a starter, click `Back`, and confirm it returns to the starter cards.
-15. Click the chooser back button and confirm it returns to `My Profiles`.
-16. Select a built-in template and confirm the primary button says `Save as New Profile`.
-17. Edit the template and save it as a new custom profile.
-18. Select a custom profile and confirm the sticky primary action says `Save Changes` and `More` includes `Save as Copy`.
+9. Confirm the fresh popup shows `No active view yet.`, hides the blank Active Profile field, and uses the first-run CTA.
+10. Choose each starter view and confirm the temporary preview applies live without creating a Profile.
+11. Adjust menu visibility/order, sidebar color, menu text color, and view name, then confirm the live preview updates without saving.
+12. Click `Create My View` and confirm a custom Profile is created, set active, and the post-creation success state appears.
+13. Confirm the success state shows `What happened` and `Skipped for now`, then test `Done`, `Edit Menu`, `Back to Summary`, `Done Editing`, and `Open Full Editor`.
+14. Confirm existing custom Profiles skip first-run onboarding.
+15. Click `Change View` from the active overview and confirm it returns to `My Profiles`, not starter cards.
+16. Click `Start from Template`, confirm starter cards appear, preview a starter, click `Back`, and confirm it returns to the starter cards.
+17. Click the chooser back button and confirm it returns to `My Profiles`.
+18. Select a built-in template and confirm the primary button says `Save as New Profile`.
+19. Edit the template and save it as a new custom profile.
+19. Select a custom profile and confirm the sticky primary action says `Save Changes` and `More` includes `Save as Copy`.
 19. Use the Menu Items, Rename Labels, Quick Links, and Sidebar Style tabs.
 20. Uncheck `Show this Profile in popup`, save, and confirm the Profile is hidden from the popup dropdown.
 21. Recheck `Show this Profile in popup`, save, and confirm the Profile returns to the popup dropdown.

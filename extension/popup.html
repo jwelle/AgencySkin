@@ -17,9 +17,12 @@
         </div>
       </header>
 
-      <label class="toggle-row">
+      <label class="toggle-row popup-toggle-row">
         <span>CleanView</span>
-        <input id="enabledToggle" type="checkbox">
+        <span class="popup-toggle">
+          <input id="enabledToggle" type="checkbox" aria-label="Enable CleanView">
+          <span class="popup-toggle-slider" aria-hidden="true"></span>
+        </span>
       </label>
 
       <label id="presetField" class="field" for="presetSelect">
@@ -27,17 +30,18 @@
         <select id="presetSelect"></select>
       </label>
 
-      <p id="emptyStateMessage" class="empty-state" hidden>No active view yet. Open the panel to create your first CleanView.</p>
+      <section id="emptyStateMessage" class="empty-state" hidden>
+        <p class="empty-state-title">No active view yet.</p>
+        <p class="empty-state-copy">Create your first CleanView to simplify your GHL sidebar.</p>
+      </section>
 
-      <section class="popup-section" aria-label="Manage">
-        <p class="section-label">Manage</p>
+      <section class="popup-section" aria-label="Customize CleanView">
         <div class="button-row">
           <button id="panelButton" type="button">Customize CleanView</button>
         </div>
       </section>
 
       <p id="statusMessage" class="status" role="status"></p>
-      <p class="note">Changes apply only in this browser.</p>
     </main>
 
     <script src="namespace.js"></script>

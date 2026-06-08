@@ -115,6 +115,9 @@
     if (emptyStateMessage) {
       emptyStateMessage.hidden = popupPresetIds.length !== 0;
     }
+    if (panelButton) {
+      panelButton.textContent = popupPresetIds.length === 0 ? "Create Your First View" : "Customize CleanView";
+    }
   }
 
   function refreshState() {

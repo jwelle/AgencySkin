@@ -11,12 +11,13 @@
 - Save now persists local settings separately from `Apply Live to GHL`, which only targets validated open GHL tabs.
 - Built-in templates now open as editable drafts that save as new custom profiles, while custom profiles save in place and support `Save as Copy`.
 - Fresh CleanView users now see a side-panel first-run starter flow with Sales, Marketing, AI Operator, Contact Center, and Simple starter views.
-- Starter views now preview as temporary first-run drafts, then `Create My View` saves a normal custom Profile with starter metadata, menu visibility/order, and solid sidebar color.
+- Starter views now preview as temporary first-run drafts, retry through early GHL sidebar churn, allow pre-save view naming, and then `Create My View` saves a normal custom Profile with starter metadata, menu visibility/order, sidebar color, menu text color mode, and a dedicated post-creation success state.
 - Existing custom Profile users skip first-run onboarding, use `Change View` to return to `My Profiles`, and can reopen starter cards from `Start from Template`.
 - The side-panel editor now shows a sticky bottom save bar for unsaved changes, with Revert, Save Changes, and Save & Apply actions.
 - Sidebar Style controls are now grouped into collapsible sections for Style Path, Presets, Background, Logo, Menu Text, Spacing, and Advanced.
 - The side panel now surfaces a `Reload GHL Tab` recovery action when `Apply Live to GHL` cannot reach the GHL content script.
 - The popup now closes immediately after successfully opening the CleanView side panel.
+- The popup now shows a friendlier first-run empty state, first-run CTA, and toggle-style CleanView switch without a blank Active Profile field.
 - The popup now uses a single `Customize CleanView` launcher button and no longer duplicates side-panel apply/admin actions.
 - Sidebar image presets and uploads now default to `cover`, and image uploads automatically enable image styling in preview.
 - Advanced options now provide backup/restore/reset and sidebar diagnostics instead of the daily editor.
@@ -72,15 +73,17 @@
 18. Confirm the popup closes immediately after `Customize CleanView` opens the side panel.
 19. Click `Detect GHL Sidebar` and confirm `#sidebar-v2` is reported when present.
 20. Export a Profile JSON file from `More`, then import it as a new editable Profile through `Create Profile`.
-21. Clear or simulate an empty custom Profile state, open the side panel, choose each first-run starter view, and confirm the live GHL preview updates without creating a Profile.
-22. Confirm onboarding menu visibility/order and solid color changes update the temporary preview, then `Create My View` saves a custom Profile, makes it active, and enters the normal app experience.
-23. Confirm existing custom Profile states skip first-run onboarding and keep normal editor access.
-24. Confirm `Change View` from the active overview returns existing users to `My Profiles`, not starter cards.
-25. Confirm `Start from Template` opens starter cards from `My Profiles`, preview back returns to the cards, and chooser back returns to `My Profiles`.
-26. Reproduce a content-script-not-reachable case and confirm `Reload GHL Tab` appears, then reload guidance shows after clicking it.
-27. Change a side-panel editor field and confirm the sticky save bar appears, remains visible while scrolling, and clears after Save Changes or Revert.
-28. Click Save & Apply with and without a supported GHL tab available and confirm saved changes plus the correct apply or apply-later message.
-29. Confirm Sidebar Style accordions default open to Style Path and Presets, then auto-open Background for Custom Configuration and Logo for active branding.
+21. Clear or simulate an empty custom Profile state, confirm the popup shows the first-run empty state, then open the side panel and choose each first-run starter view.
+22. Confirm the live GHL preview applies on the first click and stays visible without creating a Profile.
+23. Confirm onboarding menu visibility/order, sidebar color, menu text color, and view name changes update the temporary preview, then `Create My View` saves a custom Profile, makes it active, and shows the post-creation success state.
+24. Confirm the success state shows the saved Profile name plus `What happened` and `Skipped for now`, including `Menu groups: Not added`, and that `Done`, `Edit Menu`, `Back to Summary`, `Done Editing`, and `Open Full Editor` each land in the correct next state without recreating the Profile.
+25. Confirm existing custom Profile states skip first-run onboarding and keep normal editor access.
+26. Confirm `Change View` from the active overview returns existing users to `My Profiles`, not starter cards.
+27. Confirm `Start from Template` opens starter cards from `My Profiles`, preview back returns to the cards, and chooser back returns to `My Profiles`.
+28. Reproduce a content-script-not-reachable case and confirm `Reload GHL Tab` appears, then reload guidance shows after clicking it.
+29. Change a side-panel editor field and confirm the sticky save bar appears, remains visible while scrolling, and clears after Save Changes or Revert.
+30. Click Save & Apply with and without a supported GHL tab available and confirm saved changes plus the correct apply or apply-later message.
+31. Confirm Sidebar Style accordions default open to Style Path and Presets, then auto-open Background for Custom Configuration and Logo for active branding.
 
 ## Known Limitations
 

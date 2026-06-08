@@ -44,6 +44,7 @@
               <h2 id="starterPreviewTitle">Preview View</h2>
               <p id="starterPreviewDescription"></p>
               <p id="starterPreviewMeta" class="starter-context-meta" hidden></p>
+              <p id="starterPreviewHelper" class="starter-inline-helper">Choose a starter to preview your GHL sidebar.</p>
             </div>
           </div>
           <section class="starter-preview-list-card">
@@ -85,11 +86,11 @@
                 </select>
               </label>
             </section>
-            <section class="starter-preview-list-card">
-              <h3>Preview Status</h3>
-              <p id="starterPreviewDraftStatus" class="help-text">Your starter preview updates live and has not been saved yet.</p>
-            </section>
           </div>
+          <label class="field starter-view-name-field" for="starterViewNameInput">
+            View name
+            <input id="starterViewNameInput" type="text" value="My CleanView" maxlength="60" autocomplete="off">
+          </label>
           <div class="button-row">
             <button id="starterPreviewBackButton" class="secondary" type="button">Back</button>
             <button id="useStarterViewButton" type="button">Create My View</button>
@@ -100,25 +101,32 @@
           <div class="panel-header">
             <div class="starter-context-header">
               <div id="starterSuccessBadge" class="starter-context-badge" hidden></div>
-              <h2 id="starterSuccessTitle">View is active</h2>
-              <p id="starterSuccessMessage">Your CleanView profile is saved and ready.</p>
+              <h2 id="starterSuccessTitle">Your CleanView is ready</h2>
+              <p id="starterSuccessMessage">Your GHL sidebar has been simplified and saved as:</p>
+              <p id="starterSuccessProfileName" class="starter-success-profile-name">"Profile Name"</p>
               <p id="starterSuccessMeta" class="starter-context-meta" hidden></p>
             </div>
           </div>
           <div class="starter-preview-layout">
             <section class="starter-preview-list-card">
-              <h3>Shown Items</h3>
-              <div id="starterSuccessShownList" class="starter-item-list"></div>
+              <h3>What happened</h3>
+              <div id="starterSuccessWhatHappened" class="starter-summary-list"></div>
             </section>
             <section class="starter-preview-list-card">
-              <h3>Hidden Items</h3>
-              <div id="starterSuccessHiddenList" class="starter-item-list"></div>
+              <h3>Skipped for now</h3>
+              <div id="starterSuccessSkipped" class="starter-summary-list"></div>
             </section>
           </div>
           <div class="button-row">
-            <button id="customizeStarterViewButton" class="secondary" type="button">Customize This View</button>
             <button id="doneStarterViewButton" type="button">Done</button>
           </div>
+          <section class="starter-success-followup">
+            <h3>Want to keep customizing?</h3>
+            <div class="button-row compact starter-success-actions">
+              <button id="editStarterMenuButton" class="secondary" type="button">Edit Menu</button>
+              <button id="openStarterFullEditorButton" class="secondary" type="button">Open Full Editor</button>
+            </div>
+          </section>
         </div>
       </section>
 
@@ -384,7 +392,11 @@
         <section class="tab-panel" data-tab-panel="menu">
           <div class="panel-header">
             <h2>Menu Builder</h2>
-            <p>Choose which GoHighLevel menu items appear in your sidebar, then organize them into simple groups. Quick Links stay separate.</p>
+            <p id="menuBuilderDescription">Choose which GoHighLevel menu items appear in your sidebar, then organize them into simple groups. Quick Links stay separate.</p>
+          </div>
+          <div id="postCreationMenuActions" class="button-row compact post-creation-menu-actions" hidden>
+            <button id="backToStarterSummaryButton" class="secondary" type="button">Back to Summary</button>
+            <button id="doneEditingStarterMenuButton" type="button">Done Editing</button>
           </div>
           <div class="menu-builder-layout">
             <section class="menu-builder-column">
