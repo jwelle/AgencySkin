@@ -325,6 +325,16 @@
                 <div id="menuColorEditor" class="form-grid compact-style-editor"></div>
               </details>
 
+              <details id="headerControlsStyleAccordion" class="style-card style-accordion" data-style-accordion="headerControls">
+                <summary class="style-accordion-summary">
+                  <div>
+                    <h3>Top Header</h3>
+                    <p class="help-text">Match the GHL top header to your active CleanView theme.</p>
+                  </div>
+                </summary>
+                <div id="headerControlsStyleEditor" class="form-grid two-columns compact-style-editor"></div>
+              </details>
+
               <details id="spacingStyleAccordion" class="style-card style-accordion" data-style-accordion="spacing">
                 <summary class="style-accordion-summary">
                   <div>
@@ -364,6 +374,27 @@
                   <div class="button-row compact">
                     <button id="applyLiveButton" type="button">Apply Live to GHL</button>
                     <button id="detectGhlSidebarButton" class="secondary" type="button">Detect GHL Sidebar</button>
+                  </div>
+                </div>
+                <div id="headerControlsPreview" class="header-controls-preview">
+                  <div id="headerControlsPreviewWrapper" class="header-controls-preview-wrapper">
+                    <div id="headerControlsPreviewCluster" class="header-controls-preview-cluster">
+                      <button type="button" class="header-control-preview-button" data-header-control-preview="askAi" aria-label="Ask AI">
+                        <span class="header-control-preview-icon"></span>
+                      </button>
+                      <button type="button" class="header-control-preview-button" data-header-control-preview="call" aria-label="Call">
+                        <span class="header-control-preview-icon"></span>
+                      </button>
+                      <button type="button" class="header-control-preview-button" data-header-control-preview="notifications" aria-label="Notifications">
+                        <span class="header-control-preview-icon"></span>
+                      </button>
+                      <button type="button" class="header-control-preview-button" data-header-control-preview="help" aria-label="Help">
+                        <span class="header-control-preview-icon"></span>
+                      </button>
+                      <button type="button" class="header-control-preview-button avatar" data-header-control-preview="avatar" aria-label="Avatar">
+                        <span class="header-control-preview-avatar"></span>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div id="sidebarStylePreview" class="sidebar-style-preview">

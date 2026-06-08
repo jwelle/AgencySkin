@@ -403,7 +403,9 @@ aiSummary.bestFor: 240 characters
           "brandName": "Sotheby's"
         },
         "shape": {
-          "sidebarRadius": 16,
+          "structuralChromeRadius": 0,
+          "surfaceRadius": 16,
+          "controlRadius": 8,
           "menuItemRadius": 8,
           "spacingDensity": "comfortable",
           "shadowStrength": "soft",

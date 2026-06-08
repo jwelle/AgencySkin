@@ -81,6 +81,10 @@
       hoverBackgroundColor: "",
       dividerColor: "",
       badgeColor: "",
+      structuralChromeRadius: "0px",
+      surfaceRadius: "16px",
+      controlRadius: "",
+      menuItemRadius: "",
       borderRadius: "",
       sidebarRadius: "16px",
       buttonRadius: "",
@@ -94,7 +98,37 @@
       headerLabel: "",
       brandAccentColor: "",
       logoSize: "32px",
-      headerAlignment: "center"
+      headerAlignment: "center",
+      headerControls: {
+        enabled: false,
+        wrapper: {
+          backgroundColor: "",
+          borderRadius: "",
+          gap: "",
+          opacity: 1
+        },
+        button: {
+          backgroundColor: "",
+          iconColor: "",
+          borderRadius: "",
+          opacity: 1
+        },
+        visibility: {
+          cluster: true,
+          askAi: true,
+          call: true,
+          notifications: true,
+          help: true,
+          avatar: true
+        }
+      },
+      topHeader: {
+        inheritFromTheme: true,
+        backgroundMode: "inherit",
+        backgroundColor: "",
+        controlsBackgroundColor: "",
+        quickButtons: []
+      }
     }, namespace.defaultSidebarStyle || {});
   }
 
@@ -104,6 +138,8 @@
     var allowedBrandingModes = ["keep", "hide", "replace"];
     var allowedHeaderAlignments = ["left", "center", "right"];
     var allowedStylePaths = ["preset", "custom"];
+    var defaultHeaderControls = defaultSidebarStyle().headerControls;
+    var defaultTopHeader = defaultSidebarStyle().topHeader;
     var defaultImageSettings = defaultSidebarStyle().imageSettings;
     var defaultPatternSettings = defaultSidebarStyle().patternSettings;
     var defaultShuffle = defaultSidebarStyle().curatedShuffle;
@@ -171,6 +207,13 @@
     normalized.autoReadability = normalized.autoReadability !== false;
     normalized.shadowStrength = clampOpacity(normalized.shadowStrength === undefined ? 0.35 : normalized.shadowStrength);
     normalized.borderVisible = normalized.borderVisible !== false;
+    normalized.structuralChromeRadius = "0px";
+    normalized.surfaceRadius = normalized.surfaceRadius || normalized.sidebarRadius || "16px";
+    normalized.menuItemRadius = normalized.menuItemRadius || normalized.borderRadius || "";
+    normalized.controlRadius = normalized.controlRadius || normalized.buttonRadius || normalized.menuItemRadius || "";
+    normalized.borderRadius = normalized.menuItemRadius;
+    normalized.buttonRadius = normalized.controlRadius;
+    normalized.sidebarRadius = normalized.surfaceRadius;
     normalized.sidebarBrandingMode = allowedBrandingModes.indexOf(normalized.sidebarBrandingMode) === -1 ? "keep" : normalized.sidebarBrandingMode;
     normalized.logoUrl = normalizeUrl(normalized.logoUrl);
     normalized.customLogoDataUrl = isSafeImageDataUrl(normalized.customLogoDataUrl) ? normalized.customLogoDataUrl : "";
@@ -178,6 +221,31 @@
     normalized.brandAccentColor = normalized.brandAccentColor || "";
     normalized.logoSize = normalized.logoSize || "32px";
     normalized.headerAlignment = allowedHeaderAlignments.indexOf(normalized.headerAlignment) === -1 ? "center" : normalized.headerAlignment;
+    normalized.headerControls = Object.assign({}, defaultHeaderControls, normalized.headerControls || {});
+    normalized.headerControls.enabled = normalized.headerControls.enabled === true;
+    normalized.headerControls.wrapper = Object.assign({}, defaultHeaderControls.wrapper, normalized.headerControls.wrapper || {});
+    normalized.headerControls.button = Object.assign({}, defaultHeaderControls.button, normalized.headerControls.button || {});
+    normalized.headerControls.visibility = Object.assign({}, defaultHeaderControls.visibility, normalized.headerControls.visibility || {});
+    normalized.headerControls.wrapper.backgroundColor = normalized.headerControls.wrapper.backgroundColor || "";
+    normalized.headerControls.wrapper.borderRadius = normalized.headerControls.wrapper.borderRadius || "";
+    normalized.headerControls.wrapper.gap = normalized.headerControls.wrapper.gap || "";
+    normalized.headerControls.wrapper.opacity = clampOpacity(normalized.headerControls.wrapper.opacity === undefined ? 1 : normalized.headerControls.wrapper.opacity);
+    normalized.headerControls.button.backgroundColor = normalized.headerControls.button.backgroundColor || "";
+    normalized.headerControls.button.iconColor = normalized.headerControls.button.iconColor || "";
+    normalized.headerControls.button.borderRadius = normalized.headerControls.button.borderRadius || "";
+    normalized.headerControls.button.opacity = clampOpacity(normalized.headerControls.button.opacity === undefined ? 1 : normalized.headerControls.button.opacity);
+    normalized.headerControls.visibility.cluster = normalized.headerControls.visibility.cluster !== false;
+    normalized.headerControls.visibility.askAi = normalized.headerControls.visibility.askAi !== false;
+    normalized.headerControls.visibility.call = normalized.headerControls.visibility.call !== false;
+    normalized.headerControls.visibility.notifications = normalized.headerControls.visibility.notifications !== false;
+    normalized.headerControls.visibility.help = normalized.headerControls.visibility.help !== false;
+    normalized.headerControls.visibility.avatar = normalized.headerControls.visibility.avatar !== false;
+    normalized.topHeader = Object.assign({}, defaultTopHeader, normalized.topHeader || {});
+    normalized.topHeader.inheritFromTheme = normalized.topHeader.inheritFromTheme !== false;
+    normalized.topHeader.backgroundMode = normalized.topHeader.backgroundMode || "inherit";
+    normalized.topHeader.backgroundColor = normalized.topHeader.backgroundColor || "";
+    normalized.topHeader.controlsBackgroundColor = normalized.topHeader.controlsBackgroundColor || "";
+    normalized.topHeader.quickButtons = Array.isArray(normalized.topHeader.quickButtons) ? normalized.topHeader.quickButtons.slice(0, 10) : [];
     return normalized;
   }
 

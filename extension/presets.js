@@ -41,6 +41,10 @@
     activeBackgroundColor: "",
     activeTextColor: "",
     hoverBackgroundColor: "",
+    structuralChromeRadius: "0px",
+    surfaceRadius: "16px",
+    controlRadius: "",
+    menuItemRadius: "",
     borderRadius: "",
     itemSpacing: "",
     sidebarPadding: "",
@@ -48,7 +52,37 @@
     logoUrl: "",
     headerLabel: "",
     logoSize: "32px",
-    headerAlignment: "center"
+    headerAlignment: "center",
+    headerControls: {
+      enabled: false,
+      wrapper: {
+        backgroundColor: "",
+        borderRadius: "",
+        gap: "",
+        opacity: 1
+      },
+      button: {
+        backgroundColor: "",
+        iconColor: "",
+        borderRadius: "",
+        opacity: 1
+      },
+      visibility: {
+        cluster: true,
+        askAi: true,
+        call: true,
+        notifications: true,
+        help: true,
+        avatar: true
+      }
+    },
+    topHeader: {
+      inheritFromTheme: true,
+      backgroundMode: "inherit",
+      backgroundColor: "",
+      controlsBackgroundColor: "",
+      quickButtons: []
+    }
   };
   var sidebarStylePresets = {
     default: Object.assign({ name: "Default" }, defaultSidebarStyle),

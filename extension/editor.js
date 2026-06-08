@@ -27,6 +27,7 @@
     background: false,
     logo: false,
     menuText: false,
+    headerControls: false,
     spacing: false,
     advanced: false
   };
@@ -117,6 +118,7 @@
   var advancedStyleEditor = document.getElementById("advancedStyleEditor");
   var presetAdjustmentEditor = document.getElementById("presetAdjustmentEditor");
   var menuColorEditor = document.getElementById("menuColorEditor");
+  var headerControlsStyleEditor = document.getElementById("headerControlsStyleEditor");
   var stickySaveBar = document.getElementById("stickySaveBar");
   var stickySaveStatus = document.getElementById("stickySaveStatus");
   var stickyRevertButton = document.getElementById("stickyRevertButton");
@@ -129,6 +131,9 @@
   var sidebarStylePreviewOverlay = document.getElementById("sidebarStylePreviewOverlay");
   var sidebarStylePreviewHeaderText = document.getElementById("sidebarStylePreviewHeaderText");
   var sidebarStylePreviewLogo = document.getElementById("sidebarStylePreviewLogo");
+  var headerControlsPreview = document.getElementById("headerControlsPreview");
+  var headerControlsPreviewWrapper = document.getElementById("headerControlsPreviewWrapper");
+  var headerControlsPreviewCluster = document.getElementById("headerControlsPreviewCluster");
   var applyLiveButton = document.getElementById("applyLiveButton");
   var detectGhlSidebarButton = document.getElementById("detectGhlSidebarButton");
   var sidebarMeasurementStatus = document.getElementById("sidebarMeasurementStatus");
@@ -477,9 +482,9 @@
     { key: "logoSize", label: "Logo Size", type: "text", group: "global" },
     { key: "brandAccentColor", label: "Brand Accent", type: "color", group: "global" },
     { key: "headerAlignment", label: "Brand Alignment", type: "select", options: sidebarBrandingAlignmentOptions, group: "global" },
-    { section: "Shape", key: "borderRadius", label: "Menu Item Radius", type: "text", group: "global" },
-    { key: "sidebarRadius", label: "Sidebar Radius", type: "text", group: "global" },
-    { key: "buttonRadius", label: "Button Radius", type: "text", group: "global" },
+    { section: "Shape", key: "menuItemRadius", label: "Menu Item Radius", type: "text", group: "global" },
+    { key: "surfaceRadius", label: "Surface Radius", type: "text", group: "global" },
+    { key: "controlRadius", label: "Button Radius", type: "text", group: "global" },
     { key: "itemSpacing", label: "Spacing Density", type: "text", group: "global" },
     { key: "sidebarPadding", label: "Sidebar Padding", type: "text", group: "global" },
     { key: "shadowStrength", label: "Shadow Strength", type: "range", group: "global" },
@@ -492,6 +497,10 @@
     { key: "dividerColor", label: "Divider Color", type: "color", group: "menu" },
     { key: "badgeColor", label: "Badge Color", type: "color", group: "menu" }
   ];
+  var topHeaderStyleFields = [
+    { key: "topHeader.inheritFromTheme", label: "Apply theme to top header", type: "checkbox", group: "top-header" }
+  ];
+  var allSidebarStyleFields = sidebarStyleFields.concat(topHeaderStyleFields);
 
   function setReloadGhlActionState(tabId, visible) {
     reloadGhlTabTargetId = visible && tabId ? tabId : null;
@@ -3244,8 +3253,10 @@
           brandName: normalized.headerLabel || "CleanView"
         },
         shape: {
-          sidebarRadius: parsePixelNumber(normalized.sidebarRadius, 16),
-          menuItemRadius: parsePixelNumber(normalized.borderRadius || normalized.buttonRadius, 8),
+          structuralChromeRadius: parsePixelNumber(normalized.structuralChromeRadius, 0),
+          surfaceRadius: parsePixelNumber(normalized.surfaceRadius, 16),
+          controlRadius: parsePixelNumber(normalized.controlRadius || normalized.menuItemRadius, 8),
+          menuItemRadius: parsePixelNumber(normalized.menuItemRadius, 8),
           spacingDensity: spacingDensityName(normalized.itemSpacing),
           shadowStrength: shadowStrengthName(normalized.shadowStrength),
           showBorder: normalized.borderVisible !== false
@@ -3258,6 +3269,36 @@
           hoverBackgroundColor: normalized.hoverBackgroundColor || "",
           dividerColor: normalized.dividerColor || "",
           badgeColor: normalized.badgeColor || ""
+        },
+        topHeader: {
+          inheritFromTheme: normalized.topHeader.inheritFromTheme !== false,
+          backgroundMode: normalized.topHeader.backgroundMode || "inherit",
+          backgroundColor: normalized.topHeader.backgroundColor || null,
+          controlsBackgroundColor: normalized.topHeader.controlsBackgroundColor || null,
+          quickButtons: Array.isArray(normalized.topHeader.quickButtons) ? normalized.topHeader.quickButtons.slice(0, 10) : []
+        },
+        headerControls: {
+          enabled: normalized.headerControls.enabled === true,
+          wrapper: {
+            backgroundColor: normalized.headerControls.wrapper.backgroundColor || "",
+            borderRadius: normalized.headerControls.wrapper.borderRadius || "",
+            gap: normalized.headerControls.wrapper.gap || "",
+            opacity: clampOpacity(normalized.headerControls.wrapper.opacity === undefined ? 1 : normalized.headerControls.wrapper.opacity)
+          },
+          button: {
+            backgroundColor: normalized.headerControls.button.backgroundColor || "",
+            iconColor: normalized.headerControls.button.iconColor || "",
+            borderRadius: normalized.headerControls.button.borderRadius || "",
+            opacity: clampOpacity(normalized.headerControls.button.opacity === undefined ? 1 : normalized.headerControls.button.opacity)
+          },
+          visibility: {
+            cluster: normalized.headerControls.visibility.cluster !== false,
+            askAi: normalized.headerControls.visibility.askAi !== false,
+            call: normalized.headerControls.visibility.call !== false,
+            notifications: normalized.headerControls.visibility.notifications !== false,
+            help: normalized.headerControls.visibility.help !== false,
+            avatar: normalized.headerControls.visibility.avatar !== false
+          }
         }
       }
     };
@@ -3315,6 +3356,8 @@
     var logo = globalSettings && globalSettings.logo ? globalSettings.logo : {};
     var shape = globalSettings && globalSettings.shape ? globalSettings.shape : {};
     var menuColors = globalSettings && globalSettings.menuColors ? globalSettings.menuColors : {};
+    var topHeader = globalSettings && globalSettings.topHeader ? globalSettings.topHeader : {};
+    var headerControls = globalSettings && globalSettings.headerControls ? globalSettings.headerControls : {};
     var allowedLogoSources = ["default", "uploaded", "external", "none"];
     var allowedLogoSizes = ["small", "medium", "large"];
     var allowedSpacing = ["compact", "comfortable", "spacious"];
@@ -3362,12 +3405,19 @@
       style.headerLabel = sanitizeProfileText(logo.brandName, 60, "sidebarStyle.global.logo.brandName", errors, false);
     }
 
-    if (shape.sidebarRadius !== undefined) {
-      style.sidebarRadius = Math.round(clampNumber(shape.sidebarRadius, 0, 32, 16)) + "px";
+    style.structuralChromeRadius = "0px";
+    if (shape.surfaceRadius !== undefined) {
+      style.surfaceRadius = Math.round(clampNumber(shape.surfaceRadius, 0, 32, 16)) + "px";
+    } else if (shape.sidebarRadius !== undefined) {
+      style.surfaceRadius = Math.round(clampNumber(shape.sidebarRadius, 0, 32, 16)) + "px";
     }
     if (shape.menuItemRadius !== undefined) {
-      style.borderRadius = Math.round(clampNumber(shape.menuItemRadius, 0, 32, 8)) + "px";
-      style.buttonRadius = style.borderRadius;
+      style.menuItemRadius = Math.round(clampNumber(shape.menuItemRadius, 0, 32, 8)) + "px";
+    }
+    if (shape.controlRadius !== undefined) {
+      style.controlRadius = Math.round(clampNumber(shape.controlRadius, 0, 32, 8)) + "px";
+    } else if (shape.menuItemRadius !== undefined) {
+      style.controlRadius = Math.round(clampNumber(shape.menuItemRadius, 0, 32, 8)) + "px";
     }
     if (shape.spacingDensity && allowedSpacing.indexOf(shape.spacingDensity) === -1) {
       errors.push("sidebarStyle.global.shape.spacingDensity is not supported.");
@@ -3401,6 +3451,79 @@
       }
       style[key] = normalizeProfileColor(menuColors[key], style[key]);
     });
+
+    if (topHeader && typeof topHeader === "object" && !Array.isArray(topHeader)) {
+      style.topHeader = Object.assign({}, style.topHeader || {}, {
+        inheritFromTheme: topHeader.inheritFromTheme !== false,
+        backgroundMode: topHeader.backgroundMode || getByPath(style, "topHeader.backgroundMode", "inherit"),
+        backgroundColor: getByPath(style, "topHeader.backgroundColor", ""),
+        controlsBackgroundColor: getByPath(style, "topHeader.controlsBackgroundColor", ""),
+        quickButtons: Array.isArray(topHeader.quickButtons) ? topHeader.quickButtons.slice(0, 10) : getByPath(style, "topHeader.quickButtons", [])
+      });
+      ["backgroundColor", "controlsBackgroundColor"].forEach(function applyTopHeaderColor(key) {
+        var value = topHeader[key];
+
+        if (!value) {
+          return;
+        }
+        if (!isSafeProfileColor(value)) {
+          errors.push("sidebarStyle.global.topHeader." + key + " must be a hex or safe rgba color.");
+          return;
+        }
+        style.topHeader[key] = normalizeProfileColor(value, "");
+      });
+    }
+
+    if (headerControls && typeof headerControls === "object" && !Array.isArray(headerControls)) {
+      style.headerControls = Object.assign({}, style.headerControls || {}, {
+        enabled: headerControls.enabled === true,
+        wrapper: Object.assign({}, getByPath(style, "headerControls.wrapper", {}), headerControls.wrapper || {}),
+        button: Object.assign({}, getByPath(style, "headerControls.button", {}), headerControls.button || {}),
+        visibility: Object.assign({}, getByPath(style, "headerControls.visibility", {}), headerControls.visibility || {})
+      });
+      ["backgroundColor"].forEach(function applyWrapperColor(key) {
+        var value = getByPath(headerControls, "wrapper." + key, "");
+        if (!value) {
+          return;
+        }
+        if (!isSafeProfileColor(value)) {
+          errors.push("sidebarStyle.global.headerControls.wrapper." + key + " must be a hex or safe rgba color.");
+          return;
+        }
+        setByPath(style, "headerControls.wrapper." + key, normalizeProfileColor(value, ""));
+      });
+      ["backgroundColor", "iconColor"].forEach(function applyButtonColor(key) {
+        var value = getByPath(headerControls, "button." + key, "");
+        if (!value) {
+          return;
+        }
+        if (!isSafeProfileColor(value)) {
+          errors.push("sidebarStyle.global.headerControls.button." + key + " must be a hex or safe rgba color.");
+          return;
+        }
+        setByPath(style, "headerControls.button." + key, normalizeProfileColor(value, ""));
+      });
+      if (getByPath(headerControls, "wrapper.borderRadius") !== undefined) {
+        style.headerControls.wrapper.borderRadius = sanitizeProfileText(getByPath(headerControls, "wrapper.borderRadius"), 20, "sidebarStyle.global.headerControls.wrapper.borderRadius", errors, false);
+      }
+      if (getByPath(headerControls, "wrapper.gap") !== undefined) {
+        style.headerControls.wrapper.gap = sanitizeProfileText(getByPath(headerControls, "wrapper.gap"), 20, "sidebarStyle.global.headerControls.wrapper.gap", errors, false);
+      }
+      if (getByPath(headerControls, "button.borderRadius") !== undefined) {
+        style.headerControls.button.borderRadius = sanitizeProfileText(getByPath(headerControls, "button.borderRadius"), 20, "sidebarStyle.global.headerControls.button.borderRadius", errors, false);
+      }
+      if (getByPath(headerControls, "wrapper.opacity") !== undefined) {
+        style.headerControls.wrapper.opacity = clampOpacity(getByPath(headerControls, "wrapper.opacity"));
+      }
+      if (getByPath(headerControls, "button.opacity") !== undefined) {
+        style.headerControls.button.opacity = clampOpacity(getByPath(headerControls, "button.opacity"));
+      }
+      ["cluster", "askAi", "call", "notifications", "help", "avatar"].forEach(function applyVisibility(key) {
+        if (getByPath(headerControls, "visibility." + key) !== undefined) {
+          setByPath(style, "headerControls.visibility." + key, getByPath(headerControls, "visibility." + key) !== false);
+        }
+      });
+    }
 
     return storage.normalizeSidebarStyle(style);
   }
@@ -4004,6 +4127,70 @@
     return style.headerLabel || brandSettings.brandName || "AgencySkin";
   }
 
+  function colorValueToRgb(value) {
+    var trimmed = String(value || "").trim();
+    var rgbaMatch = trimmed.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i);
+
+    if (isValidHexColor(trimmed)) {
+      return hexToRgb(trimmed);
+    }
+    if (rgbaMatch) {
+      return {
+        r: clampNumber(rgbaMatch[1], 0, 255, 15),
+        g: clampNumber(rgbaMatch[2], 0, 255, 23),
+        b: clampNumber(rgbaMatch[3], 0, 255, 42)
+      };
+    }
+
+    return null;
+  }
+
+  function isLightColorValue(value) {
+    var rgb = colorValueToRgb(value);
+
+    if (!rgb) {
+      return false;
+    }
+
+    return ((rgb.r * 299) + (rgb.g * 587) + (rgb.b * 114)) / 1000 >= 160;
+  }
+
+  function getTopHeaderRepresentativeColor(style) {
+    if (style.backgroundType === "gradient") {
+      return style.gradientStartColor || style.backgroundColor || "#0f172a";
+    }
+
+    if (style.backgroundType === "image") {
+      return getImageBaseBackgroundColor(style);
+    }
+
+    if (style.backgroundType === "pattern") {
+      return style.backgroundColor || "#0f172a";
+    }
+
+    return style.backgroundColor || "#0f172a";
+  }
+
+  function getTopHeaderBackgroundValue(style) {
+    if (style.backgroundType === "gradient") {
+      return getSidebarBackgroundValue(style) || getBackgroundColorValue(style.backgroundColor || "#0f172a", style.backgroundOpacity);
+    }
+
+    if (style.backgroundType === "image") {
+      return getBackgroundColorValue(getImageBaseBackgroundColor(style), 1);
+    }
+
+    if (style.backgroundType === "pattern") {
+      return getBackgroundColorValue(style.backgroundColor || "#0f172a", 1);
+    }
+
+    return getSidebarBackgroundValue(style) || getBackgroundColorValue(style.backgroundColor || "#0f172a", style.backgroundOpacity);
+  }
+
+  function getTopHeaderBorderColor(style) {
+    return isLightColorValue(getTopHeaderRepresentativeColor(style)) ? "rgba(15, 23, 42, 0.12)" : "rgba(255, 255, 255, 0.12)";
+  }
+
   function getAlignmentFlexValue(alignment) {
     if (alignment === "left") {
       return "flex-start";
@@ -4497,7 +4684,7 @@
   }
 
   function getSidebarStyleFieldContainers() {
-    return [globalSidebarStyleEditor, spacingStyleEditor, advancedStyleEditor, presetAdjustmentEditor, sidebarStyleEditor, menuColorEditor].filter(Boolean);
+    return [globalSidebarStyleEditor, spacingStyleEditor, advancedStyleEditor, presetAdjustmentEditor, sidebarStyleEditor, menuColorEditor, headerControlsStyleEditor].filter(Boolean);
   }
 
   function syncStylePathState(style) {
@@ -4540,7 +4727,7 @@
     populateCuratedShuffleForm(normalizedStyle);
     getSidebarStyleFieldContainers().forEach(function updateContainer(container) {
       container.querySelectorAll("[data-sidebar-style-field]").forEach(function updateField(input) {
-      var rangeField = sidebarStyleFields.find(function findRange(field) {
+      var rangeField = allSidebarStyleFields.find(function findRange(field) {
         return field.key === input.dataset.sidebarStyleField;
       }) || {};
       var value = getFieldValue(normalizedStyle, rangeField);
@@ -4713,7 +4900,7 @@
   }
 
   function isSpacingStyleField(field) {
-    return ["borderRadius", "sidebarRadius", "buttonRadius", "itemSpacing", "sidebarPadding"].indexOf(field.key) !== -1;
+    return ["menuItemRadius", "surfaceRadius", "controlRadius", "itemSpacing", "sidebarPadding"].indexOf(field.key) !== -1;
   }
 
   function isAdvancedStyleField(field) {
@@ -4773,6 +4960,7 @@
     renderSidebarStyleFields(presetAdjustmentEditor, style, presetAdjustmentFields);
     renderSidebarStyleFields(sidebarStyleEditor, style, customFields);
     renderSidebarStyleFields(menuColorEditor, style, menuFields);
+    renderSidebarStyleFields(headerControlsStyleEditor, style, topHeaderStyleFields);
     populateSidebarStyleForm(style, { presetValue: style.preset || "default" });
     renderStyleAccordionState(style);
   }
@@ -5011,6 +5199,37 @@
     sidebarMeasurementStatus.textContent = "GHL sidebar model: 224 x 1156.";
   }
 
+  function updateHeaderControlsPreview(style) {
+    var normalized = storage.normalizeSidebarStyle(style || {});
+    var topHeader = normalized.topHeader || {};
+    var isEnabled = topHeader.inheritFromTheme !== false;
+    var headerBackground = isEnabled ? getTopHeaderBackgroundValue(normalized) : "#f8fafc";
+    var isLightBackground = isLightColorValue(getTopHeaderRepresentativeColor(normalized));
+    var buttonBackground = isEnabled ? (isLightBackground ? "rgba(15, 23, 42, 0.08)" : "rgba(255, 255, 255, 0.16)") : "#ffffff";
+    var iconColor = isEnabled ? (isLightBackground ? "#0f172a" : "#ffffff") : "#0f172a";
+    var borderColor = isEnabled ? getTopHeaderBorderColor(normalized) : "rgba(148, 163, 184, 0.24)";
+
+    if (!headerControlsPreview || !headerControlsPreviewWrapper || !headerControlsPreviewCluster) {
+      return;
+    }
+
+    headerControlsPreview.hidden = false;
+    headerControlsPreviewWrapper.style.background = headerBackground;
+    headerControlsPreviewWrapper.style.borderRadius = "0";
+    headerControlsPreviewWrapper.style.border = "1px solid " + borderColor;
+    headerControlsPreviewWrapper.style.opacity = "1";
+    headerControlsPreviewCluster.style.gap = "0.35rem";
+    headerControlsPreviewCluster.hidden = false;
+
+    headerControlsPreviewCluster.querySelectorAll("[data-header-control-preview]").forEach(function updatePreviewControl(button) {
+      button.hidden = false;
+      button.style.background = buttonBackground;
+      button.style.borderRadius = "999px";
+      button.style.color = iconColor;
+      button.style.opacity = "1";
+    });
+  }
+
   function setLayerMeasuredDimensions(element, width, height) {
     if (!element) {
       return;
@@ -5227,6 +5446,7 @@
     setContainerControlsDisabled(advancedStyleEditor, !canEdit);
     setContainerControlsDisabled(sidebarStyleEditor, !canEdit);
     setContainerControlsDisabled(menuColorEditor, !canEdit);
+    setContainerControlsDisabled(headerControlsStyleEditor, !canEdit);
     setContainerControlsDisabled(curatedPresetGrid, !canEdit);
     setContainerControlsDisabled(curatedShuffleCustomPool, !canEdit);
     sidebarStyleEnabled.disabled = !canEdit;
@@ -5318,7 +5538,7 @@
     getSidebarStyleFieldContainers().forEach(function collectContainer(container) {
       container.querySelectorAll("[data-sidebar-style-field]").forEach(function collectField(input) {
       var key = input.dataset.sidebarStyleField;
-      var rangeField = sidebarStyleFields.find(function findField(field) {
+      var rangeField = allSidebarStyleFields.find(function findField(field) {
         return field.key === key;
       }) || {};
       var modeElement = input.closest("[data-sidebar-style-mode]");
@@ -5390,9 +5610,9 @@
     var activeTextColor = style.activeTextColor || textColor;
     var dividerColor = style.dividerColor || "rgba(255, 255, 255, 0.22)";
     var badgeColor = style.badgeColor || style.brandAccentColor || activeBackgroundColor;
-    var borderRadius = style.borderRadius || "8px";
-    var buttonRadius = style.buttonRadius || borderRadius;
-    var sidebarRadius = style.sidebarRadius || "16px";
+    var structuralChromeRadius = style.structuralChromeRadius || "0px";
+    var surfaceRadius = style.surfaceRadius || style.sidebarRadius || "16px";
+    var menuItemRadius = style.menuItemRadius || style.borderRadius || "8px";
     var itemSpacing = style.itemSpacing || "4px";
     var sidebarPadding = style.sidebarPadding || "12px";
     var shadowStrength = clampOpacity(style.shadowStrength === undefined ? 0.35 : style.shadowStrength);
@@ -5413,7 +5633,7 @@
     sidebarStylePreview.style.backgroundRepeat = "";
     sidebarStylePreview.style.background = style.backgroundType === "image" ? getImageBaseBackgroundColor(style) : (style.backgroundColor || "#ffffff");
     applyMeasuredPreviewLayout(style);
-    sidebarStylePreview.style.borderRadius = sidebarRadius;
+    sidebarStylePreview.style.borderRadius = structuralChromeRadius;
     sidebarStylePreview.style.borderColor = style.borderVisible === false ? "transparent" : "var(--as-border)";
     sidebarStylePreview.style.boxShadow = shadowStrength > 0 ? "0 12px 32px rgba(15, 23, 42, " + shadowStrength + ")" : "none";
     if (sidebarStylePreviewBackground) {
@@ -5479,9 +5699,11 @@
       };
     }
 
+    updateHeaderControlsPreview(style);
+
     sidebarStylePreview.querySelectorAll(".sidebar-preview-item").forEach(function updateItem(item) {
       item.style.color = textColor;
-      item.style.borderRadius = buttonRadius;
+      item.style.borderRadius = menuItemRadius;
       item.style.marginTop = itemSpacing;
       item.style.marginBottom = itemSpacing;
       item.style.padding = "8px 12px";
@@ -5505,6 +5727,10 @@
     if (activeItem) {
       activeItem.style.background = activeBackgroundColor;
       activeItem.style.color = activeTextColor;
+    }
+
+    if (sidebarStylePreviewHeader) {
+      sidebarStylePreviewHeader.style.borderRadius = surfaceRadius;
     }
   }
 

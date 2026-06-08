@@ -15,6 +15,7 @@
 - Existing custom View users skip first-run onboarding, use `My Views` to manage saved views, and use `Create New View` to start with a starter, start from blank, or duplicate the current view.
 - The popup now shows `Current View`, saved custom Views only, a `Switch View` dropdown only when needed, and a `Customize View` CTA.
 - The side panel now has a `My Views` management list with Active/Saved status and Make Active, Edit, Rename, Duplicate, and Delete actions.
+- Full-editor Sidebar Style now includes a simple top-header theme toggle that applies the active CleanView theme to the GHL header, while keeping deeper header-controls schema support behind the scenes for future use.
 - The side-panel editor now shows a sticky bottom save bar for unsaved changes, with Revert, Save Changes, and Save & Apply actions.
 - Sidebar Style controls are now grouped into collapsible sections for Style Path, Presets, Background, Logo, Menu Text, Spacing, and Advanced.
 - The side panel now surfaces a `Reload GHL Tab` recovery action when `Apply Live to GHL` cannot reach the GHL content script.

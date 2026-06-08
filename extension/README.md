@@ -14,6 +14,7 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 - Rename registered GoHighLevel sidebar labels for your browser.
 - Add CleanView Quick Links as personal shortcuts in the sidebar.
 - Apply optional per-View sidebar styling.
+- Optionally apply the active CleanView theme to the GHL top header for a more consistent dashboard.
 - Save unsaved side-panel edits from a sticky bottom save bar.
 - Reset the current page back to the original GoHighLevel sidebar.
 - Enable or disable CleanView without deleting saved Views.
@@ -61,17 +62,18 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 29. Change a setting, click `Save & Apply`, and confirm the GHL sidebar updates or a clear apply-later message appears.
 30. Upload a sidebar image and confirm it appears in preview immediately without needing a separate styling checkbox.
 31. Confirm Sidebar Style uses collapsible sections for Style Path, Presets, Background, Logo, Menu Text, Spacing, and Advanced.
-32. Confirm `Use Preset` hides custom background controls, then switch to `Custom Configuration` and test None, Color, Gradient, and Image before saving.
-33. Set Sidebar Branding to `Keep default`, `Hide default`, and `Replace with custom` to confirm the preview updates.
-34. Save/apply `Hide default` and confirm the native GHL logo/header is hidden without removing it.
-35. Save/apply `Replace with custom` and confirm the custom logo/header appears once.
-36. Switch back to Color or Gradient and confirm the old image background is removed after saving/applying.
-37. Navigate inside GoHighLevel and confirm the sidebar state reapplies after rerenders without duplicate branding.
-38. Click `Detect GHL Sidebar` and confirm it reports `#sidebar-v2`.
-39. Toggle CleanView off and confirm the original sidebar remains visible.
-40. Use `More` to export the active View JSON.
-41. Copy or download the exported JSON, then import it as a new View from the advanced import path.
-42. Confirm invalid JSON and unsafe quick link URLs are rejected before import.
+32. Use `Top Header` in the full editor, confirm the local preview updates immediately, and confirm the active view theme applies to `.hl_header` and `.hl_header .container-fluid`.
+33. Confirm `Use Preset` hides custom background controls, then switch to `Custom Configuration` and test None, Color, Gradient, and Image before saving.
+34. Set Sidebar Branding to `Keep default`, `Hide default`, and `Replace with custom` to confirm the preview updates.
+35. Save/apply `Hide default` and confirm the native GHL logo/header is hidden without removing it.
+36. Save/apply `Replace with custom` and confirm the custom logo/header appears once.
+37. Switch back to Color or Gradient and confirm the old image background is removed after saving/applying.
+38. Navigate inside GoHighLevel and confirm the sidebar state reapplies after rerenders without duplicate branding.
+39. Click `Detect GHL Sidebar` and confirm it reports `#sidebar-v2`.
+40. Toggle CleanView off and confirm the original sidebar remains visible.
+41. Use `More` to export the active View JSON.
+42. Copy or download the exported JSON, then import it as a new View from the advanced import path.
+43. Confirm invalid JSON and unsafe quick link URLs are rejected before import.
 
 ## Starters
 

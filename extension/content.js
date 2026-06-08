@@ -402,10 +402,19 @@
     });
   }
 
+  function clearTopHeaderThemeState() {
+    if (document.body) {
+      document.body.classList.remove("cleanview-enabled", "cleanview-theme-header");
+      document.body.style.removeProperty("--cleanview-top-header-bg");
+      document.body.style.removeProperty("--cleanview-top-header-border");
+    }
+  }
+
   function resetSidebarStyle() {
     removeSidebarBackgroundLayers();
     removeCustomSidebarBranding();
     restoreNativeSidebarBranding();
+    clearTopHeaderThemeState();
     removeSidebarStyleBlock();
     document.querySelectorAll("[data-agencyskin-cleanview-style-role='header']").forEach(function removeHeader(header) {
       header.remove();
@@ -726,6 +735,70 @@
     return styleValue(style.backgroundColor) ? getBackgroundColorValue(style.backgroundColor, style.backgroundOpacity) : "";
   }
 
+  function colorValueToRgb(value) {
+    var trimmed = String(value || "").trim();
+    var rgbaMatch = trimmed.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i);
+
+    if (/^#([0-9A-F]{3}){1,2}$/i.test(trimmed)) {
+      return hexToRgb(trimmed);
+    }
+    if (rgbaMatch) {
+      return {
+        r: clampNumber(rgbaMatch[1], 0, 255, 15),
+        g: clampNumber(rgbaMatch[2], 0, 255, 23),
+        b: clampNumber(rgbaMatch[3], 0, 255, 42)
+      };
+    }
+
+    return null;
+  }
+
+  function isLightColorValue(value) {
+    var rgb = colorValueToRgb(value);
+
+    if (!rgb) {
+      return false;
+    }
+
+    return ((rgb.r * 299) + (rgb.g * 587) + (rgb.b * 114)) / 1000 >= 160;
+  }
+
+  function getTopHeaderRepresentativeColor(style) {
+    if (style.backgroundType === "gradient") {
+      return style.gradientStartColor || style.backgroundColor || "#0f172a";
+    }
+
+    if (style.backgroundType === "image") {
+      return getImageBaseBackgroundColor(style);
+    }
+
+    if (style.backgroundType === "pattern") {
+      return style.backgroundColor || "#0f172a";
+    }
+
+    return style.backgroundColor || "#0f172a";
+  }
+
+  function getTopHeaderBackgroundValue(style) {
+    if (style.backgroundType === "gradient") {
+      return getSidebarBackgroundValue(style) || getBackgroundColorValue(style.backgroundColor || "#0f172a", style.backgroundOpacity);
+    }
+
+    if (style.backgroundType === "image") {
+      return getBackgroundColorValue(getImageBaseBackgroundColor(style), 1);
+    }
+
+    if (style.backgroundType === "pattern") {
+      return getBackgroundColorValue(style.backgroundColor || "#0f172a", 1);
+    }
+
+    return getSidebarBackgroundValue(style) || getBackgroundColorValue(style.backgroundColor || "#0f172a", style.backgroundOpacity);
+  }
+
+  function getTopHeaderBorderColor(style) {
+    return isLightColorValue(getTopHeaderRepresentativeColor(style)) ? "rgba(15, 23, 42, 0.12)" : "rgba(255, 255, 255, 0.12)";
+  }
+
   function applySidebarBackground(sidebar, style) {
     var backgroundValue = getSidebarBackgroundValue(style);
     var wrapper = null;
@@ -805,9 +878,26 @@
   }
 
   function injectSidebarStyleBlock(style) {
+    var normalized = storage.normalizeSidebarStyle(style || {});
+    var headerControls = normalized.headerControls || {};
+    var topHeader = normalized.topHeader || {};
+    var topHeaderBackground = topHeader.inheritFromTheme !== false ? getTopHeaderBackgroundValue(normalized) : "";
+    var topHeaderBorder = topHeader.inheritFromTheme !== false ? getTopHeaderBorderColor(normalized) : "";
     var groupHoverBackground = styleValue(style.hoverBackgroundColor) || "rgba(255,255,255,0.08)";
     var groupExpandedBackground = getSubtleBackgroundColor(style.activeBackgroundColor, groupHoverBackground);
     var css = [
+      "body.cleanview-enabled.cleanview-theme-header {",
+      topHeaderBackground ? "--cleanview-top-header-bg: " + topHeaderBackground + ";" : "",
+      topHeaderBorder ? "--cleanview-top-header-border: " + topHeaderBorder + ";" : "",
+      "}",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header,",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header .container-fluid {",
+      "background: var(--cleanview-top-header-bg) !important;",
+      "border-bottom: 1px solid var(--cleanview-top-header-border, rgba(255,255,255,0.12)) !important;",
+      "border-radius: 0 !important;",
+      "border-top-left-radius: 0 !important;",
+      "border-top-right-radius: 0 !important;",
+      "}",
       "[data-agencyskin-cleanview-style-role='menu-item']:hover {",
       styleValue(style.hoverBackgroundColor) ? "background: " + style.hoverBackgroundColor + " !important;" : "",
       "}",
@@ -818,6 +908,15 @@
       "[data-agencyskin-cleanview-style-role='menu-item'] svg,",
       "[data-agencyskin-cleanview-style-role='menu-item'] i {",
       styleValue(style.iconColor) ? "color: " + style.iconColor + " !important; stroke: " + style.iconColor + " !important;" : "",
+      "}",
+      "[data-agencyskin-cleanview-style-role='header-control-button'] *,",
+      "[data-agencyskin-cleanview-style-role='header-controls-cluster'] * {",
+      headerControls.enabled && styleValue(getByPath(headerControls, "button.iconColor", "")) ? "color: inherit !important;" : "",
+      "}",
+      "[data-agencyskin-cleanview-style-role='header-control-button'] svg,",
+      "[data-agencyskin-cleanview-style-role='header-control-button'] i,",
+      "[data-agencyskin-cleanview-style-role='header-control-button'] path {",
+      headerControls.enabled && styleValue(getByPath(headerControls, "button.iconColor", "")) ? "color: currentColor !important; fill: currentColor !important; stroke: currentColor !important;" : "",
       "}",
       "[data-agencyskin-cleanview-style-role='sidebar'] hr,",
       "[data-agencyskin-cleanview-style-role='sidebar'] [role='separator'] {",
@@ -1103,6 +1202,248 @@
     return changedCount;
   }
 
+  function applyTopHeaderTheme(sidebarStyle) {
+    var style = storage.normalizeSidebarStyle(sidebarStyle || {});
+    var topHeader = style.topHeader || {};
+
+    clearTopHeaderThemeState();
+    if (!style.enabled || topHeader.inheritFromTheme === false || !document.body) {
+      return 0;
+    }
+
+    injectSidebarStyleBlock(style);
+    document.body.classList.add("cleanview-enabled", "cleanview-theme-header");
+    document.body.style.setProperty("--cleanview-top-header-bg", getTopHeaderBackgroundValue(style));
+    document.body.style.setProperty("--cleanview-top-header-border", getTopHeaderBorderColor(style));
+    return document.querySelector(".hl_header") ? 1 : 0;
+  }
+
+  function findHeaderControlsCluster() {
+    return document.querySelector(".hl_header--controls");
+  }
+
+  function findHeaderControlsWrapper(cluster) {
+    var wrapper = cluster && cluster.closest ? cluster.closest(".container-fluid.justify-end") : null;
+
+    if (wrapper && wrapper.contains(cluster)) {
+      return wrapper;
+    }
+
+    return null;
+  }
+
+  function topLevelHeaderControlForNode(cluster, node) {
+    var current = node;
+
+    while (current && current.parentElement && current.parentElement !== cluster) {
+      current = current.parentElement;
+    }
+
+    return current && current.parentElement === cluster ? current : null;
+  }
+
+  function getHeaderControlCandidates(cluster) {
+    var directChildren = cluster ? Array.prototype.slice.call(cluster.children || []) : [];
+    var matches = cluster ? Array.prototype.slice.call(cluster.querySelectorAll("a, button, [role='button'], [aria-label], [title], img")) : [];
+    var candidates = [];
+
+    directChildren.forEach(function addDirectChild(child) {
+      if (candidates.indexOf(child) === -1) {
+        candidates.push(child);
+      }
+    });
+
+    matches.forEach(function addMatch(match) {
+      var topLevel = topLevelHeaderControlForNode(cluster, match);
+
+      if (topLevel && candidates.indexOf(topLevel) === -1) {
+        candidates.push(topLevel);
+      }
+    });
+
+    return candidates.filter(function keepCandidate(candidate) {
+      return candidate && candidate.nodeType === 1;
+    });
+  }
+
+  function headerControlSignalText(element) {
+    var descendantSignals = Array.prototype.slice.call(element.querySelectorAll("*")).slice(0, 12).map(function mapNode(node) {
+      return [
+        node.tagName,
+        node.id,
+        node.className && node.className.toString ? node.className.toString() : "",
+        node.getAttribute("aria-label"),
+        node.getAttribute("title"),
+        node.getAttribute("href"),
+        node.getAttribute("alt"),
+        node.textContent
+      ].join(" ");
+    }).join(" ");
+
+    return normalizeText([
+      element.tagName,
+      element.id,
+      element.className && element.className.toString ? element.className.toString() : "",
+      element.getAttribute("aria-label"),
+      element.getAttribute("title"),
+      element.getAttribute("href"),
+      element.getAttribute("alt"),
+      element.textContent,
+      descendantSignals
+    ].join(" "));
+  }
+
+  function headerControlMatchScore(element, key) {
+    var signal = headerControlSignalText(element);
+    var hasImage = Boolean(element.querySelector("img, [class*='avatar'], [class*='profile'], [class*='user']"));
+
+    if (key === "askAi") {
+      if (signal.indexOf("ask ai") !== -1 || signal.indexOf("ask-ai") !== -1 || signal.indexOf("askai") !== -1) {
+        return 10;
+      }
+      if (signal.indexOf("assistant") !== -1) {
+        return 6;
+      }
+      return 0;
+    }
+    if (key === "call") {
+      if (signal.indexOf("call") !== -1 || signal.indexOf("phone") !== -1 || signal.indexOf("dial") !== -1) {
+        return 8;
+      }
+      return 0;
+    }
+    if (key === "notifications") {
+      if (signal.indexOf("notification") !== -1 || signal.indexOf("notifications") !== -1 || signal.indexOf("bell") !== -1 || signal.indexOf("alert") !== -1) {
+        return 8;
+      }
+      return 0;
+    }
+    if (key === "help") {
+      if (signal.indexOf("help") !== -1 || signal.indexOf("support") !== -1 || signal.indexOf("question") !== -1) {
+        return 8;
+      }
+      return 0;
+    }
+    if (key === "avatar") {
+      if (signal.indexOf("avatar") !== -1 || signal.indexOf("profile") !== -1 || signal.indexOf("account") !== -1 || signal.indexOf("user") !== -1) {
+        return 8;
+      }
+      if (hasImage) {
+        return 5;
+      }
+      return 0;
+    }
+
+    return 0;
+  }
+
+  function findHeaderControlElements(cluster) {
+    var controlKeys = ["askAi", "call", "notifications", "help", "avatar"];
+    var candidates = getHeaderControlCandidates(cluster);
+    var matches = {};
+    var usedCandidates = [];
+
+    controlKeys.forEach(function matchControl(key) {
+      var bestCandidate = null;
+      var bestScore = 0;
+
+      candidates.forEach(function scoreCandidate(candidate) {
+        var score = usedCandidates.indexOf(candidate) === -1 ? headerControlMatchScore(candidate, key) : 0;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestCandidate = candidate;
+        }
+      });
+
+      if (bestCandidate && bestScore > 0) {
+        matches[key] = bestCandidate;
+        usedCandidates.push(bestCandidate);
+      }
+    });
+
+    return matches;
+  }
+
+  function applyHeaderControlsStyle(sidebarStyle) {
+    var style = storage.normalizeSidebarStyle(sidebarStyle || {});
+    var controls = style.headerControls || {};
+    var cluster = null;
+    var wrapper = null;
+    var target = null;
+    var matchedControls = {};
+    var changedCount = 0;
+
+    if (!controls.enabled) {
+      return 0;
+    }
+
+    cluster = findHeaderControlsCluster();
+    if (!cluster) {
+      console.warn("[AgencySkin CleanView] Could not find GHL header controls cluster.");
+      return 0;
+    }
+
+    wrapper = findHeaderControlsWrapper(cluster);
+    target = wrapper || cluster;
+    matchedControls = findHeaderControlElements(cluster);
+
+    injectSidebarStyleBlock(style);
+    markStyledElement(cluster, "header-controls-cluster");
+    if (target !== cluster) {
+      markStyledElement(target, "header-controls-wrapper");
+    }
+
+    if (controls.visibility && controls.visibility.cluster === false) {
+      cluster.style.setProperty("display", "none", "important");
+      return 1;
+    }
+
+    cluster.style.removeProperty("display");
+    if (styleValue(getByPath(controls, "wrapper.backgroundColor", ""))) {
+      target.style.background = controls.wrapper.backgroundColor;
+    }
+    if (styleValue(getByPath(controls, "wrapper.borderRadius", ""))) {
+      target.style.borderRadius = controls.wrapper.borderRadius;
+    }
+    if (styleValue(getByPath(controls, "wrapper.gap", ""))) {
+      target.style.gap = controls.wrapper.gap;
+      cluster.style.gap = controls.wrapper.gap;
+    }
+    target.style.opacity = String(clampOpacity(getByPath(controls, "wrapper.opacity", 1)));
+    changedCount += target === cluster ? 1 : 2;
+
+    Object.keys(matchedControls).forEach(function applyControl(key) {
+      var element = matchedControls[key];
+
+      if (!element) {
+        return;
+      }
+
+      markStyledElement(element, "header-control-button");
+      if (controls.visibility && controls.visibility[key] === false) {
+        element.style.setProperty("display", "none", "important");
+        changedCount += 1;
+        return;
+      }
+
+      element.style.removeProperty("display");
+      if (styleValue(getByPath(controls, "button.backgroundColor", ""))) {
+        element.style.background = controls.button.backgroundColor;
+      }
+      if (styleValue(getByPath(controls, "button.iconColor", ""))) {
+        element.style.color = controls.button.iconColor;
+      }
+      if (styleValue(getByPath(controls, "button.borderRadius", ""))) {
+        element.style.borderRadius = controls.button.borderRadius;
+      }
+      element.style.opacity = String(clampOpacity(getByPath(controls, "button.opacity", 1)));
+      changedCount += 1;
+    });
+
+    return changedCount;
+  }
+
   function applyAssetDefaults(style, asset) {
     if (!asset) {
       return style;
@@ -1287,9 +1628,9 @@
     if (styleValue(style.sidebarPadding)) {
       sidebar.style.padding = style.sidebarPadding;
     }
-    if (styleValue(style.sidebarRadius)) {
-      sidebar.style.borderRadius = style.sidebarRadius;
-    }
+    sidebar.style.borderRadius = style.structuralChromeRadius || "0px";
+    sidebar.style.borderTopLeftRadius = style.structuralChromeRadius || "0px";
+    sidebar.style.borderTopRightRadius = style.structuralChromeRadius || "0px";
     if (style.borderVisible === false) {
       sidebar.style.borderColor = "transparent";
     }
@@ -1309,8 +1650,8 @@
       if (styleValue(style.textColor)) {
         element.style.color = style.textColor;
       }
-      if (styleValue(style.buttonRadius) || styleValue(style.borderRadius)) {
-        element.style.borderRadius = style.buttonRadius || style.borderRadius;
+      if (styleValue(style.menuItemRadius) || styleValue(style.borderRadius)) {
+        element.style.borderRadius = style.menuItemRadius || style.borderRadius;
       }
       if (styleValue(style.itemSpacing)) {
         element.style.marginTop = style.itemSpacing;
@@ -1981,6 +2322,8 @@
     changedCount += applyMenuOrder(preset.visibleItems || [], visibleSet, preset.menuGroups || []);
     changedCount += injectCustomLinks(preset.customLinks || []);
     changedCount += applySidebarStyle(preset.sidebarStyle || {});
+    changedCount += applyTopHeaderTheme(preset.sidebarStyle || {});
+    changedCount += applyHeaderControlsStyle(preset.sidebarStyle || {});
     currentPreset = preset;
 
     return {
