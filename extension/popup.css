@@ -78,6 +78,27 @@ h1 {
   gap: 0.4rem;
 }
 
+.current-view-summary {
+  background: var(--as-surface-muted);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-sm);
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.current-view-summary span {
+  color: var(--as-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.current-view-summary strong {
+  color: var(--as-text);
+  font-size: 1rem;
+}
+
 select {
   background: var(--as-surface);
   border: 1px solid #cbd5e1;

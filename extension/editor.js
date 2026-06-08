@@ -70,6 +70,9 @@
   var activeViewStatus = document.getElementById("activeViewStatus");
   var changeStarterViewButton = document.getElementById("changeStarterViewButton");
   var customizeActiveViewButton = document.getElementById("customizeActiveViewButton");
+  var changeStyleButton = document.getElementById("changeStyleButton");
+  var createNewViewOverviewButton = document.getElementById("createNewViewOverviewButton");
+  var openAdvancedOptionsButton = document.getElementById("openAdvancedOptionsButton");
   var overviewApplyLiveButton = document.getElementById("overviewApplyLiveButton");
   var overviewResetPageButton = document.getElementById("overviewResetPageButton");
   var profileManagementPanel = document.getElementById("profileManagementPanel");
@@ -82,6 +85,8 @@
   var startFromViewButton = document.getElementById("startFromViewButton");
   var createProfileButton = document.getElementById("createProfileButton");
   var moreProfileActionsSelect = document.getElementById("moreProfileActionsSelect");
+  var savedViewList = document.getElementById("savedViewList");
+  var savedViewCountText = document.getElementById("savedViewCountText");
   var defaultPresetSelect = document.getElementById("defaultPresetSelect");
   var presetName = document.getElementById("presetName");
   var presetDescription = document.getElementById("presetDescription");
@@ -145,6 +150,9 @@
   var createTemplateSelect = document.getElementById("createTemplateSelect");
   var createFromTemplateModalButton = document.getElementById("createFromTemplateModalButton");
   var createImportProfileButton = document.getElementById("createImportProfileButton");
+  var startWithStarterModalButton = document.getElementById("startWithStarterModalButton");
+  var startBlankGuidedModalButton = document.getElementById("startBlankGuidedModalButton");
+  var duplicateCurrentViewModalButton = document.getElementById("duplicateCurrentViewModalButton");
   var profileImportPanel = document.getElementById("profileImportPanel");
   var profileExportPanel = document.getElementById("profileExportPanel");
   var profileImportTextarea = document.getElementById("profileImportTextarea");
@@ -178,6 +186,33 @@
     { id: "light", label: "Light", color: "#f8fafc" },
     { id: "custom", label: "Custom", color: "" }
   ];
+  var blankGuidedStarterView = {
+    id: "blank-guided",
+    name: "My CleanView",
+    summaryName: "Blank",
+    defaultProfileName: "My CleanView",
+    cardTitle: "Blank",
+    description: "Start clean and choose your own menu and style.",
+    bestFor: "Best for building a CleanView from scratch.",
+    keepsLine: "Starts with every native menu item visible.",
+    accentColor: "#2563eb",
+    accentSoft: "#dbeafe",
+    accentBorder: "#93c5fd",
+    iconId: "simple",
+    sidebarStyle: {
+      stylePath: "custom",
+      enabled: true,
+      backgroundType: "solid",
+      backgroundColor: "#111827",
+      textColor: "#f9fafb",
+      activeBackgroundColor: "#374151",
+      activeTextColor: "#ffffff",
+      hoverBackgroundColor: "#1f2937"
+    },
+    visibleItems: allMenuKeys.slice(),
+    labelOverrides: {},
+    isBlankGuidedSource: true
+  };
   var starterViews = [
     {
       id: "sales",
@@ -518,11 +553,11 @@
   }
 
   function profileNameFromTemplate(preset) {
-    return normalizeDisplayName(preset && (preset.name || preset.label), "CleanView") + " Profile";
+    return normalizeDisplayName(preset && (preset.name || preset.label), "CleanView") + " View";
   }
 
   function nextCopyName(name) {
-    return normalizeDisplayName(name, "CleanView") + " Profile Copy";
+    return normalizeDisplayName(name, "CleanView") + " View Copy";
   }
 
   function resolveInitialProfileId(nextState) {
@@ -591,23 +626,23 @@
   }
 
   function primarySaveLabel(preset) {
-    return isCustomPreset(preset) ? "Save Changes" : "Save as New Profile";
+    return isCustomPreset(preset) ? "Save Changes" : "Save as New View";
   }
 
   function editableNoticeText(preset) {
     if (isBlankTemplatePreset(preset)) {
-      return "You are editing a blank draft. Save it as a new profile when you are ready.";
+      return "You are editing a blank draft. Save it as a new view when you are ready.";
     }
 
     if (isTemplatePreset(preset)) {
-      return "You are editing a draft based on this template. Saving will create a new custom profile.";
+      return "You are editing a setup draft. Saving will create a new custom view.";
     }
 
     return "";
   }
 
   function saveHintText() {
-    return isCustomPreset(selectedPreset()) ? "Save Changes to keep it." : "Save as New Profile to keep it.";
+    return isCustomPreset(selectedPreset()) ? "Save Changes to keep it." : "Save as New View to keep it.";
   }
 
   function loadPresetIntoEditor(presetId, nameOverride) {
@@ -685,10 +720,10 @@
 
   function optionLabel(preset) {
     if (!preset) {
-      return "Unknown Profile";
+      return "Unknown View";
     }
 
-    return (preset.source === "builtin" ? templateDisplayName(preset) : preset.name || preset.label || "Untitled Profile") + (preset.source === "builtin" ? " (Template)" : " (Profile)");
+    return (preset.source === "builtin" ? templateDisplayName(preset) : preset.name || preset.label || "Untitled View") + (preset.source === "builtin" ? " (Starter)" : " (View)");
   }
 
   function fillPresetSelect(select, selectedValue) {
@@ -733,6 +768,10 @@
 
   function getStarterViewById(starterId) {
     var selectedStarter = null;
+
+    if (starterId === blankGuidedStarterView.id) {
+      return blankGuidedStarterView;
+    }
 
     starterViews.some(function findStarter(starter) {
       if (starter.id === starterId) {
@@ -904,7 +943,7 @@
   }
 
   function defaultStarterProfileName(starter) {
-    return String(starter && starter.name || "My CleanView").trim() || "My CleanView";
+    return String(starter && (starter.defaultProfileName || starter.name) || "My CleanView").trim() || "My CleanView";
   }
 
   function resolvedStarterProfileName(starter, value) {
@@ -1030,7 +1069,7 @@
     var visibleItems = normalizeMenuKeyList(draftOverrides && draftOverrides.visibleItems || starter && starter.visibleItems || []);
     var metadata = Object.assign({}, draftOverrides && draftOverrides.profileMetadata || {}, {
       onboardingStarterViewId: starter.id,
-      onboardingStarterViewName: starter.name,
+      onboardingStarterViewName: starter.summaryName || starter.name,
       createdFromFirstRun: true,
       sourceTemplateId: starter.sourceTemplateId || starter.id,
       accentColor: starter.accentColor || "",
@@ -1053,7 +1092,7 @@
 
     return storage.normalizePreset({
       id: draftOverrides && draftOverrides.id || namespace.createId("custom"),
-      name: resolvedStarterProfileName(starter, draftOverrides && draftOverrides.name || starter && starter.name || "My CleanView"),
+      name: resolvedStarterProfileName(starter, draftOverrides && draftOverrides.name || defaultStarterProfileName(starter)),
       description: starter.description,
       source: "custom",
       visibleItems: visibleItems,
@@ -1355,6 +1394,13 @@
     var sidebarColor = starterColorLabel(metadata.sidebarBackgroundColor || preset && preset.sidebarStyle && preset.sidebarStyle.backgroundColor || "");
     var textColorMode = starterTextColorModeLabel(metadata.onboardingMenuTextColorMode);
     var starterName = metadata.onboardingStarterViewName || starter && starter.name || "Starter";
+    var whatHappenedRows = [
+      { label: "Starter used", value: starterName },
+      { label: "Menu items shown", value: String(visibleCount) },
+      { label: "Menu items hidden", value: String(hiddenCount) },
+      { label: "Sidebar color", value: sidebarColor || "Custom" },
+      { label: "Menu text color", value: textColorMode || "Auto" }
+    ];
 
     if (!preset) {
       return;
@@ -1372,14 +1418,11 @@
     renderStarterBadge(starterSuccessBadge, starterSuccessPanel, starter, starterSuccessMeta, starterApplyMessage || "Quick setup is complete. You can add more later.");
 
     if (starterSuccessWhatHappened) {
+      if (metadata.creationSource === "duplicate-current") {
+        whatHappenedRows[0] = { label: "Duplicated from", value: metadata.duplicatedFromViewName || "Current View" };
+      }
       starterSuccessWhatHappened.innerHTML = "";
-      starterSuccessWhatHappened.appendChild(buildStarterSuccessSummaryRows([
-        { label: "Starter used", value: starterName },
-        { label: "Menu items shown", value: String(visibleCount) },
-        { label: "Menu items hidden", value: String(hiddenCount) },
-        { label: "Sidebar color", value: sidebarColor || "Custom" },
-        { label: "Menu text color", value: textColorMode || "Auto" }
-      ]));
+      starterSuccessWhatHappened.appendChild(buildStarterSuccessSummaryRows(whatHappenedRows));
     }
 
     if (starterSuccessSkipped) {
@@ -1435,7 +1478,7 @@
       activeViewName.textContent = viewName;
     }
     if (activeViewStatus) {
-      activeViewStatus.textContent = enabledText + " Apply Live to GHL when you want to refresh the open page.";
+      activeViewStatus.textContent = preset && preset.id === state.activePresetId ? "Your CleanView is active." : enabledText;
     }
     renderStarterBadge(
       activeViewBadge,
@@ -1469,13 +1512,29 @@
     postCreationMenuOnlyMode = false;
     starterFlowSource = "profiles";
     render();
-    if (presetSelect) {
-      presetSelect.scrollIntoView({ block: "nearest" });
-      presetSelect.focus();
+    if (savedViewList) {
+      savedViewList.scrollIntoView({ block: "nearest" });
     }
     if (statusText) {
       setStatus(statusText);
     }
+  }
+
+  function openStarterCreationFlow() {
+    starterFlowSource = "profiles";
+    onboardingDraftPreset = null;
+    setOnboardingMode("chooser");
+  }
+
+  function openBlankGuidedCreationFlow() {
+    starterFlowSource = "profiles";
+    selectedStarterViewId = blankGuidedStarterView.id;
+    onboardingDraftPreset = buildStarterDraft(blankGuidedStarterView, {
+      name: "My CleanView",
+      visibleItems: allMenuKeys.slice()
+    });
+    setOnboardingMode("preview", blankGuidedStarterView.id);
+    applyOnboardingDraftPreview();
   }
 
   function renderBuilderVisibility() {
@@ -1516,6 +1575,264 @@
   function renderPresetSelects() {
     fillPresetSelect(presetSelect, selectedPresetId);
     fillPresetSelect(defaultPresetSelect, state.activePresetId || "builtin:simple");
+  }
+
+  function makeButton(label, className, action, presetId) {
+    var button = document.createElement("button");
+
+    button.type = "button";
+    button.textContent = label;
+    if (className) {
+      button.className = className;
+    }
+    button.dataset.viewAction = action;
+    button.dataset.presetId = presetId;
+    return button;
+  }
+
+  function renderSavedViewList() {
+    var presets = allPresets();
+    var viewIds = editableProfileIds(state);
+
+    if (!savedViewList) {
+      return;
+    }
+
+    if (savedViewCountText) {
+      savedViewCountText.textContent = "Saved views: " + viewIds.length + ".";
+    }
+
+    savedViewList.innerHTML = "";
+    if (!viewIds.length) {
+      var empty = document.createElement("p");
+      empty.className = "help-text";
+      empty.textContent = "No saved views yet.";
+      savedViewList.appendChild(empty);
+      return;
+    }
+
+    viewIds.forEach(function renderSavedViewRow(presetId) {
+      var preset = presets[presetId];
+      var row = document.createElement("section");
+      var details = document.createElement("div");
+      var name = document.createElement("h3");
+      var status = document.createElement("span");
+      var actions = document.createElement("div");
+      var isActive = presetId === state.activePresetId;
+
+      row.className = "saved-view-row";
+      row.dataset.active = isActive ? "true" : "false";
+      details.className = "saved-view-details";
+      name.textContent = preset.name || preset.label || "Untitled View";
+      status.className = isActive ? "saved-view-status active" : "saved-view-status";
+      status.textContent = isActive ? "Active" : "Saved";
+      actions.className = "saved-view-actions";
+
+      if (!isActive) {
+        actions.appendChild(makeButton("Make Active", "secondary", "activate", presetId));
+      }
+      actions.appendChild(makeButton("Edit", "secondary", "edit", presetId));
+      actions.appendChild(makeButton("Rename", "secondary", "rename", presetId));
+      actions.appendChild(makeButton("Duplicate", "secondary", "duplicate", presetId));
+      actions.appendChild(makeButton("Delete", "danger", "delete", presetId));
+
+      details.appendChild(name);
+      details.appendChild(status);
+      row.appendChild(details);
+      row.appendChild(actions);
+      savedViewList.appendChild(row);
+    });
+  }
+
+  function selectViewForEditing(presetId, tabName, statusText) {
+    if (!storage.getPresetById(state, presetId) || !isEditableProfile(storage.getPresetById(state, presetId))) {
+      setStatus("Choose a saved view first.", true);
+      return;
+    }
+
+    selectedPresetId = presetId;
+    if (tabName) {
+      activeTab = tabName;
+    }
+    storage.updateState(function updateLastEditedView(nextState) {
+      nextState.lastEditedProfileId = presetId;
+    }, function handleViewSelected(nextState, error) {
+      if (error) {
+        setStatus("Unable to open this view.", true);
+        return;
+      }
+      state = nextState;
+      render();
+      resetDirtyStateFromRenderedDraft();
+      if (statusText) {
+        setStatus(statusText);
+      }
+      if (builderPanel && tabName) {
+        builderPanel.scrollIntoView({ block: "start" });
+      }
+    });
+  }
+
+  function activateSavedView(presetId, statusText) {
+    var preset = storage.getPresetById(state, presetId);
+
+    if (!isEditableProfile(preset)) {
+      setStatus("Only saved views can be made active.", true);
+      return;
+    }
+
+    selectedPresetId = presetId;
+    storage.updateState(function updateActiveView(nextState) {
+      nextState.activePresetId = presetId;
+      nextState.lastEditedProfileId = presetId;
+      if (nextState.presetPreferences) {
+        delete nextState.presetPreferences[presetId];
+      }
+    }, function handleActiveView(nextState, error) {
+      if (error) {
+        setStatus("Unable to make this view active.", true);
+        return;
+      }
+      state = nextState;
+      render();
+      resetDirtyStateFromRenderedDraft();
+      applyLiveToGhl({ successMessage: statusText || "View is active and applied." });
+    });
+  }
+
+  function renameSavedView(presetId) {
+    var preset = storage.getPresetById(state, presetId);
+    var nextName = "";
+
+    if (!isEditableProfile(preset)) {
+      setStatus("Only saved views can be renamed.", true);
+      return;
+    }
+
+    nextName = String(window.prompt("Rename View", preset.name || preset.label || "My CleanView") || "").trim();
+    if (!nextName) {
+      setStatus("Rename cancelled.");
+      return;
+    }
+
+    storage.updateState(function updateViewName(nextState) {
+      if (nextState.presets[presetId]) {
+        nextState.presets[presetId].name = nextName;
+        nextState.presets[presetId].updatedAt = namespace.nowIso();
+      }
+    }, function handleRenamed(nextState, error) {
+      if (error) {
+        setStatus("Unable to rename this view.", true);
+        return;
+      }
+      state = nextState;
+      selectedPresetId = presetId;
+      render();
+      resetDirtyStateFromRenderedDraft();
+      setStatus("View renamed.");
+    });
+  }
+
+  function deleteSavedView(presetId) {
+    var preset = storage.getPresetById(state, presetId);
+
+    if (!isEditableProfile(preset)) {
+      setStatus("Only saved views can be deleted.", true);
+      return;
+    }
+
+    if (!window.confirm("Delete this View? This cannot be undone.")) {
+      setStatus("Delete cancelled.");
+      return;
+    }
+
+    storage.updateState(function deleteView(nextState) {
+      delete nextState.presets[presetId];
+      Object.keys(nextState.locationRules || {}).forEach(function removeRulesForPreset(locationId) {
+        if (nextState.locationRules[locationId].presetId === presetId) {
+          delete nextState.locationRules[locationId];
+        }
+      });
+      if (nextState.activePresetId === presetId) {
+        nextState.activePresetId = "";
+      }
+      if (nextState.lastEditedProfileId === presetId) {
+        nextState.lastEditedProfileId = "";
+      }
+    }, function handleDeletedView(nextState, error) {
+      if (error) {
+        setStatus("Unable to delete View.", true);
+        return;
+      }
+      state = nextState;
+      selectedPresetId = resolveInitialProfileId(nextState);
+      render();
+      resetDirtyStateFromRenderedDraft();
+      setStatus("View deleted.");
+    });
+  }
+
+  function duplicateSavedView(presetId, options) {
+    var duplicateOptions = options || {};
+    var sourcePreset = storage.getPresetById(state, presetId);
+    var duplicate = storage.duplicatePreset(state, presetId);
+    var sourceName = sourcePreset && (sourcePreset.name || sourcePreset.label) || "CleanView";
+    var duplicateName = nextCopyName(sourceName);
+
+    if (!isEditableProfile(sourcePreset) || !duplicate) {
+      setStatus("Choose a saved view before duplicating.", true);
+      return;
+    }
+
+    duplicate.name = duplicateOptions.name || duplicateName;
+    duplicate.description = sourcePreset.description || "";
+    duplicate.showInPopup = true;
+    duplicate.archived = false;
+    duplicate.updatedAt = namespace.nowIso();
+    if (duplicateOptions.showSuccess) {
+      duplicate.profileMetadata = Object.assign({}, duplicate.profileMetadata || {}, {
+        creationSource: "duplicate-current",
+        duplicatedFromViewName: sourceName
+      });
+    }
+
+    storage.updateState(function saveDuplicate(nextState) {
+      nextState.presets[duplicate.id] = storage.normalizePreset(duplicate);
+      nextState.activePresetId = duplicate.id;
+      nextState.lastEditedProfileId = duplicate.id;
+      if (nextState.presetPreferences) {
+        delete nextState.presetPreferences[duplicate.id];
+      }
+    }, function handleDuplicateSaved(nextState, error) {
+      var starterId = duplicate.profileMetadata && duplicate.profileMetadata.onboardingStarterViewId || blankGuidedStarterView.id;
+
+      if (error) {
+        setStatus("Unable to duplicate this view.", true);
+        return;
+      }
+
+      state = nextState;
+      selectedPresetId = duplicate.id;
+      resetDirtyStateFromRenderedDraft();
+      if (!duplicateOptions.showSuccess) {
+        render();
+        applyLiveToGhl({ successMessage: "View duplicated and set active." });
+        return;
+      }
+
+      starterApplyMessage = "View duplicated.";
+      sendToContentScript({ type: "CLEANVIEW_APPLY_ACTIVE_SETTINGS" }, function handleDuplicateApplied(result) {
+        if (!result || !result.ok) {
+          starterApplyMessage = result && (result.message || result.error) ? result.message || result.error : "View duplicated. Open a GHL page to apply it live.";
+          setOnboardingMode("success", starterId);
+          setStatus(starterApplyMessage, true);
+          return;
+        }
+        starterApplyMessage = result.message || "Applied to open GHL tab.";
+        setOnboardingMode("success", starterId);
+        setStatus("View duplicated and set active.");
+      });
+    });
   }
 
   function renderTabState() {
@@ -3237,7 +3554,7 @@
       schemaVersion: cleanViewProfileSchemaVersion,
       type: "profile",
       profile: {
-        name: preset.name || preset.label || "Untitled Profile",
+        name: preset.name || preset.label || "Untitled View",
         description: preset.description || "",
         source: {
           kind: "user",
@@ -3296,7 +3613,7 @@
     var preset = null;
 
     if (!profileJson || typeof profileJson !== "object" || Array.isArray(profileJson)) {
-      return { ok: false, errors: ["CleanView Profile JSON must be an object."], warnings: warnings };
+      return { ok: false, errors: ["CleanView View JSON must be an object."], warnings: warnings };
     }
 
     findDangerousProfileFields(profileJson, "", errors);
@@ -3321,7 +3638,7 @@
 
     preset = storage.normalizePreset({
       id: namespace.createId("custom"),
-      name: name || "Imported Profile",
+      name: name || "Imported View",
       description: description,
       visibleItems: resolveMenuItemsFromProfileJson(profile.menuItems, errors),
       labelOverrides: resolveRenameLabelsFromProfileJson(profile.renameLabels, errors),
@@ -3356,7 +3673,7 @@
     }
 
     if (!text) {
-      setStatus("Paste CleanView Profile JSON or choose a .json file.", true);
+      setStatus("Paste CleanView View JSON or choose a .json file.", true);
       return;
     }
 
@@ -3426,7 +3743,7 @@
       title.textContent = "Import needs attention";
       profileImportPreview.appendChild(title);
       appendPreviewList(profileImportPreview, "Errors", result.errors);
-      setStatus("Profile import validation failed.", true);
+      setStatus("View import validation failed.", true);
       return;
     }
 
@@ -3463,7 +3780,7 @@
       "Custom " + (style.backgroundType === "image" || style.backgroundType === "pattern" ? "Visual" : style.backgroundType || "Solid") :
       "Preset " + (style.activePresetId || style.preset || "default");
 
-    title.textContent = "Profile Preview";
+    title.textContent = "View Preview";
     description.textContent = result.preset.description ? result.preset.name + ": " + result.preset.description : result.preset.name;
     profileImportPreview.appendChild(title);
     profileImportPreview.appendChild(description);
@@ -3487,7 +3804,7 @@
     if (result.warnings.length) {
       appendPreviewList(profileImportPreview, "Warnings", result.warnings);
     }
-    setStatus("Profile JSON is valid. Review the preview, then import.");
+    setStatus("View JSON is valid. Review the preview, then import.");
   }
 
   function safeProfileFilename(name) {
@@ -3509,15 +3826,14 @@
     profileTransferModal.hidden = false;
     if (mode === "create") {
       pendingImportedProfile = null;
-      profileTransferTitle.textContent = "How would you like to start?";
-      profileTransferSubtitle.textContent = "Create a new editable CleanView Profile.";
+      profileTransferTitle.textContent = "How do you want to start?";
+      profileTransferSubtitle.textContent = "Create a new saved CleanView through guided setup.";
       profileCreatePanel.hidden = false;
       profileImportPanel.hidden = true;
       profileExportPanel.hidden = true;
-      fillTemplateSelect(createTemplateSelect);
-      if (createBlankProfileName) {
-        createBlankProfileName.value = "My CleanView";
-        createBlankProfileName.focus();
+      if (duplicateCurrentViewModalButton) {
+        duplicateCurrentViewModalButton.hidden = !isEditableProfile(storage.getPresetById(state, state && state.activePresetId));
+        duplicateCurrentViewModalButton.disabled = duplicateCurrentViewModalButton.hidden;
       }
       return;
     }
@@ -3525,24 +3841,24 @@
     if (mode === "export") {
       if (!isEditableProfile(preset)) {
         closeProfileTransferModal();
-        setStatus("Save this template as a new profile before exporting it.", true);
+        setStatus("Choose a saved view before exporting it.", true);
         return;
       }
       currentExportJson = JSON.stringify(profileJsonFromPreset(storage.normalizePreset(preset)), null, 2);
       currentExportFilename = safeProfileFilename(preset.name || preset.label);
-      profileTransferTitle.textContent = "Export Profile";
-      profileTransferSubtitle.textContent = "Export this Profile as CleanView JSON.";
+      profileTransferTitle.textContent = "Export View";
+      profileTransferSubtitle.textContent = "Export this View as CleanView JSON.";
       profileCreatePanel.hidden = true;
       profileImportPanel.hidden = true;
       profileExportPanel.hidden = false;
       profileExportTextarea.value = currentExportJson;
-      setStatus("Profile JSON is ready to export.");
+      setStatus("View JSON is ready to export.");
       return;
     }
 
     pendingImportedProfile = null;
-    profileTransferTitle.textContent = "Import Profile";
-    profileTransferSubtitle.textContent = "Paste CleanView Profile JSON or upload a .json file.";
+    profileTransferTitle.textContent = "Import View";
+    profileTransferSubtitle.textContent = "Paste CleanView View JSON or upload a .json file.";
     profileCreatePanel.hidden = true;
     profileImportPanel.hidden = false;
     profileExportPanel.hidden = true;
@@ -3591,7 +3907,7 @@
     window.setTimeout(function revokeDownloadUrl() {
       URL.revokeObjectURL(link.href);
     }, 0);
-    setStatus("Profile JSON downloaded.");
+    setStatus("View JSON downloaded.");
   }
 
   function createFieldLabel(text, input) {
@@ -4792,7 +5108,7 @@
 
   function saveThenApplyLive() {
     if (!canEditSelectedPreset(selectedPreset())) {
-      setStatus("Select a profile draft before applying live.", true);
+      setStatus("Select a view draft before applying live.", true);
       return;
     }
 
@@ -4866,7 +5182,7 @@
 
       row.className = "rule-row";
       label.textContent = locationId;
-      presetLabel.textContent = preset ? optionLabel(preset) : "Unknown Profile";
+      presetLabel.textContent = preset ? optionLabel(preset) : "Unknown View";
       removeButton.type = "button";
       removeButton.className = "danger";
       removeButton.textContent = "Remove";
@@ -4968,6 +5284,7 @@
       return;
     }
     renderPresetSelects();
+    renderSavedViewList();
     renderTabState();
     renderHeader();
     renderPostCreationMenuOnlyState();
@@ -5198,7 +5515,7 @@
     var customLinks = [];
     var menuGroups = [];
 
-    preset.name = presetName.value.trim() || "Untitled Profile";
+    preset.name = presetName.value.trim() || "Untitled View";
     preset.description = presetDescription.value.trim();
 
     visibleItems = visibleMenuKeysFromEditor();
@@ -5427,7 +5744,7 @@
       }
     }, function handleSaved(nextState, error) {
       if (error) {
-        setStatus("Unable to save CleanView Profile.", true);
+        setStatus("Unable to save CleanView View.", true);
         return;
       }
       state = nextState;
@@ -5499,13 +5816,13 @@
     var profile = storage.duplicatePreset(state, sourcePresetId);
 
     if (!sourcePreset || !profile) {
-      setStatus("Unable to create Profile from this Template.", true);
+      setStatus("Unable to create View from this starter.", true);
       return;
     }
 
     profile.name = nameOverride || profileNameFromTemplate(sourcePreset);
     profile.description = sourcePreset.description || "";
-    persistPreset(profile, "Profile created.", false);
+    persistPreset(profile, "View created.", false);
   }
 
   function createBlankProfile(nameOverride) {
@@ -5518,7 +5835,7 @@
       customLinks: [],
       menuGroups: [],
       sidebarStyle: namespace.defaultSidebarStyle
-    }), "Profile created.", false);
+    }), "View created.", false);
   }
 
   function findReusableStarterProfile(nextState, starter) {
@@ -5541,7 +5858,7 @@
     var starterSidebarStyle = storage.normalizeSidebarStyle(Object.assign({}, namespace.defaultSidebarStyle || {}, starter && starter.sidebarStyle || {}, draftStyle));
     var metadata = Object.assign({}, existingProfile && existingProfile.profileMetadata || {}, draftMetadata, {
       onboardingStarterViewId: starter.id,
-      onboardingStarterViewName: starter.name,
+      onboardingStarterViewName: starter.summaryName || starter.name,
       createdFromFirstRun: true,
       sourceTemplateId: starter.sourceTemplateId || starter.id,
       accentColor: starter.accentColor || "",
@@ -5675,12 +5992,12 @@
 
   function importPendingProfile() {
     if (!pendingImportedProfile) {
-      setStatus("Validate a CleanView Profile before importing.", true);
+      setStatus("Validate a CleanView View before importing.", true);
       return;
     }
 
     closeProfileTransferModal();
-    persistPreset(pendingImportedProfile, "Imported successfully. Active Profile: " + pendingImportedProfile.name + ".", false);
+    persistPreset(pendingImportedProfile, "Imported successfully. Current View: " + pendingImportedProfile.name + ".", false);
   }
 
   function handleMoreAction(action) {
@@ -5690,23 +6007,21 @@
 
     if (action === "duplicate") {
       if (!isEditableProfile(selectedPreset())) {
-        setStatus("Save this template as a new profile before making a copy.", true);
+        setStatus("Choose a saved view before making a copy.", true);
         return;
       }
-      document.getElementById("duplicatePresetButton").click();
+      duplicateSavedView(selectedPresetId);
     } else if (action === "save-copy") {
       if (!isEditableProfile(selectedPreset())) {
-        setStatus("Save this template as a new profile before making a copy.", true);
+        setStatus("Choose a saved view before making a copy.", true);
         return;
       }
       document.getElementById("saveAsCopyButton").click();
     } else if (action === "rename") {
       if (!isEditableProfile(selectedPreset())) {
-        setStatus("Save this template as a new profile before renaming it.", true);
+        setStatus("Choose a saved view before renaming it.", true);
       } else {
-        presetName.focus();
-        presetName.select();
-        setStatus("Update the Profile Name field, then Save Changes.");
+        renameSavedView(selectedPresetId);
       }
     } else if (action === "export") {
       openProfileTransferModal("export");
@@ -5741,8 +6056,8 @@
   });
 
   document.getElementById("createPresetButton").addEventListener("click", function createPreset() {
-    loadPresetIntoEditor("builtin:blank", window.prompt("Profile name", "My CleanView") || "My CleanView");
-    setStatus("Blank draft ready. Save as New Profile when you are ready.");
+    loadPresetIntoEditor("builtin:blank", window.prompt("View name", "My CleanView") || "My CleanView");
+    setStatus("Blank draft ready. Save as New View when you are ready.");
   });
 
   document.getElementById("duplicatePresetButton").addEventListener("click", function duplicatePreset() {
@@ -5750,12 +6065,12 @@
     var duplicate = storage.duplicatePreset(state, selectedPresetId);
     if (duplicate) {
       duplicate.name = preset && preset.source === "builtin" ? profileNameFromTemplate(preset) : nextCopyName(preset && (preset.name || preset.label));
-      persistPreset(duplicate, "Profile created.", false);
+      persistPreset(duplicate, "View created.", false);
     }
   });
 
   document.getElementById("savePresetButton").addEventListener("click", function savePreset() {
-    persistSelectedView(isCustomPreset(selectedPreset()) ? "Changes saved." : "New profile saved.", false);
+    persistSelectedView(isCustomPreset(selectedPreset()) ? "Changes saved." : "New view saved.", false);
   });
 
   if (stickyRevertButton) {
@@ -5777,7 +6092,7 @@
       var duplicate = storage.duplicatePreset(state, selectedPresetId);
 
       if (!isCustomPreset(currentPreset) || !duplicate) {
-        setStatus("Save as Copy is available for custom profiles only.", true);
+        setStatus("Save a Copy is available for saved views only.", true);
         return;
       }
 
@@ -5790,7 +6105,7 @@
       duplicate.sidebarStyle = draftPreset.sidebarStyle || namespace.defaultSidebarStyle;
       duplicate.showInPopup = draftPreset.showInPopup !== false;
       duplicate.profileMetadata = draftPreset.profileMetadata || null;
-      persistPreset(duplicate, "Profile copy saved.", false);
+      persistPreset(duplicate, "View copy saved.", false);
     });
   }
 
@@ -5804,7 +6119,7 @@
     createBlankProfileModalButton.addEventListener("click", function createBlankFromModal() {
       closeProfileTransferModal();
       loadPresetIntoEditor("builtin:blank", createBlankProfileName.value || "My CleanView");
-      setStatus("Blank draft ready. Save as New Profile when you are ready.");
+      setStatus("Blank draft ready. Save as New View when you are ready.");
     });
   }
 
@@ -5812,7 +6127,7 @@
     createFromTemplateModalButton.addEventListener("click", function createFromTemplateModal() {
       closeProfileTransferModal();
       loadPresetIntoEditor(createTemplateSelect.value || "builtin:simple");
-      setStatus("Template draft ready. Customize it, then save as a new profile.");
+      setStatus("Starter draft ready. Customize it, then save as a new view.");
     });
   }
 
@@ -5822,9 +6137,36 @@
     });
   }
 
+  if (startWithStarterModalButton) {
+    startWithStarterModalButton.addEventListener("click", function startWithStarterFromModal() {
+      closeProfileTransferModal();
+      openStarterCreationFlow();
+    });
+  }
+
+  if (startBlankGuidedModalButton) {
+    startBlankGuidedModalButton.addEventListener("click", function startBlankGuidedFromModal() {
+      closeProfileTransferModal();
+      openBlankGuidedCreationFlow();
+    });
+  }
+
+  if (duplicateCurrentViewModalButton) {
+    duplicateCurrentViewModalButton.addEventListener("click", function duplicateCurrentViewFromModal() {
+      var activePreset = state && storage.getPresetById(state, state.activePresetId);
+
+      if (!isEditableProfile(activePreset)) {
+        setStatus("Create or activate a saved view before duplicating.", true);
+        return;
+      }
+      closeProfileTransferModal();
+      duplicateSavedView(activePreset.id, { showSuccess: true });
+    });
+  }
+
   if (createProfileFromTemplateButton) {
     createProfileFromTemplateButton.addEventListener("click", function createFromSelectedTemplate() {
-      persistSelectedView("New profile saved.", false);
+      persistSelectedView("New view saved.", false);
     });
   }
 
@@ -5849,7 +6191,7 @@
 
   if (starterChooserBackButton) {
     starterChooserBackButton.addEventListener("click", function returnToProfilesFromStarterChooser() {
-      openProfilesView("Choose an existing profile or start from template.");
+      openProfilesView("Choose an existing view or create a new one.");
     });
   }
 
@@ -6096,14 +6438,13 @@
 
   if (startFromViewButton) {
     startFromViewButton.addEventListener("click", function openStarterChooserFromProfiles() {
-      starterFlowSource = "profiles";
-      setOnboardingMode("chooser");
+      openStarterCreationFlow();
     });
   }
 
   if (changeStarterViewButton) {
-    changeStarterViewButton.addEventListener("click", function openStarterChooserFromOverview() {
-      openProfilesView("Choose an existing profile or start from template.");
+    changeStarterViewButton.addEventListener("click", function openViewsFromOverview() {
+      openProfilesView("Choose an existing view or create a new one.");
     });
   }
 
@@ -6111,7 +6452,35 @@
     customizeActiveViewButton.addEventListener("click", function focusActiveViewEditor() {
       activeTab = "menu";
       renderTabState();
-      setStatus("Customize the active view below.");
+      setStatus("Editing menu for the current view.");
+    });
+  }
+
+  if (changeStyleButton) {
+    changeStyleButton.addEventListener("click", function focusStyleEditor() {
+      activeTab = "style";
+      renderTabState();
+      setStatus("Editing style for the current view.");
+    });
+  }
+
+  if (createNewViewOverviewButton) {
+    createNewViewOverviewButton.addEventListener("click", function openCreateViewFromOverview() {
+      openProfileTransferModal("create");
+    });
+  }
+
+  if (openAdvancedOptionsButton) {
+    openAdvancedOptionsButton.addEventListener("click", function openAdvancedOptions() {
+      activeTab = "style";
+      styleAccordionState.background = true;
+      styleAccordionState.logo = true;
+      styleAccordionState.advanced = true;
+      render();
+      setStatus("Advanced options are available below.");
+      if (builderPanel) {
+        builderPanel.scrollIntoView({ block: "start" });
+      }
     });
   }
 
@@ -6130,14 +6499,14 @@
   if (onboardingCreateFromTemplateButton) {
     onboardingCreateFromTemplateButton.addEventListener("click", function createFromOnboardingTemplate() {
       loadPresetIntoEditor(onboardingTemplateSelect.value || "builtin:simple");
-      setStatus("Template draft ready. Customize it, then save as a new profile.");
+      setStatus("Starter draft ready. Customize it, then save as a new view.");
     });
   }
 
   if (onboardingCreateBlankButton) {
     onboardingCreateBlankButton.addEventListener("click", function createBlankFromOnboarding() {
       loadPresetIntoEditor("builtin:blank", blankProfileName.value || "My CleanView");
-      setStatus("Blank draft ready. Save as New Profile when you are ready.");
+      setStatus("Blank draft ready. Save as New View when you are ready.");
     });
   }
 
@@ -6151,6 +6520,30 @@
     moreProfileActionsSelect.addEventListener("change", function chooseMoreProfileAction() {
       handleMoreAction(moreProfileActionsSelect.value);
       moreProfileActionsSelect.value = "";
+    });
+  }
+
+  if (savedViewList) {
+    savedViewList.addEventListener("click", function handleSavedViewAction(event) {
+      var button = event.target.closest("[data-view-action]");
+      var action = button && button.dataset.viewAction;
+      var presetId = button && button.dataset.presetId;
+
+      if (!button || !presetId) {
+        return;
+      }
+
+      if (action === "activate") {
+        activateSavedView(presetId);
+      } else if (action === "edit") {
+        selectViewForEditing(presetId, "menu", "Editing this view.");
+      } else if (action === "rename") {
+        renameSavedView(presetId);
+      } else if (action === "duplicate") {
+        duplicateSavedView(presetId);
+      } else if (action === "delete") {
+        deleteSavedView(presetId);
+      }
     });
   }
 
@@ -6179,7 +6572,7 @@
         return;
       }
       if (file.size > 512 * 1024) {
-        setStatus("Profile JSON files must be 512KB or smaller.", true);
+        setStatus("View JSON files must be 512KB or smaller.", true);
         return;
       }
 
@@ -6188,7 +6581,7 @@
         validateProfileImportText();
       };
       reader.onerror = function handleProfileFileError() {
-        setStatus("Unable to read that Profile JSON file.", true);
+        setStatus("Unable to read that View JSON file.", true);
       };
       reader.readAsText(file);
     });
@@ -6196,7 +6589,7 @@
 
   if (copyProfileJsonButton) {
     copyProfileJsonButton.addEventListener("click", function copyProfileJson() {
-      copyTextToClipboard(currentExportJson, "Profile JSON copied.");
+      copyTextToClipboard(currentExportJson, "View JSON copied.");
     });
   }
 
@@ -6221,17 +6614,17 @@
   document.getElementById("resetMenuDefaultsButton").addEventListener("click", function resetMenuDefaults() {
     resetMenuCheckboxesToPresetDefault();
     refreshMenuGroupOptions();
-    setStatus("Menu Builder reset to the selected Profile default.");
+    setStatus("Menu Builder reset to the selected View default.");
     scheduleDirtyCheck();
   });
 
   document.getElementById("deletePresetButton").addEventListener("click", function deletePreset() {
     if (!isCustomPreset(selectedPreset())) {
-      setStatus("Templates are read-only. Save this draft as a new profile before deleting anything.", true);
+      setStatus("Only saved views can be deleted.", true);
       return;
     }
 
-    if (!window.confirm("Delete this Profile? This cannot be undone.")) {
+    if (!window.confirm("Delete this View? This cannot be undone.")) {
       setStatus("Delete cancelled.");
       return;
     }
@@ -6251,12 +6644,12 @@
       }
     }, function handleDeleted(nextState, error) {
       if (error) {
-        setStatus("Unable to delete Profile.", true);
+        setStatus("Unable to delete View.", true);
         return;
       }
       state = nextState;
       selectedPresetId = resolveInitialProfileId(nextState);
-      setStatus("Profile deleted.");
+      setStatus("View deleted.");
       render();
     });
   });
@@ -6348,7 +6741,7 @@
           return;
         }
         state = nextState;
-        setStatus("This Profile will be used automatically for this GHL location.");
+        setStatus("This View will be used automatically for this GHL location.");
         render();
       });
     });
@@ -6366,7 +6759,7 @@
         resetDirtyStateFromRenderedDraft();
       });
     }
-    console.log("[AgencySkin CleanView] Profile selected:", {
+    console.log("[AgencySkin CleanView] View selected:", {
       id: selectedPresetId,
       name: selectedPreset() && (selectedPreset().name || selectedPreset().label)
     });
@@ -6379,11 +6772,11 @@
       nextState.activePresetId = defaultPresetSelect.value;
     }, function handleSaved(nextState, error) {
       if (error) {
-        setStatus("Unable to update default Profile.", true);
+        setStatus("Unable to update default View.", true);
         return;
       }
       state = nextState;
-      setStatus("Default Profile updated.");
+      setStatus("Default View updated.");
       renderPresetSelects();
     });
   });

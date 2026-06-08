@@ -31,7 +31,7 @@
               <p>Choose a starter. You can adjust it before saving.</p>
             </div>
             <div class="button-row compact">
-              <button id="starterChooserBackButton" class="secondary" type="button" hidden>Back to My Profiles</button>
+              <button id="starterChooserBackButton" class="secondary" type="button" hidden>Back to My Views</button>
             </div>
           </div>
           <div id="starterViewGrid" class="starter-view-grid" aria-label="CleanView starter views"></div>
@@ -103,7 +103,7 @@
               <div id="starterSuccessBadge" class="starter-context-badge" hidden></div>
               <h2 id="starterSuccessTitle">Your CleanView is ready</h2>
               <p id="starterSuccessMessage">Your GHL sidebar has been simplified and saved as:</p>
-              <p id="starterSuccessProfileName" class="starter-success-profile-name">"Profile Name"</p>
+              <p id="starterSuccessProfileName" class="starter-success-profile-name">"View Name"</p>
               <p id="starterSuccessMeta" class="starter-context-meta" hidden></p>
             </div>
           </div>
@@ -139,8 +139,11 @@
             <p id="activeViewMeta" class="starter-context-meta" hidden></p>
           </div>
           <div class="button-row compact overview-actions">
-            <button id="changeStarterViewButton" class="secondary" type="button">Change View</button>
-            <button id="customizeActiveViewButton" class="secondary" type="button">Customize View</button>
+            <button id="changeStarterViewButton" class="secondary" type="button">My Views</button>
+            <button id="customizeActiveViewButton" class="secondary" type="button">Edit Menu</button>
+            <button id="changeStyleButton" class="secondary" type="button">Change Style</button>
+            <button id="createNewViewOverviewButton" class="secondary" type="button">Create New View</button>
+            <button id="openAdvancedOptionsButton" class="secondary" type="button">Open Advanced Options</button>
             <button id="overviewApplyLiveButton" type="button">Apply Live to GHL</button>
             <button id="overviewResetPageButton" class="secondary" type="button">Reset Page</button>
           </div>
@@ -149,38 +152,43 @@
 
       <section id="profileManagementPanel" class="panel">
         <div class="panel-header">
-          <h2>My Profiles</h2>
+          <div>
+            <h2>My Views</h2>
+            <p>These are your saved CleanViews. Choose which one to edit, duplicate, rename, or activate. <span id="savedViewCountText">Saved views: 0.</span></p>
+          </div>
           <div class="profile-header-actions">
-            <button id="startFromViewButton" class="secondary" type="button">Start from Template</button>
-            <button id="createProfileButton" type="button">Create Profile</button>
+            <button id="startFromViewButton" class="secondary" type="button" hidden>Start with a Starter</button>
+            <button id="createProfileButton" type="button">Create New View</button>
             <label class="field profile-actions-field" for="moreProfileActionsSelect">
               More
               <select id="moreProfileActionsSelect">
                 <option value="">Choose action...</option>
-                <option value="duplicate">Duplicate Profile</option>
-                <option value="save-copy">Save as Copy</option>
-                <option value="rename">Rename Profile</option>
-                <option value="export">Export Profile</option>
-                <option value="copy">Copy Profile JSON</option>
-                <option value="delete">Delete Profile</option>
+                <option value="duplicate">Duplicate View</option>
+                <option value="save-copy">Save a Copy</option>
+                <option value="rename">Rename View</option>
+                <option value="export">Export View</option>
+                <option value="copy">Copy View JSON</option>
+                <option value="delete">Delete View</option>
               </select>
             </label>
           </div>
           <div class="button-row compact" hidden>
-            <button id="duplicatePresetButton" class="secondary" type="button">Save as Copy</button>
+            <button id="duplicatePresetButton" class="secondary" type="button">Save a Copy</button>
             <button id="createPresetButton" type="button">Start Blank</button>
-            <button id="deletePresetButton" class="danger" type="button">Delete Profile</button>
+            <button id="deletePresetButton" class="danger" type="button">Delete View</button>
           </div>
         </div>
 
-        <label class="field" for="presetSelect">
-          Active Profile
+        <div id="savedViewList" class="saved-view-list" aria-label="Saved CleanViews"></div>
+
+        <label class="field internal-profile-select" for="presetSelect" hidden>
+          Current View
           <select id="presetSelect"></select>
         </label>
 
         <div class="form-grid two-columns">
           <label class="field" for="presetName">
-            Profile Name
+            View Name
             <input id="presetName" type="text">
           </label>
 
@@ -190,27 +198,27 @@
           </label>
         </div>
 
-        <div class="form-grid">
-          <p class="help-text">Profile Visibility</p>
+        <div class="form-grid" hidden>
+          <p class="help-text">View Visibility</p>
           <label class="toggle-row" for="showInPopupToggle">
-            <span>Show this Profile in popup</span>
+            <span>Show this View in popup switcher</span>
             <input id="showInPopupToggle" type="checkbox">
           </label>
         </div>
 
         <p id="builtInNotice" class="help-text"></p>
         <div id="templateNotice" class="template-notice" hidden>
-          <p>This is a read-only template draft. Customize it here, then save it as a new profile.</p>
-          <button id="createProfileFromTemplateButton" type="button">Save as New Profile</button>
+          <p>This starter is for setup only. Use Create New View to save a CleanView.</p>
+          <button id="createProfileFromTemplateButton" type="button">Save as New View</button>
         </div>
       </section>
 
       <section id="builderPanel" class="panel builder-panel">
-        <nav class="tabs" aria-label="Profile Builder sections">
+        <nav class="tabs" aria-label="View Builder sections">
           <button class="tab-button active" type="button" data-tab-button="style" data-tab-icon="palette">Sidebar Style</button>
           <button class="tab-button" type="button" data-tab-button="menu" data-tab-icon="menu">Menu Builder</button>
           <button class="tab-button" type="button" data-tab-button="rename" data-tab-icon="tag">Rename Labels</button>
-          <button class="tab-button" type="button" data-tab-button="links" data-tab-icon="link">Quick Links</button>
+          <button class="tab-button" type="button" data-tab-button="links" data-tab-icon="link">Quick Links <span class="pro-badge">Pro</span></button>
           <button class="tab-button" type="button" data-tab-button="locations" data-location-defaults-ui hidden>Location Rules</button>
         </nav>
 
@@ -284,7 +292,7 @@
               <details id="customStylePanel" class="style-card style-accordion custom-sidebar-controls" data-style-accordion="background">
                 <summary class="style-accordion-summary">
                   <div>
-                    <h3>Background</h3>
+                    <h3>Background <span class="pro-badge">Pro</span></h3>
                     <p class="help-text">Build a manual Solid, Gradient, or Visual Image sidebar.</p>
                   </div>
                 </summary>
@@ -300,7 +308,7 @@
               <details id="logoStyleAccordion" class="style-card style-accordion" data-style-accordion="logo">
                 <summary class="style-accordion-summary">
                   <div>
-                    <h3>Logo</h3>
+                    <h3>Logo <span class="pro-badge">Pro</span></h3>
                     <p class="help-text">Control sidebar branding and header display.</p>
                   </div>
                 </summary>
@@ -320,7 +328,7 @@
               <details id="spacingStyleAccordion" class="style-card style-accordion" data-style-accordion="spacing">
                 <summary class="style-accordion-summary">
                   <div>
-                    <h3>Spacing</h3>
+                    <h3>Spacing <span class="pro-badge">Pro</span></h3>
                     <p class="help-text">Adjust sidebar radius, padding, and menu spacing.</p>
                   </div>
                 </summary>
@@ -330,7 +338,7 @@
               <details id="advancedStyleAccordion" class="style-card style-accordion" data-style-accordion="advanced">
                 <summary class="style-accordion-summary">
                   <div>
-                    <h3>Advanced</h3>
+                    <h3>Advanced <span class="pro-badge">Pro</span></h3>
                     <p class="help-text">Fine tune readability, border, and shadow behavior.</p>
                   </div>
                 </summary>
@@ -445,14 +453,14 @@
         <section class="tab-panel" data-tab-panel="locations" data-location-defaults-ui hidden>
           <div class="panel-header">
             <h2>Location Rules</h2>
-            <p>Choose which Profile should be used automatically for specific GHL locations.</p>
+            <p>Choose which View should be used automatically for specific GHL locations.</p>
           </div>
           <label class="field" for="defaultPresetSelect">
-            Default Profile
+            Default View
             <select id="defaultPresetSelect"></select>
           </label>
           <p id="currentLocationLabel" class="help-text">Current GHL Location: detecting...</p>
-          <button id="assignCurrentLocationButton" class="secondary" type="button">Use current Profile for this location</button>
+          <button id="assignCurrentLocationButton" class="secondary" type="button">Use current View for this location</button>
           <div id="locationRules" class="location-rules"></div>
         </section>
 
@@ -471,8 +479,8 @@
         <div class="profile-modal-panel">
           <div class="panel-header">
             <div>
-              <h2 id="profileTransferTitle">Import Profile</h2>
-              <p id="profileTransferSubtitle">Paste CleanView Profile JSON or upload a .json file.</p>
+              <h2 id="profileTransferTitle">Import View</h2>
+              <p id="profileTransferSubtitle">Paste CleanView View JSON or upload a .json file.</p>
             </div>
             <button id="profileTransferCloseButton" class="secondary" type="button">Cancel</button>
           </div>
@@ -480,27 +488,19 @@
           <div id="profileCreatePanel" class="profile-transfer-section" hidden>
             <div class="create-profile-grid">
               <section class="create-profile-option">
-                <h3>Start Blank</h3>
-                <p class="help-text">Create a new editable Profile from scratch.</p>
-                <label class="field" for="createBlankProfileName">
-                  Profile Name
-                  <input id="createBlankProfileName" type="text" value="My CleanView">
-                </label>
-                <button id="createBlankProfileModalButton" type="button">Start Blank</button>
+                <h3>Start with a Starter</h3>
+                <p class="help-text">Pick a preset and adjust it before saving.</p>
+                <button id="startWithStarterModalButton" type="button">Start with a Starter</button>
               </section>
               <section class="create-profile-option">
-                <h3>Start From Template</h3>
-                <p class="help-text">Choose a prebuilt template and open it as a draft in the editor.</p>
-                <label class="field" for="createTemplateSelect">
-                  Template
-                  <select id="createTemplateSelect"></select>
-                </label>
-                <button id="createFromTemplateModalButton" type="button">Start from Template</button>
+                <h3>Start from Blank</h3>
+                <p class="help-text">Start clean and choose your own menu and style.</p>
+                <button id="startBlankGuidedModalButton" type="button">Start from Blank</button>
               </section>
               <section class="create-profile-option">
-                <h3>Import Profile JSON</h3>
-                <p class="help-text">Paste or upload a CleanView Profile shared by an admin, teammate, or AI agent.</p>
-                <button id="createImportProfileButton" type="button">Import Profile JSON</button>
+                <h3>Duplicate Current View</h3>
+                <p class="help-text">Copy your current setup and adjust it.</p>
+                <button id="duplicateCurrentViewModalButton" type="button">Duplicate Current View</button>
               </section>
             </div>
           </div>
@@ -515,18 +515,18 @@
               <input id="profileImportFile" type="file" accept="application/json,.json">
             </label>
             <div class="button-row">
-              <button id="validateProfileImportButton" type="button">Validate Profile</button>
+              <button id="validateProfileImportButton" type="button">Validate View</button>
             </div>
             <div id="profileImportPreview" class="profile-transfer-preview" hidden></div>
             <div class="button-row">
-              <button id="confirmProfileImportButton" type="button" disabled>Import as New Profile</button>
+              <button id="confirmProfileImportButton" type="button" disabled>Import as New View</button>
             </div>
           </div>
 
           <div id="profileExportPanel" class="profile-transfer-section" hidden>
-            <p class="help-text">Export this Profile as CleanView JSON.</p>
+            <p class="help-text">Export this View as CleanView JSON.</p>
             <label class="field" for="profileExportTextarea">
-              Profile JSON
+              View JSON
               <textarea id="profileExportTextarea" rows="12" readonly spellcheck="false"></textarea>
             </label>
             <div class="button-row">

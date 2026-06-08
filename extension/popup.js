@@ -1,6 +1,8 @@
 (function agencySkinCleanViewPopup() {
   var namespace = window.agencySkinCleanView;
   var storage = namespace.storage;
+  var currentViewSummary = document.getElementById("currentViewSummary");
+  var currentViewName = document.getElementById("currentViewName");
   var presetField = document.getElementById("presetField");
   var presetSelect = document.getElementById("presetSelect");
   var emptyStateMessage = document.getElementById("emptyStateMessage");
@@ -68,20 +70,17 @@
     });
   }
 
-  function isVisibleInPopup(preset) {
-    return preset && preset.source !== "builtin" && preset.showInPopup !== false && preset.archived !== true;
+  function isSavedView(preset) {
+    return preset && preset.source !== "builtin" && preset.archived !== true;
   }
 
-  function optionLabel(preset, isHiddenActive) {
-    var typeLabel = preset.source === "builtin" ? "Template" : "Profile";
-    var name = preset.name || preset.label || typeLabel;
-    name = preset.source === "builtin" ? name.replace(/\s+(View|Template|Profile)$/i, "") + " Template" : name;
-    return name + " (" + typeLabel + ")" + (isHiddenActive ? " (Hidden from popup)" : "");
+  function optionLabel(preset) {
+    return preset && (preset.name || preset.label) || "Untitled View";
   }
 
   function selectedOptionName() {
     var option = presetSelect.options[presetSelect.selectedIndex];
-    return option ? option.textContent.replace(/\s+\((Template|Profile)\)(\s+\(Hidden from popup\))?$/, "") : "Profile";
+    return option ? option.textContent : "View";
   }
 
   function populatePresets(state) {
@@ -89,34 +88,35 @@
     var activePresetId = state.activePresetId || "builtin:simple";
     var activePreset = allPresets[activePresetId];
     var popupPresetIds = Object.keys(allPresets).filter(function keepPopupPreset(presetId) {
-      return isVisibleInPopup(allPresets[presetId]);
+      return isSavedView(allPresets[presetId]);
     });
-
-    if (activePreset && activePreset.source !== "builtin" && popupPresetIds.indexOf(activePresetId) === -1) {
-      popupPresetIds.unshift(activePresetId);
-    }
 
     presetSelect.innerHTML = "";
 
     popupPresetIds.forEach(function addOption(presetId) {
       var option = document.createElement("option");
       var preset = allPresets[presetId];
-      var isHiddenActive = presetId === activePresetId && !isVisibleInPopup(preset);
       option.value = presetId;
-      option.textContent = optionLabel(preset, isHiddenActive);
+      option.textContent = optionLabel(preset);
       presetSelect.appendChild(option);
     });
 
     presetSelect.value = activePreset && popupPresetIds.indexOf(activePresetId) !== -1 ? activePresetId : popupPresetIds[0] || "";
     presetSelect.disabled = popupPresetIds.length === 0;
+    if (currentViewSummary) {
+      currentViewSummary.hidden = popupPresetIds.length === 0;
+    }
+    if (currentViewName) {
+      currentViewName.textContent = isSavedView(activePreset) ? optionLabel(activePreset) : "No saved view active";
+    }
     if (presetField) {
-      presetField.hidden = popupPresetIds.length === 0;
+      presetField.hidden = popupPresetIds.length <= 1 && isSavedView(activePreset);
     }
     if (emptyStateMessage) {
       emptyStateMessage.hidden = popupPresetIds.length !== 0;
     }
     if (panelButton) {
-      panelButton.textContent = popupPresetIds.length === 0 ? "Create Your First View" : "Customize CleanView";
+      panelButton.textContent = popupPresetIds.length === 0 ? "Create Your First View" : "Customize View";
     }
   }
 
@@ -145,12 +145,16 @@
   }
 
   function saveActivePreset() {
+    if (!presetSelect.value) {
+      return;
+    }
+
     storage.updateState(function updateActivePreset(state) {
-      state.activePresetId = presetSelect.value || "builtin:simple";
+      state.activePresetId = presetSelect.value;
       state.lastEditedProfileId = state.activePresetId.indexOf("custom:") === 0 ? state.activePresetId : state.lastEditedProfileId;
     }, function handleSaved(state, error) {
       if (error) {
-        setStatus("Unable to save active Profile.", true);
+        setStatus("Unable to save current View.", true);
         return;
       }
       currentState = state;

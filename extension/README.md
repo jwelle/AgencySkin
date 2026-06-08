@@ -6,17 +6,17 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 
 ## What CleanView Does
 
-- Switch between sidebar Profiles instantly.
-- Create personal CleanView Profiles.
-- Choose a first-run starter view when no custom Profiles exist.
-- Create editable Profiles from Templates.
+- Switch between saved sidebar Views instantly.
+- Create personal CleanView Views.
+- Choose a first-run starter view when no custom Views exist.
+- Create new Views through a guided starter, blank, or duplicate flow.
 - Hide registered GoHighLevel sidebar menu items.
 - Rename registered GoHighLevel sidebar labels for your browser.
 - Add CleanView Quick Links as personal shortcuts in the sidebar.
-- Apply optional per-Profile sidebar styling.
+- Apply optional per-View sidebar styling.
 - Save unsaved side-panel edits from a sticky bottom save bar.
 - Reset the current page back to the original GoHighLevel sidebar.
-- Enable or disable CleanView without deleting saved Profiles.
+- Enable or disable CleanView without deleting saved Views.
 - Recover from content-script reachability failures with a side-panel `Reload GHL Tab` action.
 
 ## Load Unpacked in Chrome
@@ -32,31 +32,30 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 1. Open `https://app.gohighlevel.com/`.
 2. Open the AgencySkin extension popup.
 3. Confirm the popup shows `CleanView`.
-4. Choose an Active Profile.
-5. Confirm the selected Profile is saved and applies only to a validated GHL tab.
-6. Click `Customize CleanView`.
+4. Confirm the popup shows `Current View` when a saved View exists.
+5. Confirm switching a saved View applies only to a validated GHL tab.
+6. Click `Customize View`.
 7. Confirm the popup closes immediately after the side panel opens.
 8. With no custom Profiles, confirm the side panel shows `Welcome to CleanView` and the five starter views.
-9. Confirm the fresh popup shows `No active view yet.`, hides the blank Active Profile field, and uses the first-run CTA.
-10. Choose each starter view and confirm the temporary preview applies live without creating a Profile.
+9. Confirm the fresh popup shows `No active view yet.`, hides the blank Current View field, and uses the first-run CTA.
+10. Choose each starter view and confirm the temporary preview applies live without creating a View.
 11. Adjust menu visibility/order, sidebar color, menu text color, and view name, then confirm the live preview updates without saving.
-12. Click `Create My View` and confirm a custom Profile is created, set active, and the post-creation success state appears.
+12. Click `Create My View` and confirm a custom View is created, set active, and the post-creation success state appears.
 13. Confirm the success state shows `What happened` and `Skipped for now`, then test `Done`, `Edit Menu`, `Back to Summary`, `Done Editing`, and `Open Full Editor`.
-14. Confirm existing custom Profiles skip first-run onboarding.
-15. Click `Change View` from the active overview and confirm it returns to `My Profiles`, not starter cards.
-16. Click `Start from Template`, confirm starter cards appear, preview a starter, click `Back`, and confirm it returns to the starter cards.
-17. Click the chooser back button and confirm it returns to `My Profiles`.
-18. Select a built-in template and confirm the primary button says `Save as New Profile`.
-19. Edit the template and save it as a new custom profile.
-19. Select a custom profile and confirm the sticky primary action says `Save Changes` and `More` includes `Save as Copy`.
+14. Confirm existing custom Views skip first-run onboarding.
+15. Click `My Views` from the active overview and confirm it returns to the saved View list.
+16. Click `Create New View`, confirm the choice panel appears, and test `Start with a Starter`, `Start from Blank`, and `Duplicate Current View`.
+17. Confirm `Start with a Starter` shows starter cards and only saves after `Create My View`.
+18. Confirm `Start from Blank` uses the guided flow and only saves after `Create My View`.
+19. Select a custom View and confirm the sticky primary action says `Save Changes` and `More` includes `Save a Copy`.
 19. Use the Menu Items, Rename Labels, Quick Links, and Sidebar Style tabs.
-20. Uncheck `Show this Profile in popup`, save, and confirm the Profile is hidden from the popup dropdown.
-21. Recheck `Show this Profile in popup`, save, and confirm the Profile returns to the popup dropdown.
+20. Confirm the popup switcher lists saved custom Views only.
+21. Confirm built-in templates, drafts, and starter previews do not appear in the popup switcher.
 22. Add a Quick Link with `LOCATION_ID` in the URL if needed.
 23. Enable a Sidebar Style preset, click `Apply Live to GHL`, and confirm the GHL sidebar updates.
 24. Reproduce a content-script-not-reachable case, then confirm the side panel shows `Reload GHL Tab`.
 25. Click `Reload GHL Tab` and confirm the tab reload guidance appears without losing the saved view/profile.
-26. Change a style, menu, rename, quick link, or profile field and confirm the sticky save bar appears.
+26. Change a style, menu, rename, quick link, or view field and confirm the sticky save bar appears.
 27. Click `Save Changes` from the sticky bar and confirm the dirty state clears.
 28. Change another setting, click `Revert`, and confirm the editor returns to the last saved value.
 29. Change a setting, click `Save & Apply`, and confirm the GHL sidebar updates or a clear apply-later message appears.
@@ -70,11 +69,11 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 37. Navigate inside GoHighLevel and confirm the sidebar state reapplies after rerenders without duplicate branding.
 38. Click `Detect GHL Sidebar` and confirm it reports `#sidebar-v2`.
 39. Toggle CleanView off and confirm the original sidebar remains visible.
-40. Use `More` to export the active Profile JSON.
-41. Copy or download the exported JSON, then use `Create Profile` to import it as a new Profile.
+40. Use `More` to export the active View JSON.
+41. Copy or download the exported JSON, then import it as a new View from the advanced import path.
 42. Confirm invalid JSON and unsafe quick link URLs are rejected before import.
 
-## Templates
+## Starters
 
 - Simple Template
 - Sales Template
@@ -82,34 +81,32 @@ CleanView runs locally in Chrome. It does not use a backend, authentication, bil
 - Admin Template
 - Loan Officer Template
 
-## CleanView Profiles
+## CleanView Views
 
-Templates are read-only starting points. Create a Profile from a Template or create a blank Profile to edit:
+Starters are creation inputs, not saved Views. Use `Create New View` to start with a Starter, start from Blank, or duplicate the current View, then save from the guided flow:
 
 - Visible sidebar items
 - Personal menu label overrides
 - CleanView Quick Links
 - Sidebar Style, including curated presets, visual backgrounds, controlled rotation, and sidebar branding mode
 
-Personal Profiles are stored in `chrome.storage.local` on this browser.
-
-Use `Show this Profile in popup` to keep the popup Active Profile dropdown focused. Hidden Profiles remain available in the Profile Builder and are not deleted.
+Personal Views are stored in `chrome.storage.local` on this browser. Saved custom Views are the only items shown in the popup switcher and My Views list.
 
 ## Sidebar Image Guidance
 
 For visual sidebar backgrounds, use vertical portrait images. Recommended size is `600 x 1600 px`, premium size is `800 x 2000 px`, and minimum size is `400 x 1200 px`. WebP is best, JPG is a good fallback, and files should stay under `750 KB` when possible. Keep important content near the center because `cover` mode may crop the image on different sidebar heights.
 
-## Profile Import / Export
+## View Import / Export
 
-Use `Create Profile` in the Profile Builder to import CleanView Profile JSON. Use `More` to export or copy JSON for the selected Profile.
+Use advanced import/export actions to move CleanView View JSON. Use `More` to export or copy JSON for the selected View.
 
-- `Export Profile` opens a JSON preview with copy and download actions.
-- `Copy Profile JSON` uses the same export preview.
-- `Import Profile JSON` accepts pasted CleanView JSON or an uploaded `.json` file.
-- Imported JSON is validated, previewed, and saved as a new editable Profile.
-- Imports never overwrite the active Profile or edit a Template directly.
+- `Export View` opens a JSON preview with copy and download actions.
+- `Copy View JSON` uses the same export preview.
+- `Import View JSON` accepts pasted CleanView JSON or an uploaded `.json` file.
+- Imported JSON is validated, previewed, and saved as a new editable View.
+- Imports never overwrite the active View or edit a starter directly.
 
-Phase 1 imports support schema version `1.0.0` and allow safe Profile configuration only. Quick link URLs must be relative GHL paths beginning with `/`.
+Phase 1 imports support schema version `1.0.0` and allow safe View configuration only. Quick link URLs must be relative GHL paths beginning with `/`.
 
 ## CleanView Quick Links
 
@@ -119,7 +116,7 @@ Use `LOCATION_ID` in a link URL when you want CleanView to substitute the curren
 
 ## CleanView Location Rules
 
-CleanView Location Rules are feature-flagged off for the current MVP. Existing stored rules are preserved for future defaults work, but the popup and Profile Builder do not show location assignment controls.
+CleanView Location Rules are feature-flagged off for the current MVP. Existing stored rules are preserved for future defaults work, but the popup and View Builder do not show location assignment controls.
 
 ## Live Apply and Diagnostics
 

@@ -5,6 +5,21 @@
   namespace.storageKey = "agencySkinCleanView";
   namespace.version = 1;
   namespace.ENABLE_LOCATION_VIEW_DEFAULTS = false;
+  namespace.cleanViewPlan = namespace.cleanViewPlan || "free";
+  namespace.cleanViewFeatureFlags = Object.assign({
+    multipleViews: false,
+    quickLinks: false,
+    deepLinks: false,
+    imageBackgrounds: false,
+    logoUpload: false,
+    gradients: false,
+    advancedStyling: false,
+    importExport: false,
+    menuGroups: false
+  }, namespace.cleanViewFeatureFlags || {});
+  namespace.cleanViewLimits = Object.assign({
+    freeSavedViews: 1
+  }, namespace.cleanViewLimits || {});
   namespace.defaultBrandLogoUrl = "https://images.leadconnectorhq.com/image/f_webp/q_80/r_1200/u_https://assets.cdn.filesafe.space/knES3eSWYIsc5YSZ3YLl/media/68dc14d7a969ba71daf21593.png";
   namespace.brandSettings = Object.assign({
     brandName: "AgencySkin",
