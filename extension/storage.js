@@ -37,6 +37,7 @@
       gradientEndColor: "",
       gradientDirection: "135deg",
       backgroundImageUrl: "",
+      backgroundImageBaseColor: "#0f172a",
       backgroundImageFit: "cover",
       backgroundImagePosition: "center",
       backgroundOverlayColor: "#000000",

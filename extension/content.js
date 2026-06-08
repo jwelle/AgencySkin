@@ -587,6 +587,10 @@
     return settings;
   }
 
+  function getImageBaseBackgroundColor(style) {
+    return styleValue(style.backgroundImageBaseColor) || styleValue(style.backgroundColor) || "#0f172a";
+  }
+
   function roundedDimension(value) {
     return Math.round(Number(value) * 1000) / 1000;
   }
@@ -702,7 +706,7 @@
 
     if (style.backgroundType === "image") {
       var imageUrl = getImageUrl(style);
-      return imageUrl ? "url(\"" + imageUrl + "\")" : styleValue(style.backgroundColor);
+      return imageUrl ? "url(\"" + imageUrl + "\")" : "";
     }
 
     if (style.backgroundType === "pattern") {
@@ -740,7 +744,7 @@
 
     if (style.backgroundType === "image" || style.backgroundType === "pattern") {
       var imageCss = style.backgroundType === "image" ? getImageCssSettings(style) : null;
-      sidebar.style.background = styleValue(style.backgroundColor) || "#0f172a";
+      sidebar.style.background = style.backgroundType === "image" ? getImageBaseBackgroundColor(style) : (styleValue(style.backgroundColor) || "#0f172a");
       wrapper = document.createElement("div");
       layer = document.createElement("div");
       overlay = document.createElement("div");
@@ -767,6 +771,7 @@
       overlay.style.background = getOverlayRgba(getOverlayColor(style), overlayOpacity);
 
       if (style.backgroundType === "image") {
+        layer.style.backgroundColor = getImageBaseBackgroundColor(style);
         layer.style.backgroundImage = backgroundValue;
         layer.style.backgroundSize = imageCss.size;
         layer.style.backgroundPosition = imageCss.position;

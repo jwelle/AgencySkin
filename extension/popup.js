@@ -1,7 +1,9 @@
 (function agencySkinCleanViewPopup() {
   var namespace = window.agencySkinCleanView;
   var storage = namespace.storage;
+  var presetField = document.getElementById("presetField");
   var presetSelect = document.getElementById("presetSelect");
+  var emptyStateMessage = document.getElementById("emptyStateMessage");
   var enabledToggle = document.getElementById("enabledToggle");
   var panelButton = document.getElementById("panelButton");
   var statusMessage = document.getElementById("statusMessage");
@@ -67,7 +69,7 @@
   }
 
   function isVisibleInPopup(preset) {
-    return preset && preset.showInPopup !== false && preset.archived !== true;
+    return preset && preset.source !== "builtin" && preset.showInPopup !== false && preset.archived !== true;
   }
 
   function optionLabel(preset, isHiddenActive) {
@@ -90,7 +92,7 @@
       return isVisibleInPopup(allPresets[presetId]);
     });
 
-    if (activePreset && popupPresetIds.indexOf(activePresetId) === -1) {
+    if (activePreset && activePreset.source !== "builtin" && popupPresetIds.indexOf(activePresetId) === -1) {
       popupPresetIds.unshift(activePresetId);
     }
 
@@ -105,7 +107,14 @@
       presetSelect.appendChild(option);
     });
 
-    presetSelect.value = activePreset && popupPresetIds.indexOf(activePresetId) !== -1 ? activePresetId : popupPresetIds[0] || "builtin:simple";
+    presetSelect.value = activePreset && popupPresetIds.indexOf(activePresetId) !== -1 ? activePresetId : popupPresetIds[0] || "";
+    presetSelect.disabled = popupPresetIds.length === 0;
+    if (presetField) {
+      presetField.hidden = popupPresetIds.length === 0;
+    }
+    if (emptyStateMessage) {
+      emptyStateMessage.hidden = popupPresetIds.length !== 0;
+    }
   }
 
   function refreshState() {

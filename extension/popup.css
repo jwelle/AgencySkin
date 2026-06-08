@@ -42,6 +42,19 @@ select {
   padding: 1rem;
 }
 
+.brand-lockup {
+  align-items: center;
+  display: flex;
+  gap: 0.8rem;
+}
+
+.brand-mark {
+  border-radius: 10px;
+  flex: 0 0 auto;
+  height: 2.2rem;
+  width: 2.2rem;
+}
+
 .eyebrow {
   color: var(--as-muted);
   font-size: 0.72rem;
@@ -113,6 +126,17 @@ select:focus {
   display: grid;
   gap: 0.5rem;
   grid-template-columns: 1fr;
+}
+
+.empty-state {
+  background: var(--as-surface-muted);
+  border: 1px solid var(--as-border);
+  border-radius: var(--as-radius-sm);
+  color: var(--as-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  margin: 0;
+  padding: 0.75rem 0.85rem;
 }
 
 button {

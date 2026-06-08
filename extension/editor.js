@@ -37,6 +37,8 @@
   var starterViewGrid = document.getElementById("starterViewGrid");
   var starterPreviewTitle = document.getElementById("starterPreviewTitle");
   var starterPreviewDescription = document.getElementById("starterPreviewDescription");
+  var starterPreviewBadge = document.getElementById("starterPreviewBadge");
+  var starterPreviewMeta = document.getElementById("starterPreviewMeta");
   var starterPreviewShownList = document.getElementById("starterPreviewShownList");
   var starterPreviewHiddenList = document.getElementById("starterPreviewHiddenList");
   var starterChooserBackButton = document.getElementById("starterChooserBackButton");
@@ -44,11 +46,15 @@
   var useStarterViewButton = document.getElementById("useStarterViewButton");
   var starterSuccessTitle = document.getElementById("starterSuccessTitle");
   var starterSuccessMessage = document.getElementById("starterSuccessMessage");
+  var starterSuccessBadge = document.getElementById("starterSuccessBadge");
+  var starterSuccessMeta = document.getElementById("starterSuccessMeta");
   var starterSuccessShownList = document.getElementById("starterSuccessShownList");
   var starterSuccessHiddenList = document.getElementById("starterSuccessHiddenList");
   var customizeStarterViewButton = document.getElementById("customizeStarterViewButton");
   var doneStarterViewButton = document.getElementById("doneStarterViewButton");
   var activeViewOverviewPanel = document.getElementById("activeViewOverviewPanel");
+  var activeViewBadge = document.getElementById("activeViewBadge");
+  var activeViewMeta = document.getElementById("activeViewMeta");
   var activeViewName = document.getElementById("activeViewName");
   var activeViewStatus = document.getElementById("activeViewStatus");
   var changeStarterViewButton = document.getElementById("changeStarterViewButton");
@@ -154,6 +160,22 @@
       name: "Sales View",
       cardTitle: "Sales",
       description: "Keep inbox, pipeline, calendar, contacts, payments, and reporting close at hand.",
+      bestFor: "Best for reps, closers, and appointment setters.",
+      keepsLine: "Keeps Inbox, Pipeline, Calendar, Contacts, Payments, and Reporting.",
+      accentColor: "#2563eb",
+      accentSoft: "#dbeafe",
+      accentBorder: "#93c5fd",
+      iconId: "sales",
+      sidebarStyle: {
+        stylePath: "custom",
+        enabled: true,
+        backgroundType: "solid",
+        backgroundColor: "#123a5c",
+        textColor: "#e0f2fe",
+        activeBackgroundColor: "#1d4ed8",
+        activeTextColor: "#ffffff",
+        hoverBackgroundColor: "#1e3a5f"
+      },
       visibleItems: ["dashboard", "conversations", "calendars", "contacts", "opportunities", "payments", "reporting", "settings"],
       labelOverrides: {
         conversations: "Inbox",
@@ -165,6 +187,22 @@
       name: "Marketing View",
       cardTitle: "Marketing",
       description: "Focus the sidebar on campaigns, workflows, sites, media, reputation, and reports.",
+      bestFor: "Best for campaign builders, media work, and funnels.",
+      keepsLine: "Keeps Marketing, Workflows, Sites, Media, Reputation, and Reporting.",
+      accentColor: "#7c3aed",
+      accentSoft: "#ede9fe",
+      accentBorder: "#c4b5fd",
+      iconId: "marketing",
+      sidebarStyle: {
+        stylePath: "custom",
+        enabled: true,
+        backgroundType: "solid",
+        backgroundColor: "#3b1d5a",
+        textColor: "#f3e8ff",
+        activeBackgroundColor: "#7c3aed",
+        activeTextColor: "#ffffff",
+        hoverBackgroundColor: "#4c1d6f"
+      },
       visibleItems: ["dashboard", "marketing", "automation", "sites", "media", "reputation", "reporting", "contacts", "settings"],
       labelOverrides: {
         automation: "Workflows"
@@ -175,6 +213,22 @@
       name: "AI Operator View",
       cardTitle: "AI Operator",
       description: "Prioritize AI tools, workflows, inbox review, contacts, and reporting.",
+      bestFor: "Best for AI teams managing agents, prompts, and automation.",
+      keepsLine: "Keeps Ask AI, AI Studio, AI Agents, Workflows, Inbox, and Reporting.",
+      accentColor: "#0f766e",
+      accentSoft: "#ccfbf1",
+      accentBorder: "#5eead4",
+      iconId: "ai-operator",
+      sidebarStyle: {
+        stylePath: "custom",
+        enabled: true,
+        backgroundType: "solid",
+        backgroundColor: "#0f4c5c",
+        textColor: "#ecfeff",
+        activeBackgroundColor: "#0ea5b7",
+        activeTextColor: "#062b33",
+        hoverBackgroundColor: "#155e75"
+      },
       visibleItems: ["ask_ai", "ai_studio", "ai_agents", "automation", "conversations", "contacts", "reporting", "settings"],
       labelOverrides: {
         automation: "Workflows",
@@ -186,6 +240,22 @@
       name: "Contact Center View",
       cardTitle: "Contact Center",
       description: "Streamline around inbox, appointments, contacts, reputation, and reporting.",
+      bestFor: "Best for teams living in messages, calls, and appointments.",
+      keepsLine: "Keeps Inbox, Appointments, Contacts, Reputation, and Reporting.",
+      accentColor: "#ea580c",
+      accentSoft: "#ffedd5",
+      accentBorder: "#fdba74",
+      iconId: "contact-center",
+      sidebarStyle: {
+        stylePath: "custom",
+        enabled: true,
+        backgroundType: "solid",
+        backgroundColor: "#4a2a12",
+        textColor: "#fff7ed",
+        activeBackgroundColor: "#c2410c",
+        activeTextColor: "#ffffff",
+        hoverBackgroundColor: "#5b3416"
+      },
       visibleItems: ["dashboard", "conversations", "calendars", "contacts", "reputation", "reporting", "settings"],
       labelOverrides: {
         conversations: "Inbox",
@@ -197,6 +267,22 @@
       name: "Simple View",
       cardTitle: "Start Simple",
       description: "Start with a quiet sidebar for common day-to-day work.",
+      bestFor: "Best for a calm, everyday workspace with fewer distractions.",
+      keepsLine: "Keeps Inbox, Calendar, Contacts, Pipeline, and Reporting.",
+      accentColor: "#475569",
+      accentSoft: "#e2e8f0",
+      accentBorder: "#cbd5e1",
+      iconId: "simple",
+      sidebarStyle: {
+        stylePath: "custom",
+        enabled: true,
+        backgroundType: "solid",
+        backgroundColor: "#1f2937",
+        textColor: "#f8fafc",
+        activeBackgroundColor: "#475569",
+        activeTextColor: "#ffffff",
+        hoverBackgroundColor: "#334155"
+      },
       visibleItems: ["dashboard", "conversations", "calendars", "contacts", "opportunities", "reporting", "settings"],
       labelOverrides: {
         conversations: "Inbox"
@@ -318,6 +404,7 @@
     { key: "imageSettings.positionY", label: "Position Y", type: "range", min: "0", max: "100", step: "1", mode: "image" },
     { key: "imageSettings.scale", label: "Zoom", type: "range", min: "0.5", max: "2.5", step: "0.05", mode: "image" },
     { key: "resetImagePosition", label: "Position", type: "image-reset", mode: "image" },
+    { key: "backgroundImageBaseColor", label: "Base Background Color", type: "color", mode: "image", helpText: "Shows behind contained, smaller, or transparent images." },
     { key: "imageSettings.opacity", label: "Fade", type: "range", mode: "image" },
     { key: "imageSettings.overlayOpacity", label: "Darken", type: "range", mode: "image" },
     { key: "imageSettings.blur", label: "Blur", type: "range", min: "0", max: "12", step: "1", unit: "px", mode: "image" },
@@ -646,6 +733,97 @@
     });
   }
 
+  function starterIconSvg(iconId) {
+    if (iconId === "sales") {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"></circle><path d="M15.5 8.5 20 4"></path><path d="m16.4 4 3.6.1-.1 3.6"></path></svg>';
+    }
+    if (iconId === "marketing") {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13.5V10c0-1 .8-1.8 1.8-1.8H8l7-3.2v13.9L8 15.8H5.8c-1 0-1.8-.8-1.8-1.8Z"></path><path d="M8 15.8 9.5 20"></path><path d="M18.5 8.5c1.1.8 1.8 2.1 1.8 3.5s-.7 2.7-1.8 3.5"></path></svg>';
+    }
+    if (iconId === "ai-operator") {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="3"></rect><path d="M9 9h.01"></path><path d="M15 9h.01"></path><path d="M8.5 13.5c1 .9 2.2 1.4 3.5 1.4s2.5-.5 3.5-1.4"></path><path d="M12 3v3"></path><path d="M12 18v3"></path></svg>';
+    }
+    if (iconId === "contact-center") {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 13a7.5 7.5 0 1 1 15 0"></path><path d="M5 13h1.5c.8 0 1.5.7 1.5 1.5v3c0 .8-.7 1.5-1.5 1.5H5.7A1.7 1.7 0 0 1 4 17.3v-2.6A1.7 1.7 0 0 1 5.7 13Z"></path><path d="M17.5 13H19a1.7 1.7 0 0 1 1.7 1.7v2.6A1.7 1.7 0 0 1 19 19h-.8c-.8 0-1.5-.7-1.5-1.5v-3c0-.8.7-1.5 1.5-1.5Z"></path><path d="M12 19v1.5"></path></svg>';
+    }
+
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.4"></rect><rect x="14" y="4" width="6" height="6" rx="1.4"></rect><rect x="4" y="14" width="6" height="6" rx="1.4"></rect><rect x="14" y="14" width="6" height="6" rx="1.4"></rect></svg>';
+  }
+
+  function setStarterTheme(surface, starter) {
+    if (!surface) {
+      return;
+    }
+
+    if (!starter) {
+      delete surface.dataset.starterThemed;
+      surface.style.removeProperty("--starter-accent");
+      surface.style.removeProperty("--starter-accent-soft");
+      surface.style.removeProperty("--starter-accent-border");
+      return;
+    }
+
+    surface.dataset.starterThemed = "true";
+    surface.style.setProperty("--starter-accent", starter.accentColor || "#2563eb");
+    surface.style.setProperty("--starter-accent-soft", starter.accentSoft || "#dbeafe");
+    surface.style.setProperty("--starter-accent-border", starter.accentBorder || starter.accentColor || "#93c5fd");
+  }
+
+  function starterThemeFromPreset(preset) {
+    var metadata = preset && preset.profileMetadata || {};
+    var starter = metadata.onboardingStarterViewId ? getStarterViewById(metadata.onboardingStarterViewId) : null;
+    var style = storage.normalizeSidebarStyle(preset && preset.sidebarStyle || {});
+    var backgroundColor = normalizeHexColor(metadata.sidebarBackgroundColor || style.backgroundColor || (starter && starter.accentColor) || "#2563eb", "#2563eb");
+    var accentColor = normalizeHexColor(metadata.accentColor || backgroundColor, backgroundColor);
+    var accentBorder = normalizeHexColor(metadata.accentBorder || style.activeBackgroundColor || accentColor, accentColor);
+
+    if (!starter && !metadata.iconId && !metadata.onboardingStarterViewName) {
+      return null;
+    }
+
+    return Object.assign({}, starter || {}, {
+      id: metadata.sourceTemplateId || metadata.onboardingStarterViewId || (starter && starter.id) || "",
+      name: metadata.onboardingStarterViewName || (starter && starter.name) || preset && (preset.name || preset.label) || "Starter View",
+      cardTitle: metadata.onboardingStarterViewName || (starter && starter.cardTitle) || (starter && starter.name) || "Starter View",
+      iconId: metadata.iconId || (starter && starter.iconId) || "simple",
+      accentColor: accentColor,
+      accentSoft: getOverlayRgba(backgroundColor, 0.12),
+      accentBorder: accentBorder,
+      bestFor: metadata.bestFor || (starter && starter.bestFor) || "",
+      keepsLine: metadata.keepsLine || (starter && starter.keepsLine) || ""
+    });
+  }
+
+  function renderStarterBadge(badge, surface, starter, metaElement, metaText) {
+    if (!badge) {
+      return;
+    }
+
+    setStarterTheme(surface, starter);
+
+    if (!starter) {
+      badge.hidden = true;
+      badge.innerHTML = "";
+      if (metaElement) {
+        metaElement.hidden = true;
+        metaElement.textContent = "";
+      }
+      return;
+    }
+
+    badge.innerHTML = '<span class="starter-context-icon">' + starterIconSvg(starter.iconId) + '</span><span>' + (starter.cardTitle || starter.name) + "</span>";
+    badge.hidden = false;
+
+    if (metaElement) {
+      metaElement.textContent = metaText || starter.bestFor || "";
+      metaElement.hidden = !metaElement.textContent;
+    }
+  }
+
+  function starterViewFromPreset(preset) {
+    return starterThemeFromPreset(preset);
+  }
+
   function fallbackMenuLabel(key) {
     return String(key || "")
       .replace(/_/g, " ")
@@ -691,22 +869,46 @@
     starterViewGrid.innerHTML = "";
     starterViews.forEach(function renderStarterCard(starter) {
       var card = document.createElement("button");
+      var hero = document.createElement("span");
+      var icon = document.createElement("span");
+      var copy = document.createElement("span");
       var title = document.createElement("span");
       var description = document.createElement("span");
+      var meta = document.createElement("span");
+      var keeps = document.createElement("span");
       var count = document.createElement("span");
 
       card.type = "button";
       card.className = "starter-view-card";
+      if (starter.id === selectedStarterViewId) {
+        card.className += " is-selected";
+      }
       card.dataset.starterViewId = starter.id;
+      card.style.setProperty("--starter-accent", starter.accentColor || "#2563eb");
+      card.style.setProperty("--starter-accent-soft", starter.accentSoft || "#dbeafe");
+      card.style.setProperty("--starter-accent-border", starter.accentBorder || starter.accentColor || "#93c5fd");
+      hero.className = "starter-card-hero";
+      icon.className = "starter-card-icon";
+      icon.innerHTML = starterIconSvg(starter.iconId);
+      copy.className = "starter-card-copy";
       title.className = "starter-card-title";
       title.textContent = starter.cardTitle || starter.name;
       description.className = "starter-card-description";
       description.textContent = starter.description;
+      meta.className = "starter-card-meta";
+      meta.textContent = starter.bestFor || "";
+      keeps.className = "starter-card-keeps";
+      keeps.textContent = starter.keepsLine || "";
       count.className = "starter-card-count";
       count.textContent = starterVisibleKeys(starter).length + " shown / " + starterHiddenKeys(starter).length + " hidden";
 
-      card.appendChild(title);
+      copy.appendChild(title);
+      copy.appendChild(meta);
+      hero.appendChild(icon);
+      hero.appendChild(copy);
+      card.appendChild(hero);
       card.appendChild(description);
+      card.appendChild(keeps);
       card.appendChild(count);
       starterViewGrid.appendChild(card);
     });
@@ -723,6 +925,7 @@
     if (starterPreviewDescription) {
       starterPreviewDescription.textContent = starter.description;
     }
+    renderStarterBadge(starterPreviewBadge, starterPreviewPanel, starter, starterPreviewMeta, starter.keepsLine || starter.bestFor);
     renderStarterItemList(starterPreviewShownList, starterVisibleKeys(starter), starter, "No native items will be shown.");
     renderStarterItemList(starterPreviewHiddenList, starterHiddenKeys(starter), starter, "No native items will be hidden.");
   }
@@ -738,6 +941,7 @@
     if (starterSuccessMessage) {
       starterSuccessMessage.textContent = starterApplyMessage || "Your CleanView profile is saved and ready.";
     }
+    renderStarterBadge(starterSuccessBadge, starterSuccessPanel, starter, starterSuccessMeta, starter.bestFor);
     renderStarterItemList(starterSuccessShownList, starterVisibleKeys(starter), starter, "No native items are shown.");
     renderStarterItemList(starterSuccessHiddenList, starterHiddenKeys(starter), starter, "No native items are hidden.");
   }
@@ -774,6 +978,7 @@
 
   function renderActiveViewOverview() {
     var preset = selectedPreset();
+    var starter = starterViewFromPreset(preset);
     var viewName = preset ? preset.name || preset.label || "CleanView" : "Active View";
     var enabledText = state && state.enabled === false ? "CleanView is off." : "CleanView is on.";
 
@@ -783,6 +988,13 @@
     if (activeViewStatus) {
       activeViewStatus.textContent = enabledText + " Apply Live to GHL when you want to refresh the open page.";
     }
+    renderStarterBadge(
+      activeViewBadge,
+      activeViewOverviewPanel,
+      starter,
+      activeViewMeta,
+      starter ? "Based on the " + (starter.cardTitle || starter.name) + " starter view." : ""
+    );
   }
 
   function setOnboardingMode(mode, starterId) {
@@ -1504,6 +1716,10 @@
     }
 
     return "";
+  }
+
+  function getImageBaseBackgroundColor(style) {
+    return style.backgroundImageBaseColor || style.backgroundColor || "#0f172a";
   }
 
   function getOverlayOpacity(style) {
@@ -2290,6 +2506,7 @@
           imagePositionY: getByPath(normalized, "imageSettings.positionY", 50),
           imageScale: Math.round(clampNumber(getByPath(normalized, "imageSettings.scale", 1), 0.5, 2.5, 1) * 100),
           imageRepeat: normalized.backgroundImageFit === "tile" ? "repeat" : "no-repeat",
+          baseBackgroundColor: normalized.backgroundImageBaseColor || normalized.backgroundColor || "#0f172a",
           fade: 1 - clampOpacity(getByPath(normalized, "imageSettings.opacity", 0.85)),
           darken: clampOpacity(getByPath(normalized, "imageSettings.overlayOpacity", 0.55)),
           overlay: {
@@ -2460,6 +2677,7 @@
         var visual = custom.visual || {};
         var visualUrl = visual.assetUrl || visual.imageUrl || "";
         var visualFit = visual.imageFit || visual.fit || (visual.imageRepeat === "repeat" ? "tile" : "cover");
+        var baseBackgroundColor = visual.baseBackgroundColor || visual.backgroundColor || style.backgroundImageBaseColor || style.backgroundColor || "#0f172a";
         var overlay = visual.overlay && typeof visual.overlay === "object" && !Array.isArray(visual.overlay) ? visual.overlay : null;
         var overlayOpacity = overlay && overlay.enabled === false ? 0 : overlay && overlay.opacity !== undefined ? overlay.opacity : visual.darken;
         var overlayColor = overlay && overlay.color ? overlay.color : "#000000";
@@ -2492,6 +2710,11 @@
           errors.push("sidebarStyle.custom.visual.assetSource must be curated, uploaded, or external.");
         }
         style.backgroundImageFit = ["cover", "contain", "stretch", "tile", "center"].indexOf(visualFit) === -1 ? "cover" : visualFit;
+        if (!isSafeProfileColor(baseBackgroundColor)) {
+          errors.push("sidebarStyle.custom.visual.baseBackgroundColor must be a hex or safe rgba color.");
+          baseBackgroundColor = "#0f172a";
+        }
+        style.backgroundImageBaseColor = normalizeProfileColor(baseBackgroundColor, "#0f172a");
         if (overlay && overlay.color && !isSafeProfileColor(overlay.color)) {
           errors.push("sidebarStyle.custom.visual.overlay.color must be a hex or safe rgba color.");
           overlayColor = "#000000";
@@ -2964,7 +3187,7 @@
 
     if (style.backgroundType === "image") {
       var imageUrl = getImageUrl(style);
-      return imageUrl ? "url(\"" + imageUrl + "\")" : style.backgroundColor || "#0f172a";
+      return imageUrl ? "url(\"" + imageUrl + "\")" : "";
     }
 
     if (style.backgroundType === "pattern") {
@@ -3665,6 +3888,12 @@
     }
     if (field.group) {
       label.dataset.sidebarStyleGroup = field.group;
+    }
+    if (field.helpText) {
+      var helper = document.createElement("span");
+      helper.className = "help-text";
+      helper.textContent = field.helpText;
+      label.appendChild(helper);
     }
 
     return label;
@@ -4392,7 +4621,7 @@
     sidebarStylePreview.style.backgroundSize = "";
     sidebarStylePreview.style.backgroundPosition = "";
     sidebarStylePreview.style.backgroundRepeat = "";
-    sidebarStylePreview.style.background = style.backgroundColor || "#ffffff";
+    sidebarStylePreview.style.background = style.backgroundType === "image" ? getImageBaseBackgroundColor(style) : (style.backgroundColor || "#ffffff");
     applyMeasuredPreviewLayout(style);
     sidebarStylePreview.style.borderRadius = sidebarRadius;
     sidebarStylePreview.style.borderColor = style.borderVisible === false ? "transparent" : "var(--as-border)";
@@ -4412,6 +4641,7 @@
     }
     if (style.backgroundType === "image") {
       if (sidebarStylePreviewBackground) {
+        sidebarStylePreviewBackground.style.backgroundColor = getImageBaseBackgroundColor(style);
         sidebarStylePreviewBackground.style.backgroundImage = background;
         sidebarStylePreviewBackground.style.backgroundSize = imageCss.size;
         sidebarStylePreviewBackground.style.backgroundPosition = imageCss.position;
@@ -4549,7 +4779,7 @@
     preset.customLinks = customLinks;
     preset.menuGroups = menuGroups;
     preset.sidebarStyle = collectSidebarStyleFromForm();
-    preset.showInPopup = showInPopupToggle.checked;
+    preset.showInPopup = isTemplatePreset(selectedPreset()) ? true : showInPopupToggle.checked;
     preset.updatedAt = namespace.nowIso();
     return storage.normalizePreset(preset);
   }
@@ -4832,8 +5062,16 @@
     var metadata = Object.assign({}, existingProfile && existingProfile.profileMetadata || {}, {
       onboardingStarterViewId: starter.id,
       onboardingStarterViewName: starter.name,
-      createdFromFirstRun: true
+      createdFromFirstRun: true,
+      sourceTemplateId: starter.sourceTemplateId || starter.id,
+      accentColor: starter.accentColor || "",
+      accentBorder: starter.accentBorder || starter.accentColor || "",
+      iconId: starter.iconId || "",
+      bestFor: starter.bestFor || "",
+      keepsLine: starter.keepsLine || "",
+      sidebarBackgroundColor: starter.sidebarStyle && starter.sidebarStyle.backgroundColor || ""
     });
+    var starterSidebarStyle = storage.normalizeSidebarStyle(Object.assign({}, namespace.defaultSidebarStyle || {}, starter && starter.sidebarStyle || {}));
 
     return storage.normalizePreset({
       id: existingProfile && existingProfile.id || namespace.createId("custom"),
@@ -4844,7 +5082,7 @@
       labelOverrides: Object.assign({}, starter.labelOverrides || {}),
       customLinks: existingProfile && Array.isArray(existingProfile.customLinks) ? existingProfile.customLinks.slice() : [],
       menuGroups: [],
-      sidebarStyle: Object.assign({}, namespace.defaultSidebarStyle || {}),
+      sidebarStyle: starterSidebarStyle,
       profileMetadata: metadata,
       showInPopup: existingProfile ? existingProfile.showInPopup !== false : true,
       archived: false,

@@ -28,11 +28,12 @@
     preset: "default",
     backgroundType: "solid",
     backgroundColor: "",
-    gradientStartColor: "",
-    gradientEndColor: "",
-    gradientDirection: "135deg",
-    backgroundImageUrl: "",
-    backgroundImageFit: "cover",
+      gradientStartColor: "",
+      gradientEndColor: "",
+      gradientDirection: "135deg",
+      backgroundImageUrl: "",
+      backgroundImageBaseColor: "#0f172a",
+      backgroundImageFit: "cover",
     backgroundImagePosition: "center",
     backgroundOverlayColor: "#000000",
     backgroundOverlayOpacity: 0.35,
@@ -277,6 +278,10 @@
       sidebarStyle: stylePreset("default")
     }
   };
+
+  Object.keys(namespace.builtInPresets).forEach(function hideBuiltInTemplateFromPopup(presetId) {
+    namespace.builtInPresets[presetId].showInPopup = false;
+  });
 
   namespace.allMenuKeys = allMenuKeys;
   namespace.defaultSidebarStyle = defaultSidebarStyle;

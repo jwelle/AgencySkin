@@ -4,13 +4,17 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>AgencySkin</title>
+    <link rel="icon" href="assets/icons/cleanview-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
     <main class="popup-shell">
-      <header>
-        <p class="eyebrow">AgencySkin</p>
-        <h1>CleanView</h1>
+      <header class="brand-lockup">
+        <img class="brand-mark" src="assets/icons/cleanview-mark.svg" alt="CleanView">
+        <div>
+          <p class="eyebrow">AgencySkin</p>
+          <h1>CleanView</h1>
+        </div>
       </header>
 
       <label class="toggle-row">
@@ -18,10 +22,12 @@
         <input id="enabledToggle" type="checkbox">
       </label>
 
-      <label class="field" for="presetSelect">
+      <label id="presetField" class="field" for="presetSelect">
         Active Profile
         <select id="presetSelect"></select>
       </label>
+
+      <p id="emptyStateMessage" class="empty-state" hidden>No active view yet. Open the panel to create your first CleanView.</p>
 
       <section class="popup-section" aria-label="Manage">
         <p class="section-label">Manage</p>
