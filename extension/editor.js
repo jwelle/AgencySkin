@@ -687,7 +687,7 @@
 
       chrome.tabs.query({
         currentWindow: true,
-        url: ["https://app.gohighlevel.com/*", "https://*.leadconnectorhq.com/*"]
+        url: namespace.supportedUrlPatterns
       }, function handleGhlTabs(tabs) {
         if (chrome.runtime.lastError || !tabs || tabs.length !== 1) {
           callback(null, tab, tabs || []);

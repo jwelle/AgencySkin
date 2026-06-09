@@ -34,8 +34,18 @@
     return prefix + ":" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   };
 
+  namespace.supportedUrlPatterns = [
+    "https://app.gohighlevel.com/*",
+    "https://*.gohighlevel.com/*",
+    "https://*.leadconnectorhq.com/*",
+    "https://app.automationsplus.com/*"
+  ];
+
   namespace.isAllowedHost = function isAllowedHost(hostname) {
-    return hostname === "app.gohighlevel.com" || hostname.endsWith(".leadconnectorhq.com");
+    return hostname === "app.gohighlevel.com" ||
+      hostname.endsWith(".gohighlevel.com") ||
+      hostname.endsWith(".leadconnectorhq.com") ||
+      hostname === "app.automationsplus.com";
   };
 
   namespace.getLocationIdFromUrl = function getLocationIdFromUrl(pathname) {

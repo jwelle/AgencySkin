@@ -12,14 +12,18 @@
   "permissions": ["storage", "tabs", "activeTab", "sidePanel"],
   "host_permissions": [
     "https://app.gohighlevel.com/*",
-    "https://*.leadconnectorhq.com/*"
+    "https://*.gohighlevel.com/*",
+    "https://*.leadconnectorhq.com/*",
+    "https://app.automationsplus.com/*"
   ],
   "web_accessible_resources": [
     {
       "resources": ["assets/backgrounds/*.webp"],
       "matches": [
         "https://app.gohighlevel.com/*",
-        "https://*.leadconnectorhq.com/*"
+        "https://*.gohighlevel.com/*",
+        "https://*.leadconnectorhq.com/*",
+        "https://app.automationsplus.com/*"
       ]
     }
   ],
@@ -40,7 +44,9 @@
     {
       "matches": [
         "https://app.gohighlevel.com/*",
-        "https://*.leadconnectorhq.com/*"
+        "https://*.gohighlevel.com/*",
+        "https://*.leadconnectorhq.com/*",
+        "https://app.automationsplus.com/*"
       ],
       "js": ["namespace.js", "selectorRegistry.js", "sidebarBackgrounds.js", "presets.js", "storage.js", "content.js"],
       "run_at": "document_start"
