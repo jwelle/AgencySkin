@@ -1,6 +1,7 @@
 (function agencySkinCleanViewEditor() {
   var namespace = window.agencySkinCleanView;
   var storage = namespace.storage;
+  var plans = namespace.plans || {};
   var registry = namespace.selectorRegistry;
   var allMenuKeys = namespace.allMenuKeys;
   var sidebarStylePresets = namespace.sidebarStylePresets || {};
@@ -169,6 +170,13 @@
   var copyProfileJsonButton = document.getElementById("copyProfileJsonButton");
   var downloadProfileJsonButton = document.getElementById("downloadProfileJsonButton");
   var saveAsCopyButton = document.getElementById("saveAsCopyButton");
+  var planSummaryCard = document.getElementById("planSummaryCard");
+  var planSummaryTitle = document.getElementById("planSummaryTitle");
+  var planSummaryDescription = document.getElementById("planSummaryDescription");
+  var planSummaryMeta = document.getElementById("planSummaryMeta");
+  var managePlanButton = document.getElementById("managePlanButton");
+  var planInfoModal = document.getElementById("planInfoModal");
+  var planInfoCloseButton = document.getElementById("planInfoCloseButton");
   var pendingImportedProfile = null;
   var currentExportJson = "";
   var currentExportFilename = "";
@@ -515,6 +523,138 @@
     statusMessage.textContent = message;
     statusMessage.className = isError ? "status error" : "status";
     setReloadGhlActionState(statusOptions.reloadTabId, statusOptions.showReloadGhlAction === true);
+  }
+
+  function currentPlanConfig(nextState) {
+    return plans.getCurrentPlanConfig ? plans.getCurrentPlanConfig(nextState || state) : {
+      id: "pro_trial",
+      label: "Pro Trial",
+      description: "30 days of Pro access included.",
+      limits: {
+        maxProfiles: 999,
+        maxQuickLinks: 999
+      },
+      features: {}
+    };
+  }
+
+  function canUsePlanFeature(featureKey, nextState) {
+    return plans.canUseFeature ? plans.canUseFeature(featureKey, nextState || state) : true;
+  }
+
+  function getPlanLimitValue(limitKey, nextState) {
+    return plans.getPlanLimit ? plans.getPlanLimit(limitKey, nextState || state) : undefined;
+  }
+
+  function getTrialStatus(nextState) {
+    return plans.getTrialStatus ? plans.getTrialStatus(nextState || state) : { isTrial: false };
+  }
+
+  function formatDateLabel(isoString) {
+    var date = new Date(isoString || "");
+
+    if (!Number.isFinite(date.getTime())) {
+      return "";
+    }
+
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
+  }
+
+  function lockedFeatureMessage(_featureKey) {
+    return "This feature is available in Pro.";
+  }
+
+  function profileLimitMessage(nextState) {
+    var limit = Number(getPlanLimitValue("maxProfiles", nextState || state));
+
+    if (!Number.isFinite(limit) || limit <= 0) {
+      return "Your current plan cannot create saved views right now.";
+    }
+
+    return "Your current plan allows " + limit + " saved view" + (limit === 1 ? "" : "s") + ".";
+  }
+
+  function quickLinkLimitMessage(nextState) {
+    var limit = Number(getPlanLimitValue("maxQuickLinks", nextState || state));
+
+    if (!Number.isFinite(limit) || limit <= 0) {
+      return lockedFeatureMessage("quickLinks");
+    }
+
+    return "Your current plan allows " + limit + " quick link" + (limit === 1 ? "" : "s") + ".";
+  }
+
+  function isAtProfileLimit(nextState) {
+    var targetState = nextState || state;
+    var count = editableProfileIds(targetState).length;
+
+    return plans.isAtProfileLimit ? plans.isAtProfileLimit(count, targetState) : false;
+  }
+
+  function isAtQuickLinkLimitForCount(count, nextState) {
+    return plans.isAtQuickLinkLimit ? plans.isAtQuickLinkLimit(count, nextState || state) : false;
+  }
+
+  function canCreateAdditionalProfile(nextState) {
+    return !isAtProfileLimit(nextState || state);
+  }
+
+  function requireFeatureAccess(featureKey, message) {
+    if (canUsePlanFeature(featureKey)) {
+      return true;
+    }
+
+    setStatus(message || lockedFeatureMessage(featureKey), true);
+    return false;
+  }
+
+  function requireProfileCapacity() {
+    if (canCreateAdditionalProfile()) {
+      return true;
+    }
+
+    setStatus(profileLimitMessage(), true);
+    return false;
+  }
+
+  function shouldDisableNewProfileSave(preset) {
+    return !isCustomPreset(preset) && !canCreateAdditionalProfile();
+  }
+
+  function renderPlanSummary() {
+    var config = currentPlanConfig();
+    var trialStatus = getTrialStatus();
+    var trialEndDate = formatDateLabel(trialStatus.trialEndsAt);
+
+    if (planSummaryCard) {
+      planSummaryCard.dataset.planId = config.id || "pro_trial";
+    }
+    if (planSummaryTitle) {
+      planSummaryTitle.textContent = config.label || "Pro Trial";
+    }
+    if (planSummaryDescription) {
+      planSummaryDescription.textContent = config.description || "30 days of Pro access included.";
+    }
+    if (planSummaryMeta) {
+      planSummaryMeta.hidden = !trialStatus.isTrial || !trialEndDate;
+      planSummaryMeta.textContent = trialEndDate ? "Trial ends: " + trialEndDate : "";
+    }
+  }
+
+  function openPlanInfoModal() {
+    if (planInfoModal) {
+      planInfoModal.hidden = false;
+    }
+  }
+
+  function closePlanInfoModal() {
+    if (planInfoModal) {
+      planInfoModal.hidden = true;
+    }
   }
 
   function allPresets() {
@@ -1586,7 +1726,7 @@
     fillPresetSelect(defaultPresetSelect, state.activePresetId || "builtin:simple");
   }
 
-  function makeButton(label, className, action, presetId) {
+  function makeButton(label, className, action, presetId, disabled) {
     var button = document.createElement("button");
 
     button.type = "button";
@@ -1596,6 +1736,7 @@
     }
     button.dataset.viewAction = action;
     button.dataset.presetId = presetId;
+    button.disabled = disabled === true;
     return button;
   }
 
@@ -1628,6 +1769,8 @@
       var status = document.createElement("span");
       var actions = document.createElement("div");
       var isActive = presetId === state.activePresetId;
+      var renameDisabled = !canUsePlanFeature("renameMenuLabels");
+      var duplicateDisabled = !canUsePlanFeature("profileDuplication") || !canCreateAdditionalProfile();
 
       row.className = "saved-view-row";
       row.dataset.active = isActive ? "true" : "false";
@@ -1641,8 +1784,8 @@
         actions.appendChild(makeButton("Make Active", "secondary", "activate", presetId));
       }
       actions.appendChild(makeButton("Edit", "secondary", "edit", presetId));
-      actions.appendChild(makeButton("Rename", "secondary", "rename", presetId));
-      actions.appendChild(makeButton("Duplicate", "secondary", "duplicate", presetId));
+      actions.appendChild(makeButton("Rename", "secondary", "rename", presetId, renameDisabled));
+      actions.appendChild(makeButton("Duplicate", "secondary", "duplicate", presetId, duplicateDisabled));
       actions.appendChild(makeButton("Delete", "danger", "delete", presetId));
 
       details.appendChild(name);
@@ -1712,6 +1855,10 @@
   function renameSavedView(presetId) {
     var preset = storage.getPresetById(state, presetId);
     var nextName = "";
+
+    if (!requireFeatureAccess("renameMenuLabels")) {
+      return;
+    }
 
     if (!isEditableProfile(preset)) {
       setStatus("Only saved views can be renamed.", true);
@@ -1787,6 +1934,14 @@
     var duplicate = storage.duplicatePreset(state, presetId);
     var sourceName = sourcePreset && (sourcePreset.name || sourcePreset.label) || "CleanView";
     var duplicateName = nextCopyName(sourceName);
+
+    if (!requireFeatureAccess("profileDuplication")) {
+      return;
+    }
+
+    if (!requireProfileCapacity()) {
+      return;
+    }
 
     if (!isEditableProfile(sourcePreset) || !duplicate) {
       setStatus("Choose a saved view before duplicating.", true);
@@ -1866,6 +2021,7 @@
     var canEdit = canEditSelectedPreset(preset);
     var isEditable = isCustomPreset(preset);
     var displayPreset = isEditable ? preset : selectedEditablePreset();
+    var disableNewProfileSave = shouldDisableNewProfileSave(preset);
     var templateButton = createProfileFromTemplateButton;
 
     if (!preset) {
@@ -1882,15 +2038,23 @@
     builtInNotice.textContent = editableNoticeText(preset);
     document.getElementById("savePresetButton").textContent = primarySaveLabel(preset);
     document.getElementById("savePresetButton").hidden = true;
+    document.getElementById("savePresetButton").disabled = !canEdit || disableNewProfileSave;
     if (saveAsCopyButton) {
       saveAsCopyButton.hidden = true;
-      saveAsCopyButton.disabled = !isEditable;
+      saveAsCopyButton.disabled = !isEditable || !canUsePlanFeature("profileDuplication") || !canCreateAdditionalProfile();
     }
     if (templateNotice) {
       templateNotice.hidden = !isTemplatePreset(preset);
     }
     if (templateButton) {
       templateButton.hidden = !isTemplatePreset(preset);
+      templateButton.disabled = disableNewProfileSave;
+    }
+    if (createProfileButton) {
+      createProfileButton.disabled = !canCreateAdditionalProfile();
+    }
+    if (createNewViewOverviewButton) {
+      createNewViewOverviewButton.disabled = !canCreateAdditionalProfile();
     }
   }
 
@@ -2290,7 +2454,15 @@
   function renderRenameEditor() {
     var preset = selectedPreset();
     var labelOverrides = preset.labelOverrides || {};
+    var renameLocked = !canUsePlanFeature("renameMenuLabels");
     renameEditor.innerHTML = "";
+
+    if (renameLocked) {
+      var lockedNotice = document.createElement("p");
+      lockedNotice.className = "help-text locked-feature-text";
+      lockedNotice.textContent = lockedFeatureMessage("renameMenuLabels");
+      renameEditor.appendChild(lockedNotice);
+    }
 
     Object.keys(labelOverrides).forEach(function renderRenameRow(key) {
       appendRenameRow(key, labelOverrides[key]);
@@ -3946,6 +4118,15 @@
       return;
     }
 
+    if (mode === "create" && !canCreateAdditionalProfile()) {
+      setStatus(profileLimitMessage(), true);
+      return;
+    }
+
+    if ((mode === "export" || mode === "import") && !requireFeatureAccess("importExport")) {
+      return;
+    }
+
     profileTransferModal.hidden = false;
     if (mode === "create") {
       pendingImportedProfile = null;
@@ -3956,7 +4137,7 @@
       profileExportPanel.hidden = true;
       if (duplicateCurrentViewModalButton) {
         duplicateCurrentViewModalButton.hidden = !isEditableProfile(storage.getPresetById(state, state && state.activePresetId));
-        duplicateCurrentViewModalButton.disabled = duplicateCurrentViewModalButton.hidden;
+        duplicateCurrentViewModalButton.disabled = duplicateCurrentViewModalButton.hidden || !canUsePlanFeature("profileDuplication") || !canCreateAdditionalProfile();
       }
       return;
     }
@@ -4019,6 +4200,10 @@
   }
 
   function downloadProfileJson() {
+    if (!requireFeatureAccess("importExport")) {
+      return;
+    }
+
     var blob = new Blob([currentExportJson], { type: "application/json" });
     var link = document.createElement("a");
 
@@ -4219,7 +4404,15 @@
 
   function renderLinks() {
     var preset = selectedPreset();
+    var quickLinksLocked = !canUsePlanFeature("quickLinks");
     linkEditor.innerHTML = "";
+
+    if (quickLinksLocked) {
+      var lockedNotice = document.createElement("p");
+      lockedNotice.className = "help-text locked-feature-text";
+      lockedNotice.textContent = lockedFeatureMessage("quickLinks");
+      linkEditor.appendChild(lockedNotice);
+    }
 
     (preset.customLinks || []).forEach(function renderLink(link) {
       var normalizedLink = storage.normalizeCustomLink(link);
@@ -4270,8 +4463,12 @@
     sidebarStylePreset.innerHTML = "";
     Object.keys(sidebarStylePresets).forEach(function addOption(key) {
       var option = document.createElement("option");
+      var presetDefinition = sidebarStylePresets[key] || {};
       option.value = key;
-      option.textContent = sidebarStylePresets[key].name || key;
+      option.textContent = presetDefinition.name || key;
+      if (presetDefinition.backgroundType === "gradient" && !canUsePlanFeature("gradients")) {
+        option.disabled = true;
+      }
       sidebarStylePreset.appendChild(option);
     });
   }
@@ -4363,6 +4560,12 @@
       var option = document.createElement("option");
       option.value = backgroundType.value;
       option.textContent = backgroundType.label;
+      if (backgroundType.value === "gradient" && !canUsePlanFeature("gradients")) {
+        option.disabled = true;
+      }
+      if (backgroundType.value === "image" && !canUsePlanFeature("imageBackgrounds")) {
+        option.disabled = true;
+      }
       sidebarBackgroundType.appendChild(option);
     });
     sidebarBackgroundType.value = selectedValue || "solid";
@@ -4554,6 +4757,11 @@
   function handleCustomImageUpload(event) {
     var file = event.target.files && event.target.files[0];
 
+    if (!requireFeatureAccess("imageBackgrounds")) {
+      event.target.value = "";
+      return;
+    }
+
     if (!file) {
       return;
     }
@@ -4616,6 +4824,11 @@
 
   function handleCustomLogoUpload(event) {
     var file = event.target.files && event.target.files[0];
+
+    if (!requireFeatureAccess("logoUpload")) {
+      event.target.value = "";
+      return;
+    }
 
     if (!file) {
       return;
@@ -4985,6 +5198,7 @@
 
   function renderCuratedPresetCards(style) {
     var favoriteSet = new Set(style.favoriteAssetIds || []);
+    var premiumTemplatesEnabled = canUsePlanFeature("premiumTemplates");
 
     if (!curatedPresetGrid) {
       return;
@@ -5002,6 +5216,7 @@
       card.type = "button";
       card.className = "curated-preset-card" + (isActive ? " active" : "");
       card.dataset.curatedPresetId = preset.id;
+      card.disabled = !premiumTemplatesEnabled;
       preview.className = "curated-preset-preview";
       preview.style.background = getCuratedPresetPreview(preset);
       if (preset.type === "image") {
@@ -5027,6 +5242,10 @@
   function applyCuratedPresetFromCard(presetId) {
     var preset = getCuratedPresetById(presetId);
     var nextStyle = null;
+
+    if (!requireFeatureAccess("premiumTemplates")) {
+      return;
+    }
 
     if (!preset) {
       return;
@@ -5138,6 +5357,10 @@
     var selected = null;
     var shuffle = collectCuratedShuffleFromForm(style);
     var recent = (shuffle.lastAppliedAssetIds || []).slice();
+
+    if (!requireFeatureAccess("premiumTemplates")) {
+      return;
+    }
 
     if (!candidates.length) {
       setStatus("No curated styles match this rotation pool.", true);
@@ -5432,22 +5655,28 @@
   }
 
   function syncPresetEditability() {
-    var canEdit = canEditSelectedPreset(selectedPreset());
-    var isEditable = isCustomPreset(selectedPreset());
+    var preset = selectedPreset();
+    var canEdit = canEditSelectedPreset(preset);
+    var isEditable = isCustomPreset(preset);
+    var renameEnabled = canUsePlanFeature("renameMenuLabels");
+    var quickLinksEnabled = canUsePlanFeature("quickLinks");
+    var customBrandingEnabled = canUsePlanFeature("customBranding");
+    var premiumTemplatesEnabled = canUsePlanFeature("premiumTemplates");
+    var quickLinkLimitReached = isAtQuickLinkLimitForCount((preset && preset.customLinks || []).length);
 
     setContainerControlsDisabled(menuEditor, !canEdit);
     if (menuGroupEditor) {
       setContainerControlsDisabled(menuGroupEditor, !canEdit);
     }
-    setContainerControlsDisabled(renameEditor, !canEdit);
-    setContainerControlsDisabled(linkEditor, !canEdit);
-    setContainerControlsDisabled(globalSidebarStyleEditor, !canEdit);
-    setContainerControlsDisabled(spacingStyleEditor, !canEdit);
-    setContainerControlsDisabled(advancedStyleEditor, !canEdit);
+    setContainerControlsDisabled(renameEditor, !canEdit || !renameEnabled);
+    setContainerControlsDisabled(linkEditor, !canEdit || !quickLinksEnabled);
+    setContainerControlsDisabled(globalSidebarStyleEditor, !canEdit || !customBrandingEnabled);
+    setContainerControlsDisabled(spacingStyleEditor, !canEdit || !customBrandingEnabled);
+    setContainerControlsDisabled(advancedStyleEditor, !canEdit || !customBrandingEnabled);
     setContainerControlsDisabled(sidebarStyleEditor, !canEdit);
     setContainerControlsDisabled(menuColorEditor, !canEdit);
-    setContainerControlsDisabled(headerControlsStyleEditor, !canEdit);
-    setContainerControlsDisabled(curatedPresetGrid, !canEdit);
+    setContainerControlsDisabled(headerControlsStyleEditor, !canEdit || !customBrandingEnabled);
+    setContainerControlsDisabled(curatedPresetGrid, !canEdit || !premiumTemplatesEnabled);
     setContainerControlsDisabled(curatedShuffleCustomPool, !canEdit);
     sidebarStyleEnabled.disabled = !canEdit;
     sidebarStylePreset.disabled = !canEdit;
@@ -5456,16 +5685,16 @@
       autoReadabilityToggle.disabled = !canEdit;
     }
     if (curatedShuffleEnabled) {
-      curatedShuffleEnabled.disabled = !canEdit;
+      curatedShuffleEnabled.disabled = !canEdit || !premiumTemplatesEnabled;
     }
     if (curatedShufflePool) {
-      curatedShufflePool.disabled = !canEdit;
+      curatedShufflePool.disabled = !canEdit || !premiumTemplatesEnabled;
     }
     if (curatedShuffleFrequency) {
-      curatedShuffleFrequency.disabled = !canEdit;
+      curatedShuffleFrequency.disabled = !canEdit || !premiumTemplatesEnabled;
     }
     if (curatedShuffleAvoidRepeats) {
-      curatedShuffleAvoidRepeats.disabled = !canEdit;
+      curatedShuffleAvoidRepeats.disabled = !canEdit || !premiumTemplatesEnabled;
     }
     document.getElementById("selectAllMenusButton").disabled = !canEdit;
     document.getElementById("deselectAllMenusButton").disabled = !canEdit;
@@ -5473,9 +5702,9 @@
     if (addMenuGroupButton) {
       addMenuGroupButton.disabled = !canEdit;
     }
-    document.getElementById("addRenameButton").disabled = !canEdit;
-    document.getElementById("addLinkButton").disabled = !canEdit;
-    curatedShuffleButton.disabled = !canEdit;
+    document.getElementById("addRenameButton").disabled = !canEdit || !renameEnabled;
+    document.getElementById("addLinkButton").disabled = !canEdit || !quickLinksEnabled || quickLinkLimitReached;
+    curatedShuffleButton.disabled = !canEdit || !premiumTemplatesEnabled;
     if (applyLiveButton) {
       applyLiveButton.disabled = !canEdit;
     }
@@ -5492,14 +5721,15 @@
       detectGhlSidebarButton.disabled = false;
     }
     document.getElementById("resetStyleButton").disabled = !canEdit;
-    document.getElementById("savePresetButton").disabled = !canEdit;
+    document.getElementById("savePresetButton").disabled = !canEdit || shouldDisableNewProfileSave(preset);
     if (saveAsCopyButton) {
       saveAsCopyButton.hidden = true;
-      saveAsCopyButton.disabled = !isEditable;
+      saveAsCopyButton.disabled = !isEditable || !canUsePlanFeature("profileDuplication") || !canCreateAdditionalProfile();
     }
   }
 
   function render() {
+    renderPlanSummary();
     if (renderBuilderVisibility()) {
       return;
     }
@@ -5961,6 +6191,13 @@
   }
 
   function persistPreset(preset, message, reapplyIfActive, afterSave) {
+    var isNewPreset = !storage.getPresetById(state, preset.id);
+
+    if (isNewPreset && !canCreateAdditionalProfile()) {
+      setStatus(profileLimitMessage(), true);
+      return;
+    }
+
     storage.updateState(function updatePreset(nextState) {
       nextState.presets[preset.id] = storage.normalizePreset(preset);
       nextState.activePresetId = preset.id;
@@ -6021,7 +6258,7 @@
   }
 
   function loadState() {
-    storage.getState(function handleState(nextState, error) {
+    storage.touchInstallMetadata(function handleState(nextState, error) {
       if (error) {
         setStatus("Unable to load CleanView settings.", true);
         return;
@@ -6185,6 +6422,10 @@
       return;
     }
 
+    if (!requireProfileCapacity()) {
+      return;
+    }
+
     updateStarterDraftName(starterNameValue);
 
     if (useStarterViewButton) {
@@ -6219,6 +6460,14 @@
   function importPendingProfile() {
     if (!pendingImportedProfile) {
       setStatus("Validate a CleanView View before importing.", true);
+      return;
+    }
+
+    if (!requireFeatureAccess("importExport")) {
+      return;
+    }
+
+    if (!requireProfileCapacity()) {
       return;
     }
 
@@ -6278,6 +6527,13 @@
       activeTab = button.dataset.tabButton;
       renderTabState();
       renderStickySaveBar();
+
+      if (activeTab === "rename" && !canUsePlanFeature("renameMenuLabels")) {
+        setStatus(lockedFeatureMessage("renameMenuLabels"), true);
+      }
+      if (activeTab === "links" && !canUsePlanFeature("quickLinks")) {
+        setStatus(lockedFeatureMessage("quickLinks"), true);
+      }
     });
   });
 
@@ -6316,6 +6572,14 @@
       var currentPreset = selectedPreset();
       var draftPreset = collectPresetFromForm();
       var duplicate = storage.duplicatePreset(state, selectedPresetId);
+
+      if (!requireFeatureAccess("profileDuplication")) {
+        return;
+      }
+
+      if (!requireProfileCapacity()) {
+        return;
+      }
 
       if (!isCustomPreset(currentPreset) || !duplicate) {
         setStatus("Save a Copy is available for saved views only.", true);
@@ -6777,6 +7041,14 @@
     profileTransferCloseButton.addEventListener("click", closeProfileTransferModal);
   }
 
+  if (managePlanButton) {
+    managePlanButton.addEventListener("click", openPlanInfoModal);
+  }
+
+  if (planInfoCloseButton) {
+    planInfoCloseButton.addEventListener("click", closePlanInfoModal);
+  }
+
   if (validateProfileImportButton) {
     validateProfileImportButton.addEventListener("click", validateProfileImportText);
   }
@@ -6881,6 +7153,10 @@
   });
 
   document.getElementById("addRenameButton").addEventListener("click", function addRename() {
+    if (!requireFeatureAccess("renameMenuLabels")) {
+      return;
+    }
+
     appendRenameRow(allMenuKeys[0], "");
     scheduleDirtyCheck();
   });
@@ -6904,6 +7180,17 @@
   }
 
   document.getElementById("addLinkButton").addEventListener("click", function addLink() {
+    var currentQuickLinkCount = linkEditor.querySelectorAll(".link-row").length;
+
+    if (!requireFeatureAccess("quickLinks")) {
+      return;
+    }
+
+    if (isAtQuickLinkLimitForCount(currentQuickLinkCount)) {
+      setStatus(quickLinkLimitMessage(), true);
+      return;
+    }
+
     if (linkEditor.querySelector(".help-text")) {
       linkEditor.innerHTML = "";
     }
@@ -7161,6 +7448,9 @@
       scheduleDirtyCheck();
     }
     if (event.target.dataset.resetImagePosition) {
+      if (!requireFeatureAccess("advancedImagePositioning")) {
+        return;
+      }
       var resetStyle = getCurrentWorkingSidebarStyle();
       resetStyle.imageSettings = Object.assign({}, resetStyle.imageSettings || {}, {
         positionX: 50,
@@ -7206,6 +7496,17 @@
   sidebarBackgroundType.addEventListener("change", function changeBackgroundType() {
     var style = getCurrentWorkingSidebarStyle();
     style.stylePath = "custom";
+
+    if (sidebarBackgroundType.value === "gradient" && !requireFeatureAccess("gradients")) {
+      sidebarBackgroundType.value = getEditorBackgroundType(style);
+      return;
+    }
+
+    if (sidebarBackgroundType.value === "image" && !requireFeatureAccess("imageBackgrounds")) {
+      sidebarBackgroundType.value = getEditorBackgroundType(style);
+      return;
+    }
+
     if (sidebarBackgroundType.value === "none") {
       style.enabled = false;
       populateSidebarStyleForm(style, { presetValue: "custom", optionLabel: "Custom Draft" });
@@ -7253,6 +7554,9 @@
   if (sidebarStylePreview) {
     sidebarStylePreview.addEventListener("pointerdown", function startImageDrag(event) {
       if (getCurrentWorkingSidebarStyle().backgroundType !== "image") {
+        return;
+      }
+      if (!canUsePlanFeature("advancedImagePositioning")) {
         return;
       }
       if (!canEditSelectedPreset(selectedPreset())) {

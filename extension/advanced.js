@@ -69,7 +69,7 @@
   }
 
   function loadBackup() {
-    storage.getState(function handleState(state, error) {
+    storage.touchInstallMetadata(function handleState(state, error) {
       if (error) {
         setStatus("Unable to load CleanView data.", true);
         return;

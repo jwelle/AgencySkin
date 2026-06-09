@@ -2408,7 +2408,7 @@
   }
 
   function loadAndApply() {
-    storage.getState(function handleState(state, error) {
+    storage.touchInstallMetadata(function handleState(state, error) {
       if (error) {
         console.warn("[AgencySkin CleanView] Unable to load stored settings.", error);
         removePreloadGuard();

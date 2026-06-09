@@ -1,14 +1,15 @@
 (function registerAgencySkinStorage() {
   var namespace = window.agencySkinCleanView || {};
+  var plans = namespace.plans || {};
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
   }
 
   function defaultState() {
-    return {
+    var state = {
       version: namespace.version,
-      schemaVersion: 1,
+      schemaVersion: 2,
       enabled: true,
       activePresetId: "builtin:simple",
       lastEditedProfileId: "",
@@ -17,6 +18,12 @@
       locationRules: {},
       updatedAt: namespace.nowIso()
     };
+
+    if (plans.ensureInstallMetadata) {
+      plans.ensureInstallMetadata(state);
+    }
+
+    return state;
   }
 
   function isPresetId(value) {
@@ -455,7 +462,7 @@
     } else {
       normalized.presets = normalized.presets || {};
     }
-    normalized.schemaVersion = normalized.schemaVersion || 1;
+    normalized.schemaVersion = Math.max(2, Number(normalized.schemaVersion || 0) || 0);
     normalized.presetPreferences = normalized.presetPreferences && !Array.isArray(normalized.presetPreferences) ? normalized.presetPreferences : {};
     Object.keys(normalized.presets).forEach(function normalizeStoredPreset(presetId) {
       var normalizedPreset = normalizePreset(normalized.presets[presetId], presetId);
@@ -498,6 +505,9 @@
       };
     });
     normalized.updatedAt = normalized.updatedAt || namespace.nowIso();
+    if (plans.ensureInstallMetadata) {
+      plans.ensureInstallMetadata(normalized);
+    }
     return normalized;
   }
 
@@ -540,7 +550,9 @@
   function updateState(mutator, callback) {
     getState(function handleState(state, error) {
       if (error) {
-        callback(null, error);
+        if (callback) {
+          callback(null, error);
+        }
         return;
       }
 
@@ -548,6 +560,14 @@
       mutator(nextState);
       saveState(nextState, callback);
     });
+  }
+
+  function touchInstallMetadata(callback) {
+    updateState(function updateInstallMetadata(nextState) {
+      if (plans.touchInstallMetadata) {
+        plans.touchInstallMetadata(nextState);
+      }
+    }, callback || function noop() {});
   }
 
   function getAllPresets(state) {
@@ -608,6 +628,7 @@
     getState: getState,
     saveState: saveState,
     updateState: updateState,
+    touchInstallMetadata: touchInstallMetadata,
     getAllPresets: getAllPresets,
     getPresetById: getPresetById,
     duplicatePreset: duplicatePreset

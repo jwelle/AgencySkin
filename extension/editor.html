@@ -23,6 +23,16 @@
         </div>
       </header>
 
+      <section id="planSummaryCard" class="panel plan-summary-card" aria-label="Current plan">
+        <div class="plan-summary-copy">
+          <p class="plan-summary-label">Plan</p>
+          <p id="planSummaryTitle" class="plan-summary-title">Pro Trial</p>
+          <p id="planSummaryDescription" class="plan-summary-description">30 days of Pro access included.</p>
+          <p id="planSummaryMeta" class="plan-summary-meta" hidden></p>
+        </div>
+        <button id="managePlanButton" class="secondary" type="button">Manage Plan</button>
+      </section>
+
       <section id="firstTimeProfileOnboarding" class="panel onboarding-panel" hidden>
         <div id="starterChooserPanel" class="starter-onboarding-step" data-onboarding-step="chooser">
           <div class="panel-header">
@@ -567,12 +577,26 @@
           </div>
         </div>
       </section>
+
+      <section id="planInfoModal" class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="planInfoTitle" hidden>
+        <div class="profile-modal-panel plan-info-modal-panel">
+          <div class="panel-header">
+            <div>
+              <h2 id="planInfoTitle">Manage Plan</h2>
+              <p id="planInfoSubtitle">CleanView Pro Trial is included during this rollout.</p>
+            </div>
+            <button id="planInfoCloseButton" class="secondary" type="button">Close</button>
+          </div>
+          <p class="plan-info-copy">CleanView Pro Trial is included during this rollout. Account and billing options will be added later.</p>
+        </div>
+      </section>
     </main>
 
     <script src="namespace.js"></script>
     <script src="selectorRegistry.js"></script>
     <script src="sidebarBackgrounds.js"></script>
     <script src="presets.js"></script>
+    <script src="plans.js"></script>
     <script src="storage.js"></script>
     <script src="editor.js"></script>
   </body>
