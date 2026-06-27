@@ -546,7 +546,7 @@
     return plans.getPlanLimit ? plans.getPlanLimit(limitKey, nextState || state) : undefined;
   }
 
-  function getTrialStatus(nextState) {
+  function getCurrentTrialStatus(nextState) {
     return plans.getTrialStatus ? plans.getTrialStatus(nextState || state) : { isTrial: false };
   }
 
@@ -627,7 +627,7 @@
 
   function renderPlanSummary() {
     var config = currentPlanConfig();
-    var trialStatus = getTrialStatus();
+    var trialStatus = getCurrentTrialStatus();
     var trialEndDate = formatDateLabel(trialStatus.trialEndsAt);
 
     if (planSummaryCard) {
@@ -6498,6 +6498,8 @@
       } else {
         renameSavedView(selectedPresetId);
       }
+    } else if (action === "import") {
+      openProfileTransferModal("import");
     } else if (action === "export") {
       openProfileTransferModal("export");
     } else if (action === "copy") {

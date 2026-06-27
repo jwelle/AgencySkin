@@ -250,11 +250,11 @@
     var now = Date.now();
     var endTime = endsAt ? new Date(endsAt).getTime() : NaN;
     var daysRemaining = undefined;
-    var isExpired = undefined;
+    var isExpired = false;
 
     if (isTrial && Number.isFinite(endTime)) {
       daysRemaining = Math.max(0, Math.ceil((endTime - now) / DAY_IN_MS));
-      isExpired = endTime < now;
+      isExpired = endTime <= now;
     }
 
     return {
