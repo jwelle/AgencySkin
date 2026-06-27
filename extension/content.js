@@ -38,9 +38,8 @@
   }
 
   function debugStartupMask(message, details) {
-    if (CLEANVIEW_DEBUG_STARTUP_MASK) {
-      console.debug("[AgencySkin CleanView startup mask] " + message, details || "");
-    }
+    void message;
+    void details;
   }
 
   function removePreloadGuard() {
@@ -1129,7 +1128,7 @@
 
   function resolveBrandHeaderLabel(style) {
     var brandSettings = namespace.brandSettings || {};
-    return styleValue(style.headerLabel) || styleValue(brandSettings.brandName) || "AgencySkin";
+    return styleValue(style.headerLabel) || styleValue(brandSettings.brandName) || "CleanView";
   }
 
   function injectCustomSidebarBranding(sidebar, style) {
@@ -2228,10 +2227,7 @@
   function injectCustomLinks(customLinks) {
     removeCustomLinks();
 
-    console.log("[AgencySkin CleanView] Custom links found:", customLinks);
-
     if (!Array.isArray(customLinks) || customLinks.length === 0) {
-      console.log("[AgencySkin CleanView] No enabled custom links to inject.");
       return 0;
     }
 
@@ -2243,11 +2239,7 @@
     });
     var sidebar = findGhlSidebar();
 
-    console.log("[AgencySkin CleanView] Enabled custom links:", enabledLinks);
-    console.log("[AgencySkin CleanView] Sidebar found:", Boolean(sidebar));
-
     if (!enabledLinks.length) {
-      console.log("[AgencySkin CleanView] No enabled custom links to inject.");
       return 0;
     }
 
@@ -2260,7 +2252,6 @@
       placeCustomLink(sidebar, createCustomLinkElement(link), link.placement);
     });
 
-    console.log("[AgencySkin CleanView] Injected " + enabledLinks.length + " custom link(s).");
     return enabledLinks.length;
   }
 
@@ -2295,13 +2286,6 @@
     var activePreset = storage.getPresetById(state, state.activePresetId);
     var preset = locationPreset || activePreset || storage.getPresetById(state, "builtin:simple");
 
-    if (preset) {
-      console.log("[AgencySkin CleanView] Active Profile applied:", {
-        id: preset.id,
-        name: preset.name || preset.label
-      });
-    }
-
     return preset;
   }
 
@@ -2309,8 +2293,6 @@
     var visibleSet = new Set(Array.isArray(preset.visibleItems) ? preset.visibleItems : allMenuKeys);
     var labelOverrides = preset.labelOverrides || {};
     var changedCount = 0;
-
-    console.log("[AgencySkin CleanView] Applying preset:", preset && (preset.name || preset.label), preset);
 
     resetPage({ preserveMenuGroupState: true });
 

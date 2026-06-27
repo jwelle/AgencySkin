@@ -92,8 +92,8 @@
     },
     pro_trial: {
       id: "pro_trial",
-      label: "Pro Trial",
-      description: "30 days of Pro access included.",
+      label: "CleanView V1",
+      description: "Local customization features enabled.",
       limits: {
         maxProfiles: 999,
         maxQuickLinks: 999

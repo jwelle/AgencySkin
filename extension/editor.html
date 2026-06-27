@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AgencySkin - CleanView Panel</title>
+    <title>CleanView Panel</title>
     <link rel="icon" href="assets/icons/cleanview-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="editor.css">
   </head>
@@ -13,7 +13,7 @@
         <div class="brand-lockup">
           <img class="brand-mark" src="assets/icons/cleanview-mark.svg" alt="CleanView">
           <div>
-            <p class="eyebrow">AgencySkin</p>
+            <p class="eyebrow">CleanView</p>
             <h1>CleanView Panel</h1>
           </div>
         </div>
@@ -22,16 +22,6 @@
           <button id="reloadGhlTabButton" class="secondary" type="button" hidden>Reload GHL Tab</button>
         </div>
       </header>
-
-      <section id="planSummaryCard" class="panel plan-summary-card" aria-label="Current plan">
-        <div class="plan-summary-copy">
-          <p class="plan-summary-label">Plan</p>
-          <p id="planSummaryTitle" class="plan-summary-title">Pro Trial</p>
-          <p id="planSummaryDescription" class="plan-summary-description">30 days of Pro access included.</p>
-          <p id="planSummaryMeta" class="plan-summary-meta" hidden></p>
-        </div>
-        <button id="managePlanButton" class="secondary" type="button">Manage Plan</button>
-      </section>
 
       <section id="firstTimeProfileOnboarding" class="panel onboarding-panel" hidden>
         <div id="starterChooserPanel" class="starter-onboarding-step" data-onboarding-step="chooser">
@@ -228,7 +218,7 @@
           <button class="tab-button active" type="button" data-tab-button="style" data-tab-icon="palette">Sidebar Style</button>
           <button class="tab-button" type="button" data-tab-button="menu" data-tab-icon="menu">Menu Builder</button>
           <button class="tab-button" type="button" data-tab-button="rename" data-tab-icon="tag">Rename Labels</button>
-          <button class="tab-button" type="button" data-tab-button="links" data-tab-icon="link">Quick Links <span class="pro-badge">Pro</span></button>
+          <button class="tab-button" type="button" data-tab-button="links" data-tab-icon="link">Quick Links</button>
           <button class="tab-button" type="button" data-tab-button="locations" data-location-defaults-ui hidden>Location Rules</button>
         </nav>
 
@@ -302,7 +292,7 @@
               <details id="customStylePanel" class="style-card style-accordion custom-sidebar-controls" data-style-accordion="background">
                 <summary class="style-accordion-summary">
                   <div>
-                    <h3>Background <span class="pro-badge">Pro</span></h3>
+                    <h3>Background</h3>
                     <p class="help-text">Build a manual Solid, Gradient, or Visual Image sidebar.</p>
                   </div>
                 </summary>
@@ -318,7 +308,7 @@
               <details id="logoStyleAccordion" class="style-card style-accordion" data-style-accordion="logo">
                 <summary class="style-accordion-summary">
                   <div>
-                    <h3>Logo <span class="pro-badge">Pro</span></h3>
+                    <h3>Logo</h3>
                     <p class="help-text">Control sidebar branding and header display.</p>
                   </div>
                 </summary>
@@ -348,7 +338,7 @@
               <details id="spacingStyleAccordion" class="style-card style-accordion" data-style-accordion="spacing">
                 <summary class="style-accordion-summary">
                   <div>
-                    <h3>Spacing <span class="pro-badge">Pro</span></h3>
+                    <h3>Spacing</h3>
                     <p class="help-text">Adjust sidebar radius, padding, and menu spacing.</p>
                   </div>
                 </summary>
@@ -358,7 +348,7 @@
               <details id="advancedStyleAccordion" class="style-card style-accordion" data-style-accordion="advanced">
                 <summary class="style-accordion-summary">
                   <div>
-                    <h3>Advanced <span class="pro-badge">Pro</span></h3>
+                    <h3>Advanced</h3>
                     <p class="help-text">Fine tune readability, border, and shadow behavior.</p>
                   </div>
                 </summary>
@@ -412,7 +402,7 @@
                   <div id="sidebarStylePreviewOverlay" class="sidebar-preview-overlay"></div>
                   <div id="sidebarStylePreviewHeader" class="sidebar-preview-header">
                     <img id="sidebarStylePreviewLogo" alt="">
-                    <span id="sidebarStylePreviewHeaderText">AgencySkin</span>
+                    <span id="sidebarStylePreviewHeaderText">CleanView</span>
                   </div>
                   <div class="sidebar-preview-item"><span class="sidebar-preview-icon"></span><span>Dashboard</span></div>
                   <div class="sidebar-preview-item"><span class="sidebar-preview-icon"></span><span>Launchpad</span></div>
@@ -578,18 +568,6 @@
         </div>
       </section>
 
-      <section id="planInfoModal" class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="planInfoTitle" hidden>
-        <div class="profile-modal-panel plan-info-modal-panel">
-          <div class="panel-header">
-            <div>
-              <h2 id="planInfoTitle">Manage Plan</h2>
-              <p id="planInfoSubtitle">CleanView Pro Trial is included during this rollout.</p>
-            </div>
-            <button id="planInfoCloseButton" class="secondary" type="button">Close</button>
-          </div>
-          <p class="plan-info-copy">CleanView Pro Trial is included during this rollout. Account and billing options will be added later.</p>
-        </div>
-      </section>
     </main>
 
     <script src="namespace.js"></script>

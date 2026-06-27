@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "install": "npm install --prefix server && npm install --prefix client",
-    "start": "npm run start --prefix server"
+    "start": "npm run start --prefix server",
+    "package:extension": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-extension.ps1"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

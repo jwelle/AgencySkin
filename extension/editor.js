@@ -528,8 +528,8 @@
   function currentPlanConfig(nextState) {
     return plans.getCurrentPlanConfig ? plans.getCurrentPlanConfig(nextState || state) : {
       id: "pro_trial",
-      label: "Pro Trial",
-      description: "30 days of Pro access included.",
+      label: "CleanView V1",
+      description: "Local customization features enabled.",
       limits: {
         maxProfiles: 999,
         maxQuickLinks: 999
@@ -634,10 +634,10 @@
       planSummaryCard.dataset.planId = config.id || "pro_trial";
     }
     if (planSummaryTitle) {
-      planSummaryTitle.textContent = config.label || "Pro Trial";
+      planSummaryTitle.textContent = config.label || "CleanView V1";
     }
     if (planSummaryDescription) {
-      planSummaryDescription.textContent = config.description || "30 days of Pro access included.";
+      planSummaryDescription.textContent = config.description || "Local customization features enabled.";
     }
     if (planSummaryMeta) {
       planSummaryMeta.hidden = !trialStatus.isTrial || !trialEndDate;
@@ -4309,7 +4309,7 @@
 
   function resolveBrandHeaderLabel(style) {
     var brandSettings = namespace.brandSettings || {};
-    return style.headerLabel || brandSettings.brandName || "AgencySkin";
+    return style.headerLabel || brandSettings.brandName || "CleanView";
   }
 
   function colorValueToRgb(value) {
@@ -7272,10 +7272,6 @@
         resetDirtyStateFromRenderedDraft();
       });
     }
-    console.log("[AgencySkin CleanView] View selected:", {
-      id: selectedPresetId,
-      name: selectedPreset() && (selectedPreset().name || selectedPreset().label)
-    });
     render();
     resetDirtyStateFromRenderedDraft();
   });
