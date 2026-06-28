@@ -230,7 +230,9 @@
     {
       id: "sales",
       name: "Sales View",
-      cardTitle: "Sales",
+      cardTitle: "Sales Person",
+      avatarPath: "assets/avatars/sales-person.webp",
+      avatarAlt: "Sales Person starter avatar",
       description: "Keep inbox, pipeline, calendar, contacts, payments, and reporting close at hand.",
       bestFor: "Best for reps, closers, and appointment setters.",
       keepsLine: "Keeps Inbox, Pipeline, Calendar, Contacts, Payments, and Reporting.",
@@ -257,7 +259,9 @@
     {
       id: "marketing",
       name: "Marketing View",
-      cardTitle: "Marketing",
+      cardTitle: "Marketing Chief",
+      avatarPath: "assets/avatars/marketing-chief.webp",
+      avatarAlt: "Marketing Chief starter avatar",
       description: "Focus the sidebar on campaigns, workflows, sites, media, reputation, and reports.",
       bestFor: "Best for campaign builders, media work, and funnels.",
       keepsLine: "Keeps Marketing, Workflows, Sites, Media, Reputation, and Reporting.",
@@ -284,6 +288,8 @@
       id: "ai-operator",
       name: "AI Operator View",
       cardTitle: "AI Operator",
+      avatarPath: "assets/avatars/ai-operator.webp",
+      avatarAlt: "AI Operator starter avatar",
       description: "Prioritize AI tools, workflows, inbox review, contacts, and reporting.",
       bestFor: "Best for AI teams managing agents, prompts, and automation.",
       keepsLine: "Keeps Ask AI, AI Studio, AI Agents, Workflows, Inbox, and Reporting.",
@@ -311,6 +317,8 @@
       id: "contact-center",
       name: "Contact Center View",
       cardTitle: "Contact Center",
+      avatarPath: "assets/avatars/contact-center.webp",
+      avatarAlt: "Contact Center starter avatar",
       description: "Streamline around inbox, appointments, contacts, reputation, and reporting.",
       bestFor: "Best for teams living in messages, calls, and appointments.",
       keepsLine: "Keeps Inbox, Appointments, Contacts, Reputation, and Reporting.",
@@ -338,6 +346,8 @@
       id: "simple",
       name: "Simple View",
       cardTitle: "Start Simple",
+      avatarPath: "assets/avatars/start-simple.webp",
+      avatarAlt: "Start Simple starter avatar",
       description: "Start with a quiet sidebar for common day-to-day work.",
       bestFor: "Best for a calm, everyday workspace with fewer distractions.",
       keepsLine: "Keeps Inbox, Calendar, Contacts, Pipeline, and Reporting.",
@@ -1007,6 +1017,16 @@
   }
 
   function renderStarterBadge(badge, surface, starter, metaElement, metaText) {
+    var avatar;
+    var card;
+    var copy;
+    var description;
+    var icon;
+    var keeps;
+    var title;
+    var visual;
+    var visibleMetaText;
+
     if (!badge) {
       return;
     }
@@ -1023,11 +1043,59 @@
       return;
     }
 
-    badge.innerHTML = '<span class="starter-context-icon">' + starterIconSvg(starter.iconId) + '</span><span>' + (starter.cardTitle || starter.name) + "</span>";
+    badge.innerHTML = "";
+    card = document.createElement("span");
+    visual = document.createElement("span");
+    avatar = document.createElement("img");
+    icon = document.createElement("span");
+    copy = document.createElement("span");
+    title = document.createElement("span");
+    description = document.createElement("span");
+    keeps = document.createElement("span");
+
+    card.className = "starter-context-card";
+    visual.className = "starter-context-visual";
+    avatar.className = "starter-context-avatar";
+    avatar.alt = starter.avatarAlt || ((starter.cardTitle || starter.name) + " starter avatar");
+    avatar.loading = "lazy";
+    avatar.hidden = !starter.avatarPath;
+    if (starter.avatarPath) {
+      avatar.src = starter.avatarPath;
+    }
+    avatar.addEventListener("error", function handleMissingStarterContextAvatar() {
+      avatar.hidden = true;
+      icon.hidden = false;
+    });
+
+    icon.className = "starter-context-icon";
+    icon.hidden = Boolean(starter.avatarPath);
+    icon.innerHTML = starterIconSvg(starter.iconId);
+
+    copy.className = "starter-context-copy";
+    title.className = "starter-context-title";
+    title.textContent = starter.cardTitle || starter.name;
+    description.className = "starter-context-description";
+    description.textContent = starter.description || starter.bestFor || starter.name;
+    keeps.className = "starter-context-keeps";
+    keeps.textContent = starter.keepsLine || "";
+    keeps.hidden = !keeps.textContent;
+
+    visual.appendChild(avatar);
+    visual.appendChild(icon);
+    copy.appendChild(title);
+    copy.appendChild(description);
+    copy.appendChild(keeps);
+    card.appendChild(visual);
+    card.appendChild(copy);
+    badge.appendChild(card);
     badge.hidden = false;
 
     if (metaElement) {
-      metaElement.textContent = metaText || starter.bestFor || "";
+      visibleMetaText = metaText || "";
+      if (visibleMetaText === starter.keepsLine || visibleMetaText === starter.bestFor) {
+        visibleMetaText = "";
+      }
+      metaElement.textContent = visibleMetaText;
       metaElement.hidden = !metaElement.textContent;
     }
   }
@@ -1462,14 +1530,13 @@
     starterViewGrid.innerHTML = "";
     starterViews.forEach(function renderStarterCard(starter) {
       var card = document.createElement("button");
-      var hero = document.createElement("span");
+      var visual = document.createElement("span");
+      var avatar = document.createElement("img");
       var icon = document.createElement("span");
       var copy = document.createElement("span");
       var title = document.createElement("span");
       var description = document.createElement("span");
-      var meta = document.createElement("span");
       var keeps = document.createElement("span");
-      var count = document.createElement("span");
       var selectedBadge = document.createElement("span");
       var isSelected = starter.id === selectedStarterViewId;
 
@@ -1483,33 +1550,40 @@
       card.style.setProperty("--starter-accent", starter.accentColor || "#2563eb");
       card.style.setProperty("--starter-accent-soft", starter.accentSoft || "#dbeafe");
       card.style.setProperty("--starter-accent-border", starter.accentBorder || starter.accentColor || "#93c5fd");
-      hero.className = "starter-card-hero";
+      visual.className = "starter-card-visual";
+      avatar.className = "starter-card-avatar";
+      avatar.alt = starter.avatarAlt || ((starter.cardTitle || starter.name) + " starter avatar");
+      avatar.loading = "lazy";
+      avatar.hidden = !starter.avatarPath;
+      if (starter.avatarPath) {
+        avatar.src = starter.avatarPath;
+      }
+      avatar.addEventListener("error", function handleMissingStarterAvatar() {
+        avatar.hidden = true;
+        icon.hidden = false;
+      });
       icon.className = "starter-card-icon";
+      icon.hidden = Boolean(starter.avatarPath);
       icon.innerHTML = starterIconSvg(starter.iconId);
       copy.className = "starter-card-copy";
       title.className = "starter-card-title";
       title.textContent = starter.cardTitle || starter.name;
       description.className = "starter-card-description";
       description.textContent = starter.description;
-      meta.className = "starter-card-meta";
-      meta.textContent = starter.bestFor || "";
       keeps.className = "starter-card-keeps";
       keeps.textContent = starter.keepsLine || "";
-      count.className = "starter-card-count";
-      count.textContent = starterVisibleKeys(starter).length + " shown / " + starterHiddenKeys(starter).length + " hidden";
       selectedBadge.className = "starter-card-selected-badge";
       selectedBadge.textContent = "Selected";
       selectedBadge.hidden = !isSelected;
 
       copy.appendChild(title);
-      copy.appendChild(meta);
-      hero.appendChild(icon);
-      hero.appendChild(copy);
+      copy.appendChild(description);
+      visual.appendChild(avatar);
+      visual.appendChild(icon);
       card.appendChild(selectedBadge);
-      card.appendChild(hero);
-      card.appendChild(description);
+      card.appendChild(visual);
+      card.appendChild(copy);
       card.appendChild(keeps);
-      card.appendChild(count);
       starterViewGrid.appendChild(card);
     });
   }

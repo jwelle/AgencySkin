@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CleanView for GoHighLevel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Customize and simplify GoHighLevel sidebars with saved views, menu visibility, colors, logos, and styling.",
   "icons": {
     "16": "assets/icons/icon16.png",
