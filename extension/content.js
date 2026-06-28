@@ -404,9 +404,21 @@
   function clearTopHeaderThemeState() {
     if (document.body) {
       document.body.classList.remove("cleanview-enabled", "cleanview-theme-header");
+      document.body.style.removeProperty("--cleanview-surface-bg");
+      document.body.style.removeProperty("--cleanview-surface-text");
+      document.body.style.removeProperty("--cleanview-surface-muted-text");
+      document.body.style.removeProperty("--cleanview-surface-hover-bg");
+      document.body.style.removeProperty("--cleanview-surface-hover-text");
+      document.body.style.removeProperty("--cleanview-surface-active-bg");
+      document.body.style.removeProperty("--cleanview-surface-active-text");
+      document.body.style.removeProperty("--cleanview-surface-border");
+      document.body.style.removeProperty("--cleanview-surface-accent");
       document.body.style.removeProperty("--cleanview-top-header-bg");
       document.body.style.removeProperty("--cleanview-top-header-border");
     }
+    document.querySelectorAll("[data-agencyskin-cleanview-header-current='true']").forEach(function clearCurrentHeaderLink(element) {
+      element.removeAttribute("data-agencyskin-cleanview-header-current");
+    });
   }
 
   function resetSidebarStyle() {
@@ -798,6 +810,130 @@
     return isLightColorValue(getTopHeaderRepresentativeColor(style)) ? "rgba(15, 23, 42, 0.12)" : "rgba(255, 255, 255, 0.12)";
   }
 
+  function getReadableTextColorForSurface(style) {
+    return isLightColorValue(getTopHeaderRepresentativeColor(style)) ? "#0f172a" : "#f8fafc";
+  }
+
+  function getMutedTextColorForSurface(style) {
+    return isLightColorValue(getTopHeaderRepresentativeColor(style)) ? "rgba(15, 23, 42, 0.68)" : "rgba(248, 250, 252, 0.72)";
+  }
+
+  function getHoverBackgroundForSurface(style) {
+    var fallback = isLightColorValue(getTopHeaderRepresentativeColor(style)) ? "rgba(15, 23, 42, 0.08)" : "rgba(255, 255, 255, 0.12)";
+    return styleValue(style.hoverBackgroundColor) || fallback;
+  }
+
+  function getActiveBackgroundForSurface(style) {
+    var hoverBackground = getHoverBackgroundForSurface(style);
+    var fallback = isLightColorValue(getTopHeaderRepresentativeColor(style)) ? "rgba(15, 23, 42, 0.12)" : "rgba(255, 255, 255, 0.18)";
+    return styleValue(style.activeBackgroundColor) || hoverBackground || fallback;
+  }
+
+  function getTopHeaderThemeVariables(style) {
+    var readableText = getReadableTextColorForSurface(style);
+    var surfaceText = styleValue(style.textColor) || readableText;
+    var activeText = styleValue(style.activeTextColor) || surfaceText;
+    var iconColor = styleValue(style.iconColor) || surfaceText;
+    var accent = styleValue(style.brandAccentColor) ||
+      styleValue(style.badgeColor) ||
+      styleValue(style.activeTextColor) ||
+      iconColor;
+
+    return {
+      "--cleanview-surface-bg": getTopHeaderBackgroundValue(style),
+      "--cleanview-surface-text": surfaceText,
+      "--cleanview-surface-muted-text": getMutedTextColorForSurface(style),
+      "--cleanview-surface-hover-bg": getHoverBackgroundForSurface(style),
+      "--cleanview-surface-hover-text": activeText,
+      "--cleanview-surface-active-bg": getActiveBackgroundForSurface(style),
+      "--cleanview-surface-active-text": activeText,
+      "--cleanview-surface-border": styleValue(style.dividerColor) || getTopHeaderBorderColor(style),
+      "--cleanview-surface-accent": accent,
+      "--cleanview-top-header-bg": getTopHeaderBackgroundValue(style),
+      "--cleanview-top-header-border": styleValue(style.dividerColor) || getTopHeaderBorderColor(style)
+    };
+  }
+
+  function applyCssVariables(element, variables) {
+    Object.keys(variables).forEach(function applyVariable(name) {
+      if (styleValue(variables[name])) {
+        element.style.setProperty(name, variables[name]);
+      }
+    });
+  }
+
+  function isHeaderUtilityElement(element) {
+    return Boolean(element && element.closest && element.closest([
+      ".hl_header--controls",
+      "#quickActions",
+      "#hl_header--copilot-icon",
+      "#recent_activities-toggle",
+      "#hl_header--help-icon",
+      "#canny_logs-toggle",
+      ".hl_header--avatar",
+      ".hl_header--copy-link"
+    ].join(",")));
+  }
+
+  function normalizePathForActiveMatch(value) {
+    var path = "";
+
+    try {
+      path = new URL(value, window.location.origin).pathname || "";
+    } catch (error) {
+      path = String(value || "").split("?")[0].split("#")[0];
+    }
+
+    path = path.replace(/\/+$/, "");
+    return path || "/";
+  }
+
+  function isCurrentHeaderPath(linkPath, currentPath) {
+    if (!linkPath || linkPath === "/" || linkPath === currentPath) {
+      return linkPath === currentPath;
+    }
+
+    return currentPath.indexOf(linkPath + "/") === 0;
+  }
+
+  function markCurrentHeaderLinks() {
+    var header = document.querySelector(".hl_header");
+    var currentPath = normalizePathForActiveMatch(window.location.href);
+    var bestMatch = null;
+    var bestLength = 0;
+
+    document.querySelectorAll("[data-agencyskin-cleanview-header-current='true']").forEach(function clearCurrentHeaderLink(element) {
+      element.removeAttribute("data-agencyskin-cleanview-header-current");
+    });
+
+    if (!header) {
+      return;
+    }
+
+    Array.prototype.slice.call(header.querySelectorAll("a[href]")).forEach(function scoreHeaderLink(link) {
+      var href = link.getAttribute("href") || "";
+      var linkPath = "";
+
+      if (!href || href === "#" || href.trim().toLowerCase().indexOf("javascript:") === 0 || isHeaderUtilityElement(link)) {
+        return;
+      }
+
+      linkPath = normalizePathForActiveMatch(href);
+      if (isCurrentHeaderPath(linkPath, currentPath) && linkPath.length > bestLength) {
+        bestMatch = link;
+        bestLength = linkPath.length;
+      }
+    });
+
+    if (bestMatch) {
+      bestMatch.setAttribute("data-agencyskin-cleanview-header-current", "true");
+      var activeContainer = bestMatch.closest("li, [role='tab'], [class*='tab'], [class*='nav-item'], [class*='menu-item']");
+      if (activeContainer && activeContainer !== header && header.contains(activeContainer) && !isHeaderUtilityElement(activeContainer)) {
+        activeContainer.setAttribute("data-agencyskin-cleanview-header-current", "true");
+      }
+    }
+  }
+
   function applySidebarBackground(sidebar, style) {
     var backgroundValue = getSidebarBackgroundValue(style);
     var wrapper = null;
@@ -880,22 +1016,68 @@
     var normalized = storage.normalizeSidebarStyle(style || {});
     var headerControls = normalized.headerControls || {};
     var topHeader = normalized.topHeader || {};
-    var topHeaderBackground = topHeader.inheritFromTheme !== false ? getTopHeaderBackgroundValue(normalized) : "";
-    var topHeaderBorder = topHeader.inheritFromTheme !== false ? getTopHeaderBorderColor(normalized) : "";
+    var topHeaderVariables = topHeader.inheritFromTheme !== false ? getTopHeaderThemeVariables(normalized) : {};
     var groupHoverBackground = styleValue(style.hoverBackgroundColor) || "rgba(255,255,255,0.08)";
     var groupExpandedBackground = getSubtleBackgroundColor(style.activeBackgroundColor, groupHoverBackground);
+    // TODO: Reuse these surface variables for internal module nav once stable module-nav selectors are registered.
     var css = [
       "body.cleanview-enabled.cleanview-theme-header {",
-      topHeaderBackground ? "--cleanview-top-header-bg: " + topHeaderBackground + ";" : "",
-      topHeaderBorder ? "--cleanview-top-header-border: " + topHeaderBorder + ";" : "",
+      topHeaderVariables["--cleanview-surface-bg"] ? "--cleanview-surface-bg: " + topHeaderVariables["--cleanview-surface-bg"] + ";" : "",
+      topHeaderVariables["--cleanview-surface-text"] ? "--cleanview-surface-text: " + topHeaderVariables["--cleanview-surface-text"] + ";" : "",
+      topHeaderVariables["--cleanview-surface-muted-text"] ? "--cleanview-surface-muted-text: " + topHeaderVariables["--cleanview-surface-muted-text"] + ";" : "",
+      topHeaderVariables["--cleanview-surface-hover-bg"] ? "--cleanview-surface-hover-bg: " + topHeaderVariables["--cleanview-surface-hover-bg"] + ";" : "",
+      topHeaderVariables["--cleanview-surface-hover-text"] ? "--cleanview-surface-hover-text: " + topHeaderVariables["--cleanview-surface-hover-text"] + ";" : "",
+      topHeaderVariables["--cleanview-surface-active-bg"] ? "--cleanview-surface-active-bg: " + topHeaderVariables["--cleanview-surface-active-bg"] + ";" : "",
+      topHeaderVariables["--cleanview-surface-active-text"] ? "--cleanview-surface-active-text: " + topHeaderVariables["--cleanview-surface-active-text"] + ";" : "",
+      topHeaderVariables["--cleanview-surface-border"] ? "--cleanview-surface-border: " + topHeaderVariables["--cleanview-surface-border"] + ";" : "",
+      topHeaderVariables["--cleanview-surface-accent"] ? "--cleanview-surface-accent: " + topHeaderVariables["--cleanview-surface-accent"] + ";" : "",
+      topHeaderVariables["--cleanview-top-header-bg"] ? "--cleanview-top-header-bg: " + topHeaderVariables["--cleanview-top-header-bg"] + ";" : "",
+      topHeaderVariables["--cleanview-top-header-border"] ? "--cleanview-top-header-border: " + topHeaderVariables["--cleanview-top-header-border"] + ";" : "",
       "}",
       "body.cleanview-enabled.cleanview-theme-header .hl_header,",
       "body.cleanview-enabled.cleanview-theme-header .hl_header .container-fluid {",
-      "background: var(--cleanview-top-header-bg) !important;",
-      "border-bottom: 1px solid var(--cleanview-top-header-border, rgba(255,255,255,0.12)) !important;",
+      "background: var(--cleanview-surface-bg, var(--cleanview-top-header-bg)) !important;",
+      "border-bottom: 1px solid var(--cleanview-surface-border, var(--cleanview-top-header-border, rgba(255,255,255,0.12))) !important;",
       "border-radius: 0 !important;",
       "border-top-left-radius: 0 !important;",
       "border-top-right-radius: 0 !important;",
+      "color: var(--cleanview-surface-text) !important;",
+      "}",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header :is(a, button, [role='button'], [role='tab'], [aria-haspopup='true']):not(.btn):not(.hl_header--controls *):not(#quickActions):not(#quickActions *):not(#hl_header--copilot-icon):not(#hl_header--copilot-icon *):not(#recent_activities-toggle):not(#recent_activities-toggle *):not(#hl_header--help-icon):not(#hl_header--help-icon *):not(#canny_logs-toggle):not(#canny_logs-toggle *):not(.hl_header--avatar):not(.hl_header--avatar *) {",
+      "color: var(--cleanview-surface-text) !important;",
+      "}",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header :is(nav, [role='navigation'], .hl_topHeader, [class*='topHeader'], [class*='top-header'], [class*='nav'], [class*='tabs'], [class*='tab']) :is(a, button, [role='button'], [role='tab']):not(.btn):not(.hl_header--controls *):not(#quickActions *):not(#hl_header--copilot-icon *):not(#recent_activities-toggle *):not(#hl_header--help-icon *):not(#canny_logs-toggle *):not(.hl_header--avatar *) {",
+      "border-color: transparent !important;",
+      "color: var(--cleanview-surface-text) !important;",
+      "}",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header :is(nav, [role='navigation'], .hl_topHeader, [class*='topHeader'], [class*='top-header'], [class*='nav'], [class*='tabs'], [class*='tab']) :is(a, button, [role='button'], [role='tab']):not(.btn):not(.hl_header--controls *):not(#quickActions *):not(#hl_header--copilot-icon *):not(#recent_activities-toggle *):not(#hl_header--help-icon *):not(#canny_logs-toggle *):not(.hl_header--avatar *):hover,",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header :is(nav, [role='navigation'], .hl_topHeader, [class*='topHeader'], [class*='top-header'], [class*='nav'], [class*='tabs'], [class*='tab']) :is(a, button, [role='button'], [role='tab']):not(.btn):not(.hl_header--controls *):not(#quickActions *):not(#hl_header--copilot-icon *):not(#recent_activities-toggle *):not(#hl_header--help-icon *):not(#canny_logs-toggle *):not(.hl_header--avatar *):focus-visible {",
+      "background: var(--cleanview-surface-hover-bg) !important;",
+      "color: var(--cleanview-surface-hover-text) !important;",
+      "}",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header :is([aria-current='page'], [aria-current='true'], [aria-selected='true'], .active, .selected, .router-link-active, .nuxt-link-active, [class*='active'], [class*='selected'], [class*='current'], [data-agencyskin-cleanview-header-current='true']):not(.btn):not(.hl_header--controls *):not(#quickActions *):not(#hl_header--copilot-icon *):not(#recent_activities-toggle *):not(#hl_header--help-icon *):not(#canny_logs-toggle *):not(.hl_header--avatar *) {",
+      "background: var(--cleanview-surface-active-bg) !important;",
+      "border-color: var(--cleanview-surface-accent) !important;",
+      "box-shadow: inset 0 -2px 0 var(--cleanview-surface-accent) !important;",
+      "color: var(--cleanview-surface-active-text) !important;",
+      "}",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header :is([aria-current='page'], [aria-current='true'], [aria-selected='true'], .active, .selected, .router-link-active, .nuxt-link-active, [class*='active'], [class*='selected'], [class*='current'], [data-agencyskin-cleanview-header-current='true']):not(.btn):not(.hl_header--controls *) :is(span, p, div):not(.hl_header--controls *),",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header [data-agencyskin-cleanview-header-current='true'] :is(span, p, div) {",
+      "color: var(--cleanview-surface-active-text) !important;",
+      "}",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header :is(nav, [role='navigation'], .hl_topHeader, [class*='topHeader'], [class*='top-header'], [class*='nav'], [class*='tabs'], [class*='tab']) :is(svg, i):not(.hl_header--controls *):not(#quickActions *):not(#hl_header--copilot-icon *):not(#recent_activities-toggle *):not(#hl_header--help-icon *):not(#canny_logs-toggle *):not(.hl_header--avatar *) {",
+      "color: currentColor !important;",
+      "stroke: currentColor !important;",
+      "}",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header :is(nav, [role='navigation'], .hl_topHeader, [class*='topHeader'], [class*='top-header'], [class*='nav'], [class*='tabs'], [class*='tab']) svg :is(path, circle, rect, line, polyline, polygon):not([fill='none']):not(.hl_header--controls *) {",
+      "fill: currentColor !important;",
+      "}",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header :is(nav, [role='navigation'], .hl_topHeader, [class*='topHeader'], [class*='top-header'], [class*='nav'], [class*='tabs'], [class*='tab']) svg :is(path, circle, rect, line, polyline, polygon):not(.hl_header--controls *) {",
+      "stroke: currentColor !important;",
+      "}",
+      "body.cleanview-enabled.cleanview-theme-header .hl_header :is([class*='underline'], [class*='indicator'], [class*='active-border'], [class*='selected-border']):not(.hl_header--controls *) {",
+      "background-color: var(--cleanview-surface-accent) !important;",
+      "border-color: var(--cleanview-surface-accent) !important;",
       "}",
       "[data-agencyskin-cleanview-style-role='menu-item']:hover {",
       styleValue(style.hoverBackgroundColor) ? "background: " + style.hoverBackgroundColor + " !important;" : "",
@@ -1204,16 +1386,18 @@
   function applyTopHeaderTheme(sidebarStyle) {
     var style = storage.normalizeSidebarStyle(sidebarStyle || {});
     var topHeader = style.topHeader || {};
+    var themeVariables = null;
 
     clearTopHeaderThemeState();
     if (!style.enabled || topHeader.inheritFromTheme === false || !document.body) {
       return 0;
     }
 
+    themeVariables = getTopHeaderThemeVariables(style);
     injectSidebarStyleBlock(style);
     document.body.classList.add("cleanview-enabled", "cleanview-theme-header");
-    document.body.style.setProperty("--cleanview-top-header-bg", getTopHeaderBackgroundValue(style));
-    document.body.style.setProperty("--cleanview-top-header-border", getTopHeaderBorderColor(style));
+    applyCssVariables(document.body, themeVariables);
+    markCurrentHeaderLinks();
     return document.querySelector(".hl_header") ? 1 : 0;
   }
 
