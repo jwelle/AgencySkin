@@ -9,40 +9,62 @@
   var enabledToggle = document.getElementById("enabledToggle");
   var panelButton = document.getElementById("panelButton");
   var statusMessage = document.getElementById("statusMessage");
+  var customDomainCard = document.getElementById("customDomainCard");
+  var customDomainHostname = document.getElementById("customDomainHostname");
+  var customDomainMessage = document.getElementById("customDomainMessage");
+  var enableCustomDomainButton = document.getElementById("enableCustomDomainButton");
   var currentState = null;
+  var activeDomainStatus = null;
+  var activeDomainTabId = null;
 
   function setStatus(message, isError) {
     statusMessage.textContent = message;
     statusMessage.className = isError ? "status error" : "status";
   }
 
-  function isGhlUrl(url) {
-    try {
-      var parsed = new URL(url || "");
-      return parsed.protocol === "https:" && namespace.isAllowedHost(parsed.hostname);
-    } catch (_error) {
-      return false;
-    }
+  function targetGhlTab(callback) {
+    namespace.domainAccess.findTargetTab(callback);
   }
 
-  function targetGhlTab(callback) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function handleActive(tabs) {
-      var activeTab = chrome.runtime.lastError || !tabs || !tabs[0] ? null : tabs[0];
+  function renderCustomDomainStatus(result, tab) {
+    activeDomainStatus = result || null;
+    activeDomainTabId = tab && tab.id || null;
 
-      if (activeTab && activeTab.id && isGhlUrl(activeTab.url)) {
-        callback(activeTab);
+    if (!result || result.status === "built_in" || result.status === "unsupported") {
+      customDomainCard.hidden = true;
+      return;
+    }
+
+    customDomainCard.hidden = false;
+    customDomainCard.dataset.status = result.status || "unavailable";
+    customDomainHostname.textContent = result.hostname || "Custom domain";
+    enableCustomDomainButton.hidden = true;
+
+    if (result.allowed && result.hasPermission) {
+      customDomainMessage.textContent = "This agency domain is approved and enabled in this browser.";
+      return;
+    }
+
+    if (result.allowed) {
+      customDomainMessage.textContent = "This agency domain is approved. Grant Chrome access once to enable CleanView here.";
+      enableCustomDomainButton.hidden = false;
+      return;
+    }
+
+    customDomainMessage.textContent = result.status === "denied" ?
+      "This agency domain is not enabled for CleanView." :
+      (result.error || "CleanView cannot verify this agency domain right now.");
+  }
+
+  function refreshCustomDomainStatus() {
+    chrome.tabs.query({ active: true, currentWindow: true }, function handleTabs(tabs) {
+      var tab = chrome.runtime.lastError || !tabs || !tabs[0] ? null : tabs[0];
+      if (!tab) {
+        customDomainCard.hidden = true;
         return;
       }
-
-      chrome.tabs.query({
-        currentWindow: true,
-        url: namespace.supportedUrlPatterns
-      }, function handleGhlTabs(ghlTabs) {
-        if (chrome.runtime.lastError || !ghlTabs || ghlTabs.length !== 1) {
-          callback(null, activeTab, ghlTabs || []);
-          return;
-        }
-        callback(ghlTabs[0], activeTab, ghlTabs);
+      namespace.domainAccess.getUrlStatus(tab.url, function handleStatus(result) {
+        renderCustomDomainStatus(result, tab);
       });
     });
   }
@@ -130,6 +152,7 @@
       currentState = state;
       enabledToggle.checked = state.enabled !== false;
       populatePresets(state);
+      refreshCustomDomainStatus();
     });
   }
 
@@ -206,8 +229,47 @@
     });
   }
 
+  function enableCustomDomain() {
+    var requestedStatus = activeDomainStatus;
+    var requestedTabId = activeDomainTabId;
+
+    if (!requestedStatus || !requestedStatus.allowed || !requestedStatus.pattern) {
+      setStatus("This agency domain is not approved for CleanView.", true);
+      return;
+    }
+
+    enableCustomDomainButton.disabled = true;
+    chrome.permissions.request({ origins: [requestedStatus.pattern] }, function handlePermission(granted) {
+      if (chrome.runtime.lastError || !granted) {
+        enableCustomDomainButton.disabled = false;
+        setStatus("Chrome access was not granted for this domain.", true);
+        return;
+      }
+
+      namespace.domainAccess.runtimeMessage({
+        type: "CLEANVIEW_REGISTER_CUSTOM_DOMAIN",
+        url: "https://" + requestedStatus.hostname + "/"
+      }, function handleRegistration(result) {
+        if (!result || !result.ok) {
+          enableCustomDomainButton.disabled = false;
+          chrome.permissions.remove({ origins: [requestedStatus.pattern] });
+          setStatus(result && result.error || "Unable to enable CleanView on this domain.", true);
+          refreshCustomDomainStatus();
+          return;
+        }
+
+        setStatus("CleanView enabled. Reloading this agency domain...");
+        if (requestedTabId) {
+          chrome.tabs.reload(requestedTabId);
+        }
+        window.setTimeout(refreshCustomDomainStatus, 500);
+      });
+    });
+  }
+
   presetSelect.addEventListener("change", saveActivePreset);
   enabledToggle.addEventListener("change", setEnabled);
   panelButton.addEventListener("click", openPanel);
+  enableCustomDomainButton.addEventListener("click", enableCustomDomain);
   refreshState();
 })();

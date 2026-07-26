@@ -14,35 +14,8 @@
     statusMessage.className = isError ? "status error" : "status";
   }
 
-  function isGhlUrl(url) {
-    try {
-      var parsed = new URL(url || "");
-      return parsed.protocol === "https:" && namespace.isAllowedHost(parsed.hostname);
-    } catch (_error) {
-      return false;
-    }
-  }
-
   function getTargetGhlTab(callback) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function handleActive(tabs) {
-      var activeTab = chrome.runtime.lastError || !tabs || !tabs[0] ? null : tabs[0];
-
-      if (activeTab && activeTab.id && isGhlUrl(activeTab.url)) {
-        callback(activeTab);
-        return;
-      }
-
-      chrome.tabs.query({
-        currentWindow: true,
-        url: namespace.supportedUrlPatterns
-      }, function handleGhlTabs(ghlTabs) {
-        if (chrome.runtime.lastError || !ghlTabs || ghlTabs.length !== 1) {
-          callback(null, activeTab, ghlTabs || []);
-          return;
-        }
-        callback(ghlTabs[0], activeTab, ghlTabs);
-      });
-    });
+    namespace.domainAccess.findTargetTab(callback);
   }
 
   function sendToGhl(message, callback) {

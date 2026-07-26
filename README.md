@@ -2,7 +2,7 @@
 
 AgencySkin's current shipping product is the **AgencySkin CleanView Chrome extension**.
 
-CleanView is a local Chrome extension for GoHighLevel sidebar customization. It lets users create and apply personal Profiles for sidebar styling, menu visibility, renamed labels, and quick links without requiring a backend, hosted sync, or GoHighLevel API access.
+CleanView is a Chrome extension for GoHighLevel sidebar customization. Profiles remain local to the browser; a small Supabase allowlist controls which exact agency white-label domains may run the extension.
 
 ## Current Shipping Product
 
@@ -38,6 +38,7 @@ See `extension/README.md` for the full extension test flow.
 ```text
 AgencySkin/
   extension/             CleanView Chrome extension MVP
+  supabase/              Custom-domain allowlist migration and check function
   docs/                  Extension roadmap, selector notes, legacy docs
   client/                Legacy React + Vite theme builder surface
   server/                Legacy Express API and JSON storage
@@ -52,6 +53,7 @@ Do not delete `client/`, `server/`, or `public/loader.js` yet. Their original MV
 
 ## Development Notes
 
-- The extension MVP does not require `npm install` or a local server to load unpacked in Chrome.
+- The extension does not require `npm install` or a local server to load unpacked in Chrome.
+- Custom-domain testing requires the Supabase migration/function to be deployed and its public function URL configured in `extension/domainAccessConfig.js`.
 - The legacy dashboard/server can still be run for reference with the root `package.json` scripts.
 - Future hosted sync work should build from the extension Profile model instead of treating the legacy theme builder as the active product.

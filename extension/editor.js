@@ -819,33 +819,8 @@
     });
   }
 
-  function isGhlUrl(url) {
-    try {
-      var parsed = new URL(url || "");
-      return parsed.protocol === "https:" && namespace.isAllowedHost(parsed.hostname);
-    } catch (_error) {
-      return false;
-    }
-  }
-
   function getTargetGhlTab(callback) {
-    getActiveTab(function handleActiveTab(tab) {
-      if (tab && tab.id && isGhlUrl(tab.url)) {
-        callback(tab);
-        return;
-      }
-
-      chrome.tabs.query({
-        currentWindow: true,
-        url: namespace.supportedUrlPatterns
-      }, function handleGhlTabs(tabs) {
-        if (chrome.runtime.lastError || !tabs || tabs.length !== 1) {
-          callback(null, tab, tabs || []);
-          return;
-        }
-        callback(tabs[0], tab, tabs);
-      });
-    });
+    namespace.domainAccess.findTargetTab(callback);
   }
 
   function sendToContentScript(message, callback) {

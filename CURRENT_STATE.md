@@ -2,6 +2,10 @@
 
 ## Added
 
+- Centrally managed exact-host custom-domain support was added for agency GoHighLevel white-label domains.
+- Supabase now provides a private `cleanview_allowed_domains` table and a public boolean-only domain-check Edge Function.
+- The extension requests Chrome access only for an approved exact hostname, registers its custom-domain content script dynamically, and rechecks approval on every page load.
+- Custom-domain Chrome grants are stored separately from CleanView View backups and are removed after an authoritative denial.
 - CleanView Sidebar Style is now the first View Builder tab.
 - Curated sidebar style cards, bundled visual backgrounds, pattern-backed presets, and controlled Curated Rotation were added to the Chrome extension.
 - Sidebar background settings now store structured image, pattern, readability, favorite, and rotation configuration.
@@ -37,6 +41,10 @@
 - `client/src/App.jsx`
 - `client/src/styles.css`
 - `extension/content.js`
+- `extension/background.js`
+- `extension/domainAccess.js`
+- `extension/domainAccessConfig.js`
+- `extension/customDomainMarker.js`
 - `extension/editor.css`
 - `extension/editor.html`
 - `extension/editor.js`
@@ -53,6 +61,9 @@
 - `CURRENT_STATE.md`
 - `docs/legacy-theme-builder.md`
 - `docs/extension-roadmap.md`
+- `supabase/config.toml`
+- `supabase/migrations/*_create_cleanview_allowed_domains.sql`
+- `supabase/functions/check-cleanview-domain/index.ts`
 
 ## How To Test
 

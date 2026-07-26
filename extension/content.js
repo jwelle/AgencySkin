@@ -23,7 +23,11 @@
   var preferredSidebarSelector = "#sidebar-v2";
   var sidebarWaitTimeoutMs = 20000;
 
-  if (!namespace.isAllowedHost(window.location.hostname)) {
+  var isBuiltInPage = namespace.isBuiltInHost && namespace.isBuiltInHost(window.location.hostname);
+  var isRegisteredCustomPage = namespace.customDomainHostname === String(window.location.hostname || "").toLowerCase();
+  var contentRuntimeStarted = false;
+
+  if (!isBuiltInPage && !isRegisteredCustomPage) {
     return;
   }
 
@@ -2640,7 +2644,13 @@
     }
   }
 
-  chrome.runtime.onMessage.addListener(function handleMessage(message, _sender, sendResponse) {
+  function startContentRuntime() {
+    if (contentRuntimeStarted) {
+      return;
+    }
+
+    contentRuntimeStarted = true;
+    chrome.runtime.onMessage.addListener(function handleMessage(message, _sender, sendResponse) {
     if (!message || message.source !== namespace.messageSource) {
       return false;
     }
@@ -2779,9 +2789,22 @@
 
     respond(sendResponse, { ok: false, error: "Unknown CleanView message." });
     return false;
-  });
+    });
 
-  primePreloadGuardFromRawState();
-  loadAndApply();
-  startObserverWhenReady();
+    primePreloadGuardFromRawState();
+    loadAndApply();
+    startObserverWhenReady();
+  }
+
+  if (isBuiltInPage) {
+    startContentRuntime();
+    return;
+  }
+
+  chrome.runtime.sendMessage({ type: "CLEANVIEW_CUSTOM_DOMAIN_PAGE_CHECK" }, function handleDomainCheck(result) {
+    if (chrome.runtime.lastError || !result || result.allowed !== true) {
+      return;
+    }
+    startContentRuntime();
+  });
 })();

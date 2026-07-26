@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CleanView for GoHighLevel",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Customize and simplify GoHighLevel sidebars with saved views, menu visibility, colors, logos, and styling.",
   "icons": {
     "16": "assets/icons/icon16.png",
@@ -9,22 +9,28 @@
     "48": "assets/icons/icon48.png",
     "128": "assets/icons/icon128.png"
   },
-  "permissions": ["storage", "tabs", "sidePanel"],
+  "permissions": ["storage", "tabs", "sidePanel", "scripting"],
+  "optional_host_permissions": [
+    "https://*/*"
+  ],
   "host_permissions": [
     "https://app.gohighlevel.com/*",
     "https://*.gohighlevel.com/*",
-    "https://*.leadconnectorhq.com/*"
+    "https://*.leadconnectorhq.com/*",
+    "https://pclmbmuhgxmrvnctvjja.supabase.co/*"
   ],
   "web_accessible_resources": [
     {
       "resources": ["assets/backgrounds/*.webp"],
       "matches": [
-        "https://app.gohighlevel.com/*",
-        "https://*.gohighlevel.com/*",
-        "https://*.leadconnectorhq.com/*"
-      ]
+        "https://*/*"
+      ],
+      "use_dynamic_url": true
     }
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

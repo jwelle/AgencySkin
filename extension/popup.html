@@ -25,6 +25,13 @@
         </span>
       </label>
 
+      <section id="customDomainCard" class="domain-access-card" hidden>
+        <span class="domain-access-label">Agency domain</span>
+        <strong id="customDomainHostname"></strong>
+        <p id="customDomainMessage"></p>
+        <button id="enableCustomDomainButton" type="button" hidden>Enable CleanView Here</button>
+      </section>
+
       <section id="currentViewSummary" class="current-view-summary" hidden>
         <span>Current View</span>
         <strong id="currentViewName">No saved view</strong>
@@ -50,6 +57,7 @@
     </main>
 
     <script src="namespace.js"></script>
+    <script src="domainAccess.js"></script>
     <script src="selectorRegistry.js"></script>
     <script src="sidebarBackgrounds.js"></script>
     <script src="presets.js"></script>

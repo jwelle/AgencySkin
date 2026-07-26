@@ -34,10 +34,17 @@
     "https://*.leadconnectorhq.com/*"
   ];
 
-  namespace.isAllowedHost = function isAllowedHost(hostname) {
+  namespace.isBuiltInHost = function isBuiltInHost(hostname) {
+    hostname = String(hostname || "").toLowerCase();
     return hostname === "app.gohighlevel.com" ||
       hostname.endsWith(".gohighlevel.com") ||
       hostname.endsWith(".leadconnectorhq.com");
+  };
+
+  namespace.isAllowedHost = function isAllowedHost(hostname) {
+    hostname = String(hostname || "").toLowerCase();
+    return namespace.isBuiltInHost(hostname) ||
+      Boolean(namespace.customDomainHostname && namespace.customDomainHostname === hostname);
   };
 
   namespace.getLocationIdFromUrl = function getLocationIdFromUrl(pathname) {

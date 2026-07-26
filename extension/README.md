@@ -129,14 +129,26 @@ Use `Detect GHL Sidebar` to confirm CleanView can reach `#sidebar-v2`. Turn off 
 ## Supported Sites
 
 - `https://app.gohighlevel.com/*`
+- `https://*.gohighlevel.com/*`
 - `https://*.leadconnectorhq.com/*`
+- Exact agency white-label hosts approved in the central Supabase allowlist
 
-Custom white-label domains can be added later by extending `matches` and `host_permissions` in `manifest.json`.
+### Approve an agency white-label domain
+
+1. Open the linked Supabase project and select `cleanview_allowed_domains` in Table Editor.
+2. Add the agency name and exact lowercase hostname, such as `app.agency.com`. Do not include `https://`, a path, port, or wildcard.
+3. Leave `enabled` on to approve the hostname. Turn it off to revoke access on the next page load.
+4. Have the agency user open that exact HTTPS hostname and click the CleanView extension.
+5. Click `Enable CleanView Here` and approve Chrome's exact-site access prompt. CleanView reloads the page and begins applying the active View.
+
+The extension checks the central allowlist on every custom-domain page load. A denied hostname removes its dynamic content-script registration and Chrome origin grant. A temporary verification outage blocks CleanView for that load without removing the prior grant.
+
+The public check endpoint is configured in `domainAccessConfig.js`. It returns only an allow/deny result; Supabase service credentials stay inside the Edge Function. Domain grants are stored separately from View backups and resets.
 
 ## Known Limitations
 
 - Storage is local to the current Chrome browser.
-- No cloud sync or AgencySkin web app sync yet.
+- No Profile cloud sync or AgencySkin web app sync yet; only custom-domain eligibility is hosted.
 - No GoHighLevel API access.
 - Sidebar Style is scoped to the detected GHL sidebar/menu area.
 - No raw CSS, raw JavaScript, or selector editor.
